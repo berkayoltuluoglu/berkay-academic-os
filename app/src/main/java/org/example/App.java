@@ -1,6 +1,9 @@
 package org.example;
 
 import javafx.application.Application;
+import javafx.animation.PauseTransition;
+import javafx.util.Duration;
+import javafx.scene.control.ScrollPane;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -14,7 +17,6 @@ import javafx.scene.layout.VBox;
 import javafx.scene.web.WebView;
 import javafx.stage.Stage;
 
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -26,6 +28,9 @@ public class App extends Application {
     private Label statusLabel;
     private WebView webView;
     private TextArea notesArea;
+    private TextArea webNotesArea;
+    private final WebNotesSession webNotesSession = new WebNotesSession();
+    private final PauseTransition notesSaveDelay = new PauseTransition(Duration.millis(500));
     private AppConfig appConfig;
     private Path currentNotesRoot;
     private Path currentNotesDirectory;
@@ -43,7 +48,6 @@ public class App extends Application {
 
     private ModuleActionHandler moduleActionHandler;
     private ModuleItem currentWebModule;
-    private long lastWebLoadTime = 0;
 
     @Override
     public void start(Stage stage) {
@@ -81,13 +85,19 @@ public class App extends Application {
         centerArea.setStyle("-fx-background-color: white;");
         VBox.setVgrow(centerArea, Priority.ALWAYS);
 
-        webView = new WebView();
-        VBox.setVgrow(webView, Priority.ALWAYS);
-
         notesArea = new TextArea();
         notesArea.setWrapText(true);
-        notesArea.setPromptText("Bu siteye özel notlarını buraya yaz...");
-        notesArea.textProperty().addListener((obs, oldText, newText) -> autoSaveCurrentModuleNotes());
+        notesArea.setPromptText("Dosya içeriği...");
+        webNotesArea = new TextArea();
+        webNotesArea.setWrapText(true);
+        webNotesArea.setPromptText("Bu siteye özel notlarını buraya yaz...");
+        webNotesArea.textProperty().addListener((obs, oldText, newText) -> {
+            if (currentWebModule != null) {
+                webNotesSession.edit(newText);
+                notesSaveDelay.playFromStart();
+            }
+        });
+        notesSaveDelay.setOnFinished(event -> saveNotesForCurrentModule());
 
         String defaultStatus = "Hazır";
         if (appConfig != null && appConfig.getUi() != null
@@ -107,27 +117,42 @@ public class App extends Application {
         }
 
         root.setTop(topBar);
-        root.setLeft(sidebar);
+        ScrollPane sidebarScroll = new ScrollPane(sidebar);
+        sidebarScroll.setFitToWidth(true);
+        sidebarScroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        sidebarScroll.setPrefWidth(sidebar.getPrefWidth() + 2);
+        root.setLeft(sidebarScroll);
         root.setCenter(centerArea);
         root.setBottom(bottomBar);
 
         Scene scene = new Scene(root, 1100, 700);
         stage.setTitle("Berkay Academic OS");
         stage.setScene(scene);
+        stage.setOnCloseRequest(event -> {
+            try {
+                leaveCurrentModule();
+            } catch (Exception ex) {
+                event.consume();
+                statusLabel.setText("Durum: Notlar kaydedilemedi, pencere açık tutuldu: " + ex.getMessage());
+            }
+        });
         stage.show();
     }
 
-    private void autoSaveCurrentModuleNotes() {
-        if (currentWebModule == null) {
-            return;
+    private void leaveCurrentModule() throws Exception {
+        notesSaveDelay.stop();
+        webNotesSession.close();
+        currentWebModule = null;
+        moduleActionHandler.cancelScript();
+        if (webView != null) {
+            webView.getEngine().getLoadWorker().cancel();
+            webView.getEngine().load(null);
         }
-        try {
-            Path notesFile = getNotesFilePath(currentWebModule);
-            Files.createDirectories(notesFile.getParent());
-            fileOperationService.saveTextFile(notesFile, notesArea.getText());
-        } catch (Exception e) {
-            statusLabel.setText("Durum: Otomatik kaydetme hatası");
-        }
+    }
+
+    @Override
+    public void stop() throws Exception {
+        leaveCurrentModule();
     }
 
     private Path getProjectRoot() {
@@ -164,7 +189,7 @@ public class App extends Application {
                 statusLabel.setText("Durum: Açık dosya yok");
                 return;
             }
-            Files.writeString(currentOpenedFile, notesArea.getText(), StandardCharsets.UTF_8);
+            fileOperationService.saveTextFile(currentOpenedFile, notesArea.getText());
             statusLabel.setText("Durum: Dosya kaydedildi");
         } catch (Exception e) {
             statusLabel.setText("Durum: Kaydetme hatası");
@@ -180,62 +205,38 @@ public class App extends Application {
         return getProjectRoot().resolve(notesDirName).resolve(sanitizeFileName(module.getName()) + ".txt");
     }
 
-    private void loadNotesForModule(ModuleItem module) {
-        try {
-            Path notesFile = getNotesFilePath(module);
-            Files.createDirectories(notesFile.getParent());
-            if (Files.exists(notesFile)) {
-                notesArea.setText(Files.readString(notesFile, StandardCharsets.UTF_8));
-            } else {
-                notesArea.clear();
-            }
-        } catch (Exception e) {
-            notesArea.setText("Notlar yüklenemedi:\n" + e.getMessage());
-        }
-    }
-
     private void saveNotesForCurrentModule() {
+        if (currentWebModule == null) return;
+        notesSaveDelay.stop();
         try {
-            if (currentWebModule == null) {
-                return;
-            }
-            Path notesFile = getNotesFilePath(currentWebModule);
-            Files.createDirectories(notesFile.getParent());
-            Files.writeString(notesFile, notesArea.getText(), StandardCharsets.UTF_8);
+            webNotesSession.save();
             statusLabel.setText("Durum: Notlar kaydedildi");
-        } catch (Exception e) {
-            statusLabel.setText("Durum: Not kaydetme hatası");
-            e.printStackTrace();
+        } catch (Exception ex) {
+            statusLabel.setText("Durum: Notlar kaydedilemedi: " + ex.getMessage());
         }
     }
 
-    private void showWebWithNotes(ModuleItem module) {
-        long now = System.currentTimeMillis();
-        if (now - lastWebLoadTime < 400) {
-            return;
-        }
-        lastWebLoadTime = now;
-
+    private void showWebWithNotes(ModuleItem module) throws Exception {
         if (module.getTarget() == null || module.getTarget().isBlank()) {
             showTextInCenter("Web hedefi tanımlanmamış");
             statusLabel.setText("Durum: Hata");
             return;
         }
 
+        String text = webNotesSession.open(getNotesFilePath(module));
+        webNotesArea.setText(text);
         currentWebModule = module;
-        loadNotesForModule(module);
-
+        if (webView == null) {
+            webView = new WebView();
+            VBox.setVgrow(webView, Priority.ALWAYS);
+        }
         SplitPane splitPane = webModuleView.build(
-                module,
-                webView,
-                notesArea,
-                this::saveNotesForCurrentModule,
+                module, webView, webNotesArea, this::saveNotesForCurrentModule,
                 () -> {
-                    notesArea.clear();
+                    webNotesArea.clear();
                     saveNotesForCurrentModule();
                 }
         );
-
         showNodeInCenter(splitPane);
         statusLabel.setText("Durum: " + module.getName() + " açık");
     }
@@ -304,7 +305,6 @@ public class App extends Application {
     }
 
     private void showNodeInCenter(javafx.scene.Node node) {
-        currentWebModule = null;
         centerArea.getChildren().clear();
         centerArea.getChildren().add(node);
         centerArea.setAlignment(Pos.CENTER);
@@ -312,6 +312,12 @@ public class App extends Application {
     }
 
     private void handleModuleAction(ModuleItem module) {
+        try {
+            leaveCurrentModule();
+        } catch (Exception ex) {
+            statusLabel.setText("Durum: Notlar kaydedilemedi, modül değişmedi: " + ex.getMessage());
+            return;
+        }
         try {
             String type = module.getType();
             if (type == null || type.isBlank()) {
@@ -335,7 +341,7 @@ public class App extends Application {
                     moduleActionHandler.handleExternalWebModule(module, this::showTextInCenter, text -> statusLabel.setText(text));
                     break;
                 case "script":
-                    moduleActionHandler.handleScriptModule(module, getProjectRoot(), this::showTextInCenter, text -> statusLabel.setText(text));
+                    moduleActionHandler.handleScriptModule(module, centerArea, text -> statusLabel.setText(text));
                     break;
                 case "calendar":
                     centerArea.getChildren().clear();

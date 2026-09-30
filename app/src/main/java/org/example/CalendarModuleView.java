@@ -49,7 +49,6 @@ public class CalendarModuleView {
     public VBox build(Path tasksFilePath) {
         TaskStorageService storageService = new TaskStorageService(tasksFilePath);
         allTasks.setAll(storageService.loadTasks());
-        seedTasksIfEmpty();
 
         mainTabs = new TabPane();
         Tab calendarTab = new Tab("Takvim");
@@ -240,14 +239,16 @@ public class CalendarModuleView {
         VBox.setVgrow(content, Priority.ALWAYS);
         VBox.setVgrow(splitPane, Priority.ALWAYS);
 
-        Runnable persist = () -> storageService.saveTasks(new ArrayList<>(allTasks));
-
         refreshButton.setOnAction(e -> {
-            allTasks.setAll(storageService.loadTasks());
-            seedTasksIfEmpty();
-            applyTaskFilter(taskFilterCombo.getValue());
-            refreshCalendarView();
-            taskInfoLabel.setText("Görevler diskten yeniden yüklendi");
+            try {
+                List<TaskItem> loaded = storageService.loadTasks();
+                allTasks.setAll(loaded);
+                applyTaskFilter(taskFilterCombo.getValue());
+                refreshCalendarView();
+                taskInfoLabel.setText("Görevler diskten yeniden yüklendi");
+            } catch (IllegalStateException ex) {
+                taskInfoLabel.setText(ex.getMessage());
+            }
         });
 
         useSelectedDayButton.setOnAction(e -> {
@@ -297,13 +298,11 @@ public class CalendarModuleView {
                     statusCombo.getValue() == null ? "Bekliyor" : statusCombo.getValue()
             );
 
-            allTasks.add(newTask);
-            sortTasks();
-            persist.run();
-            applyTaskFilter(taskFilterCombo.getValue());
-            taskListView.getSelectionModel().select(newTask);
-            refreshCalendarView();
-            taskInfoLabel.setText("Yeni görev kaydedildi");
+            List<TaskItem> proposed = new ArrayList<>(allTasks);
+            proposed.add(newTask);
+            if (commitTasks(storageService, proposed, "Yeni görev kaydedildi")) {
+                taskListView.getSelectionModel().select(newTask);
+            }
         });
 
         updateButton.setOnAction(e -> {
@@ -319,17 +318,17 @@ public class CalendarModuleView {
                 return;
             }
 
-            selectedTask.setTitle(titleText.trim());
-            selectedTask.setDate(taskDatePicker.getValue() == null ? selectedDate : taskDatePicker.getValue());
-            selectedTask.setStatus(statusCombo.getValue() == null ? "Bekliyor" : statusCombo.getValue());
-            selectedTask.setDescription(descriptionField.getText() == null ? "" : descriptionField.getText().trim());
-
-            sortTasks();
-            persist.run();
-            applyTaskFilter(taskFilterCombo.getValue());
-            taskListView.refresh();
-            refreshCalendarView();
-            taskInfoLabel.setText("Görev güncellendi");
+            TaskItem updated = new TaskItem(
+                    titleText.trim(),
+                    taskDatePicker.getValue() == null ? selectedDate : taskDatePicker.getValue(),
+                    descriptionField.getText() == null ? "" : descriptionField.getText().trim(),
+                    statusCombo.getValue() == null ? "Bekliyor" : statusCombo.getValue()
+            );
+            List<TaskItem> proposed = new ArrayList<>(allTasks);
+            proposed.set(proposed.indexOf(selectedTask), updated);
+            if (commitTasks(storageService, proposed, "Görev güncellendi")) {
+                taskListView.getSelectionModel().select(updated);
+            }
         });
 
         deleteButton.setOnAction(e -> {
@@ -339,11 +338,9 @@ public class CalendarModuleView {
                 return;
             }
 
-            allTasks.remove(selectedTask);
-            persist.run();
-            applyTaskFilter(taskFilterCombo.getValue());
-            refreshCalendarView();
-            taskInfoLabel.setText("Görev silindi");
+            List<TaskItem> proposed = new ArrayList<>(allTasks);
+            proposed.remove(selectedTask);
+            commitTasks(storageService, proposed, "Görev silindi");
         });
 
         markDoneButton.setOnAction(e -> {
@@ -353,13 +350,13 @@ public class CalendarModuleView {
                 return;
             }
 
-            selectedTask.setStatus("Tamamlandı");
-            sortTasks();
-            persist.run();
-            applyTaskFilter(taskFilterCombo.getValue());
-            taskListView.refresh();
-            refreshCalendarView();
-            taskInfoLabel.setText("Görev tamamlandı olarak kaydedildi");
+            TaskItem completed = new TaskItem(selectedTask.getTitle(), selectedTask.getDate(),
+                    selectedTask.getDescription(), "Tamamlandı");
+            List<TaskItem> proposed = new ArrayList<>(allTasks);
+            proposed.set(proposed.indexOf(selectedTask), completed);
+            if (commitTasks(storageService, proposed, "Görev tamamlandı olarak kaydedildi")) {
+                taskListView.getSelectionModel().select(completed);
+            }
         });
 
         return wrapper;
@@ -601,17 +598,18 @@ public class CalendarModuleView {
         return projectRoot.resolve("data/tasks.json");
     }
 
-    private void seedTasksIfEmpty() {
-        if (!allTasks.isEmpty()) return;
-        allTasks.addAll(
-                new TaskItem("Calculus final tekrar", LocalDate.now(), "Yönlü türev, Lagrange, üç katlı integral tekrar edilecek.", "Bekliyor"),
-                new TaskItem("Fizik 2 optik özeti", LocalDate.now().plusDays(1), "Geometrik optik ve fiziksel optik notları düzenlenecek.", "Yapılıyor"),
-                new TaskItem("Embedded proje planı", LocalDate.now().plusDays(3), "ESP32 görevleri ve modül akışı netleştirilecek.", "Bekliyor")
-        );
-        sortTasks();
-    }
-
-    private void sortTasks() {
-        allTasks.sort(Comparator.comparing(TaskItem::getDate).thenComparing(TaskItem::getTitle));
+    private boolean commitTasks(TaskStorageService storage, List<TaskItem> proposed, String message) {
+        proposed.sort(Comparator.comparing(TaskItem::getDate).thenComparing(TaskItem::getTitle));
+        try {
+            storage.saveTasks(proposed);
+        } catch (IllegalStateException ex) {
+            taskInfoLabel.setText(ex.getMessage());
+            return false;
+        }
+        allTasks.setAll(proposed);
+        applyTaskFilter(taskFilterCombo.getValue());
+        refreshCalendarView();
+        taskInfoLabel.setText(message);
+        return true;
     }
 }

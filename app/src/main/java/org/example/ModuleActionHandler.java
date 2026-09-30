@@ -12,6 +12,7 @@ public class ModuleActionHandler {
     private final ReferenceLibraryView referenceLibraryView;
     private final CalendarModuleView calendarModuleView;
     private final Path projectRoot;
+    private ScriptModuleView scriptView;
 
     public ModuleActionHandler(
             ScriptModuleRunner scriptModuleRunner,
@@ -77,22 +78,18 @@ public class ModuleActionHandler {
         }
     }
 
-    public boolean handleScriptModule(
-            ModuleItem module,
-            Path projectRoot,
-            TextCenterShower textCenterShower,
-            StatusUpdater statusUpdater
-    ) {
-        try {
-            String result = scriptModuleRunner.run(module, projectRoot);
-            textCenterShower.show(result);
-            statusUpdater.update("Durum: Script başarıyla çalıştı");
-            return true;
-        } catch (Exception ex) {
-            textCenterShower.show(ex.getMessage());
-            statusUpdater.update("Durum: Hata");
-            ex.printStackTrace();
-            return true;
+    public void handleScriptModule(ModuleItem module, VBox centerArea, StatusUpdater statusUpdater) {
+        cancelScript();
+        scriptView = new ScriptModuleView();
+        VBox view = scriptView.build(module, projectRoot, scriptModuleRunner, statusUpdater);
+        centerArea.getChildren().setAll(view);
+        VBox.setVgrow(view, javafx.scene.layout.Priority.ALWAYS);
+    }
+
+    public void cancelScript() {
+        if (scriptView != null) {
+            scriptView.dispose();
+            scriptView = null;
         }
     }
 

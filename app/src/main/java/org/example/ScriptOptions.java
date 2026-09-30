@@ -3,7 +3,8 @@ package org.example;
 public class ScriptOptions {
     private String interpreter;
     private String workingDirectory;
-    private boolean captureOutput;
+    private boolean captureOutput = true;
+    private long timeoutSeconds = 300;
 
     public ScriptOptions() {
     }
@@ -30,5 +31,14 @@ public class ScriptOptions {
 
     public void setCaptureOutput(boolean captureOutput) {
         this.captureOutput = captureOutput;
+    }
+
+    public long getTimeoutSeconds() {
+        return timeoutSeconds;
+    }
+
+    public void setTimeoutSeconds(long timeoutSeconds) {
+        if (timeoutSeconds <= 0) throw new IllegalArgumentException("Script süresi pozitif olmalı");
+        this.timeoutSeconds = timeoutSeconds;
     }
 }

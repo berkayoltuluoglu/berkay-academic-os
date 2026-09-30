@@ -25,3 +25,6 @@ config/
 !data/reference-topics.json
 !data/tasks.json
 !app/src/main/resources/config.json
+
+# Son başarılı görev kaydının yerel yedeği
+data/*.bak

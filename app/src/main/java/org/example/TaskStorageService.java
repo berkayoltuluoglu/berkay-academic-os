@@ -52,7 +52,7 @@ public class TaskStorageService {
                 return tasks;
             }
         } catch (Exception e) {
-            System.err.println("Görevler yüklenemedi: " + e.getMessage());
+            throw new IllegalStateException("Görevler yüklenemedi: " + e.getMessage(), e);
         }
         return new ArrayList<>();
     }
@@ -60,7 +60,7 @@ public class TaskStorageService {
     public void saveTasks(List<TaskItem> tasks) {
         try {
             if (filePath == null) {
-                return;
+                throw new IllegalArgumentException("Görev dosyası tanımlanmamış");
             }
 
             Path parent = filePath.getParent();
@@ -84,9 +84,14 @@ public class TaskStorageService {
                 }
             }
 
-            mapper.writerWithDefaultPrettyPrinter().writeValue(filePath.toFile(), records);
+            byte[] bytes = mapper.writerWithDefaultPrettyPrinter().writeValueAsBytes(records);
+            if (Files.exists(filePath)) {
+                Path backup = filePath.resolveSibling(filePath.getFileName() + ".bak");
+                AtomicFileWriter.write(backup, Files.readAllBytes(filePath));
+            }
+            AtomicFileWriter.write(filePath, bytes);
         } catch (Exception e) {
-            System.err.println("Görevler kaydedilemedi: " + e.getMessage());
+            throw new IllegalStateException("Görevler kaydedilemedi: " + e.getMessage(), e);
         }
     }
 

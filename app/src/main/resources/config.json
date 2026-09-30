@@ -168,7 +168,8 @@
       "scriptOptions": {
         "interpreter": "python3",
         "workingDirectory": "project_root",
-        "captureOutput": true
+        "captureOutput": true,
+        "timeoutSeconds": 300
       }
     },
     {
