@@ -24,6 +24,31 @@
   },
   "modules": [
     {
+      "id": "today",
+      "name": "Bugün",
+      "category": "Planlama",
+      "type": "internal",
+      "enabled": true,
+      "icon": "sun"
+    },
+    {
+      "id": "courses",
+      "name": "Dersler",
+      "category": "Akademik",
+      "type": "internal",
+      "enabled": true,
+      "icon": "courses"
+    },
+    {
+      "id": "finance",
+      "name": "Borç Defteri",
+      "category": "Finans",
+      "type": "internal",
+      "enabled": true,
+      "icon": "wallet",
+      "message": "Borç Defteri açıldı"
+    },
+    {
       "id": "documents",
       "name": "Belge Merkezi",
       "category": "Verimlilik",

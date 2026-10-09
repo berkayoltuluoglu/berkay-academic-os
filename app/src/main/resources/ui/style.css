@@ -1,0 +1,461 @@
+/* ===================================================================
+   Berkay Academic OS — tasarım dosyası (AtlantaFX Primer'ın üstüne)
+
+   Nasıl kullanılır:
+   - Renkleri değiştirmek için sadece .uygulama ve .uygulama.dark bloklarındaki
+     değişkenleri düzenle; bütün bileşenler bunlardan beslenir.
+   - Yeni bir sayfa yazarken kutular için .panel, başlıklar için .panel-baslik,
+     ikincil metin için .soluk sınıflarını kullan.
+   =================================================================== */
+
+.root {
+    -fx-font-family: "IBM Plex Sans", "Segoe UI", "Noto Sans", sans-serif;
+    -fx-font-size: 13.5px;
+}
+
+.uygulama {
+    -zemin:          #ECEFF1;
+    -yuzey:          #FFFFFF;
+    -yuzey-2:        #F4F6F7;
+    -cizgi:          #DCE2E6;
+    -yazi:           #15222B;
+    -yazi-soluk:     #5D6B76;
+    -kenar:          #0F1A21;
+    -kenar-yazi:     #8C9DA9;
+    -vurgu:          #0B7A84;
+    -vurgu-koyu:     #08636B;
+    -vurgu-acik:     #D6EEF0;
+    -basari:         #17875A;
+    -tehlike:        #C2412A;
+    -uyari:          #B7791F;
+    -parlak:         #3ED3C5;
+    -klasor:         #C99A2E;
+    -terminal-zemin: #0B151A;
+    -terminal-yazi:  #CFE4E6;
+
+    -color-accent-fg:        -vurgu;
+    -color-accent-emphasis:  -vurgu;
+    -color-accent-5:         -vurgu;
+    -color-accent-6:         -vurgu-koyu;
+    -color-accent-muted:     rgba(11, 122, 132, 0.35);
+    -color-accent-subtle:    -vurgu-acik;
+    -color-bg-default:       -yuzey;
+    -color-bg-subtle:        -yuzey-2;
+    -color-bg-inset:         -yuzey-2;
+    -color-border-default:   -cizgi;
+    -color-border-muted:     -cizgi;
+    -color-fg-default:       -yazi;
+    -color-fg-muted:         -yazi-soluk;
+    -color-success-fg:       -basari;
+    -color-danger-fg:        -tehlike;
+    -color-danger-emphasis:  -tehlike;
+    -color-cell-bg:          -yuzey;
+    -color-cell-bg-odd:      -yuzey;
+    -color-cell-border:      -cizgi;
+    -color-cell-bg-selected: -vurgu-acik;
+    -color-cell-bg-selected-focused: -vurgu-acik;
+    -color-header-bg:        -yuzey;
+    -color-header-fg:        -yazi-soluk;
+}
+
+.uygulama.dark {
+    -zemin:          #10181D;
+    -yuzey:          #151E24;
+    -yuzey-2:        #1B262D;
+    -cizgi:          #26343D;
+    -yazi:           #E2E9ED;
+    -yazi-soluk:     #8898A3;
+    -kenar:          #0A1014;
+    -kenar-yazi:     #7D8E9A;
+    -vurgu:          #26AAB4;
+    -vurgu-koyu:     #1E8F98;
+    -vurgu-acik:     #133A40;
+    -basari:         #44C089;
+    -tehlike:        #EA7158;
+    -uyari:          #E3A83F;
+    -parlak:         #4BE0D2;
+    -klasor:         #E0B64E;
+    -terminal-zemin: #081014;
+    -color-accent-muted: rgba(38, 170, 180, 0.35);
+}
+
+.soluk { -fx-text-fill: -yazi-soluk; }
+
+/* ---------------- Pencere kabuğu ---------------- */
+.pencere-dis { -fx-background-color: transparent; -fx-padding: 18; }
+.pencere-dis:tam-ekran { -fx-padding: 0; }
+.pencere {
+    -fx-background-color: -zemin;
+    -fx-background-radius: 14;
+    -fx-effect: dropshadow(gaussian, rgba(4, 14, 20, 0.38), 26, 0.12, 0, 8);
+}
+.pencere-dis:tam-ekran .pencere { -fx-background-radius: 0; -fx-effect: null; }
+.boyut-tutamaci {
+    -fx-pref-width: 16; -fx-pref-height: 16;
+    -fx-max-width: 16;  -fx-max-height: 16;
+    -fx-background-color: transparent;
+}
+
+/* ---------------- Yan menü ---------------- */
+.kenar-cubugu {
+    -fx-background-color: -kenar;
+    -fx-padding: 22 12 16 12;
+}
+.logo { -fx-padding: 0 0 0 6; }
+.logo-kutu {
+    -fx-background-color: -vurgu;
+    -fx-background-radius: 9;
+    -fx-min-width: 34; -fx-min-height: 34;
+    -fx-max-width: 34; -fx-max-height: 34;
+}
+.logo-kutu .ikonli-font-icon { -fx-icon-color: #FFFFFF; -fx-icon-size: 17; }
+.logo-ad {
+    -fx-font-family: "IBM Plex Sans SmBld", "IBM Plex Sans";
+    -fx-font-size: 16px;
+    -fx-text-fill: #FFFFFF;
+}
+.logo-alt { -fx-text-fill: -kenar-yazi; -fx-font-size: 12px; }
+
+.menu-kaydirma, .menu-kaydirma > .viewport { -fx-background-color: transparent; -fx-background-insets: 0; -fx-padding: 0; }
+.menu-kaydirma { -fx-border-width: 0; }
+
+.grup-basligi {
+    -fx-text-fill: #5E717E;
+    -fx-font-size: 12px;
+    -fx-padding: 14 12 6 12;
+}
+
+.nav {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-background-radius: 8;
+    -fx-border-color: transparent;
+    -fx-border-radius: 8;
+    -fx-effect: null;
+    -fx-text-fill: -kenar-yazi;
+    -fx-font-size: 14px;
+    -fx-alignment: CENTER_LEFT;
+    -fx-graphic-text-gap: 13;
+    -fx-padding: 9 12;
+    -fx-cursor: hand;
+}
+.nav .ikonli-font-icon { -fx-icon-color: -kenar-yazi; -fx-icon-size: 17; }
+.nav:hover { -fx-background-color: rgba(255, 255, 255, 0.05); -fx-text-fill: #FFFFFF; }
+.nav:hover .ikonli-font-icon { -fx-icon-color: #FFFFFF; }
+.nav:selected, .nav:selected:hover {
+    -fx-background-color: rgba(255, 255, 255, 0.08);
+    -fx-text-fill: #FFFFFF;
+}
+.nav:selected .ikonli-font-icon { -fx-icon-color: -parlak; }
+.nav:focus-visible { -fx-border-color: -parlak; }
+
+.tema-satiri {
+    -fx-padding: 12 8 2 12;
+    -fx-border-color: rgba(255, 255, 255, 0.08) transparent transparent transparent;
+}
+.tema-ad { -fx-text-fill: -kenar-yazi; -fx-graphic-text-gap: 12; }
+.tema-ad .ikonli-font-icon { -fx-icon-color: -kenar-yazi; -fx-icon-size: 16; }
+
+/* ---------------- Üst çubuk ---------------- */
+.ust-cubuk { -fx-padding: 18 14 14 24; }
+.sayfa-baslik {
+    -fx-font-family: "IBM Plex Sans SmBld", "IBM Plex Sans";
+    -fx-font-size: 22px;
+    -fx-text-fill: -yazi;
+}
+.pencere-dugmeleri { -fx-padding: 0 0 0 10; }
+.pencere-dugmesi .ikonli-font-icon { -fx-icon-color: -yazi-soluk; -fx-icon-size: 15; }
+.pencere-dugmesi.kapat:hover { -fx-background-color: -tehlike; }
+.pencere-dugmesi.kapat:hover .ikonli-font-icon { -fx-icon-color: #FFFFFF; }
+
+/* ---------------- Durum çubuğu ---------------- */
+.durum-cubugu {
+    -fx-padding: 7 16 7 24;
+    -fx-background-color: -yuzey;
+    -fx-border-color: -cizgi transparent transparent transparent;
+}
+.durum-metni { -fx-text-fill: -yazi-soluk; -fx-font-size: 12.5px; }
+.durum-ikonu .ikonli-font-icon { -fx-icon-color: -basari; -fx-icon-size: 14; }
+.durum-cubugu:hata .durum-ikonu .ikonli-font-icon { -fx-icon-color: -tehlike; }
+.durum-cubugu:hata .durum-metni { -fx-text-fill: -tehlike; }
+.durum-rozet { -fx-text-fill: -yazi-soluk; -fx-font-size: 12.5px; -fx-graphic-text-gap: 7; }
+.durum-rozet .ikonli-font-icon { -fx-icon-color: -vurgu; -fx-icon-size: 14; }
+
+/* ---------------- Ortak sayfa parçaları ---------------- */
+.sayfa-icerik { -fx-padding: 2 24 18 24; }
+
+.panel {
+    -fx-background-color: -yuzey;
+    -fx-background-radius: 12;
+    -fx-border-color: -cizgi;
+    -fx-border-radius: 12;
+    -fx-padding: 14 16;
+}
+.panel-baslik {
+    -fx-font-family: "IBM Plex Sans SmBld", "IBM Plex Sans";
+    -fx-font-size: 15px;
+    -fx-text-fill: -yazi;
+}
+.alan-etiketi { -fx-text-fill: -yazi-soluk; -fx-font-size: 12px; }
+.bos-ikon { -fx-icon-color: -cizgi; -fx-icon-size: 42; }
+
+/* SplitPane: bölücüler görünmez, paneller arasında boşluk bırakır */
+.belge-merkezi {
+    -fx-background-color: transparent;
+    -fx-padding: 2 24 18 24;
+    -fx-border-width: 0;
+}
+.belge-merkezi > .split-pane-divider {
+    -fx-background-color: transparent;
+    -fx-padding: 0 5;
+}
+
+/* ---------------- Belge Merkezi: favoriler ---------------- */
+.favori-listesi {
+    -fx-background-color: transparent;
+    -fx-border-width: 0;
+    -fx-padding: 0;
+}
+.favori-listesi .list-cell {
+    -fx-background-color: transparent;
+    -fx-background-radius: 7;
+    -fx-padding: 8 10;
+    -fx-graphic-text-gap: 11;
+    -fx-text-fill: -yazi;
+}
+.favori-listesi .list-cell .ikonli-font-icon { -fx-icon-color: -yazi-soluk; -fx-icon-size: 16; }
+.favori-listesi .list-cell:hover { -fx-background-color: -yuzey-2; }
+.favori-listesi .list-cell:selected { -fx-background-color: -vurgu-acik; }
+.favori-listesi .list-cell:selected .ikonli-font-icon { -fx-icon-color: -vurgu; }
+.favori-listesi .list-cell:empty { -fx-background-color: transparent; }
+
+/* ---------------- Belge Merkezi: içerik ---------------- */
+.yol-cubugu { -fx-padding: 0 0 0 4; }
+.yol-parcasi {
+    -fx-padding: 4 7;
+    -fx-text-fill: -yazi-soluk;
+}
+.yol-parcasi.son {
+    -fx-text-fill: -yazi;
+    -fx-font-family: "IBM Plex Sans Medm", "IBM Plex Sans";
+}
+.yol-ayraci { -fx-icon-color: -cizgi; -fx-icon-size: 13; }
+
+.arac-dugmesi {
+    -fx-graphic-text-gap: 7;
+    -fx-padding: 6 12;
+}
+.arac-dugmesi .ikonli-font-icon { -fx-icon-size: 15; }
+
+.izin-basligi { -fx-font-size: 12px; -fx-padding: 2 4 2 0; }
+.button.tehlikeli .ikonli-font-icon { -fx-icon-color: -tehlike; }
+.button.tehlikeli:hover { -fx-background-color: -color-danger-subtle; }
+.izin {
+    -fx-background-color: -yuzey-2;
+    -fx-background-radius: 20;
+    -fx-padding: 2 9 2 7;
+    -fx-font-size: 12px;
+    -fx-text-fill: -yazi-soluk;
+    -fx-graphic-text-gap: 5;
+}
+.izin.acik .ikonli-font-icon { -fx-icon-color: -basari; -fx-icon-size: 12; }
+.izin.kapali .ikonli-font-icon { -fx-icon-color: -tehlike; -fx-icon-size: 12; }
+.izin.kapali { -fx-opacity: 0.8; }
+
+.table-view { -fx-background-color: transparent; }
+.table-view .column-header-background,
+.table-view .column-header,
+.table-view .filler {
+    -fx-background-color: -yuzey;
+    -fx-border-color: transparent transparent -cizgi transparent;
+    -fx-border-width: 0 0 1 0;
+}
+.table-view .column-header .label {
+    -fx-font-size: 12.5px;
+    -fx-font-weight: normal;
+    -fx-text-fill: -yazi-soluk;
+}
+.table-row-cell { -fx-cell-size: 40; }
+.table-view .table-cell { -fx-text-fill: -yazi; -fx-graphic-text-gap: 11; }
+.table-view .sag-hizali,
+.table-view .column-header.sag-hizali .label { -fx-alignment: CENTER_RIGHT; }
+.table-view .table-cell.sag-hizali { -fx-font-family: "IBM Plex Mono", monospace; -fx-font-size: 12.5px; -fx-text-fill: -yazi-soluk; }
+.table-view .table-cell.soluk-sutun { -fx-text-fill: -yazi-soluk; }
+.klasor-ikonu { -fx-icon-color: -klasor; -fx-icon-size: 17; }
+.dosya-ikonu  { -fx-icon-color: -yazi-soluk; -fx-icon-size: 17; }
+
+.birakma-alani {
+    -fx-background-color: -yuzey-2;
+    -fx-background-radius: 10;
+    -fx-border-color: -cizgi;
+    -fx-border-style: segments(6, 5);
+    -fx-border-radius: 10;
+    -fx-border-width: 1.5;
+    -fx-padding: 14;
+}
+.birakma-alani .ikonli-font-icon { -fx-icon-color: -yazi-soluk; -fx-icon-size: 18; }
+.birakma-metni { -fx-text-fill: -yazi-soluk; }
+.birakma-alani:surukleniyor {
+    -fx-background-color: -vurgu-acik;
+    -fx-border-color: -vurgu;
+}
+.birakma-alani:surukleniyor .ikonli-font-icon { -fx-icon-color: -vurgu; }
+.birakma-alani:surukleniyor .birakma-metni { -fx-text-fill: -vurgu; }
+
+/* ---------------- Belge Merkezi: editör ---------------- */
+.degisti-rozeti {
+    -fx-background-color: -vurgu-acik;
+    -fx-background-radius: 20;
+    -fx-text-fill: -vurgu;
+    -fx-font-size: 11.5px;
+    -fx-padding: 1 8;
+}
+.editor-kutusu {
+    -fx-background-color: -yuzey-2;
+    -fx-background-radius: 9;
+    -fx-border-color: -cizgi;
+    -fx-border-radius: 9;
+}
+.text-area.kod-editoru,
+.text-area.kod-editoru .content,
+.text-area.kod-editoru:focused {
+    -fx-background-color: transparent;
+    -fx-border-width: 0;
+    -fx-background-insets: 0;
+    -fx-effect: null;
+}
+.text-area.kod-editoru {
+    -fx-font-family: "IBM Plex Mono", monospace;
+    -fx-font-size: 13px;
+    -fx-text-fill: -yazi;
+    -fx-highlight-fill: -color-accent-muted;
+    -fx-highlight-text-fill: -yazi;
+}
+.text-area.kod-editoru .content { -fx-padding: 12 14; }
+.editor-alt {
+    -fx-padding: 6 12;
+    -fx-border-color: -cizgi transparent transparent transparent;
+}
+.editor-alt-bilgi { -fx-text-fill: -yazi-soluk; -fx-font-size: 12px; }
+
+/* ---------------- UART konsolu ---------------- */
+.uart-ust { -fx-padding: 10 14; }
+.baglanti-durumu { -fx-text-fill: -yazi-soluk; -fx-graphic-text-gap: 6; -fx-font-size: 12.5px; }
+.baglanti-durumu .ikonli-font-icon { -fx-icon-color: -yazi-soluk; -fx-icon-size: 9; }
+.baglanti-durumu:bagli { -fx-text-fill: -basari; }
+.baglanti-durumu:bagli .ikonli-font-icon { -fx-icon-color: -basari; }
+
+.text-area.terminal,
+.text-area.terminal:focused {
+    -fx-background-color: -terminal-zemin;
+    -fx-background-radius: 12;
+    -fx-background-insets: 0;
+    -fx-border-width: 0;
+    -fx-effect: null;
+}
+.text-area.terminal .content {
+    -fx-background-color: -terminal-zemin;
+    -fx-background-radius: 12;
+    -fx-padding: 14 16;
+}
+.text-area.terminal {
+    -fx-font-family: "IBM Plex Mono", monospace;
+    -fx-font-size: 13px;
+    -fx-text-fill: -terminal-yazi;
+    -fx-highlight-fill: rgba(62, 211, 197, 0.3);
+    -fx-highlight-text-fill: #FFFFFF;
+}
+.text-area.terminal .scroll-bar { -fx-background-color: transparent; }
+.terminal-girdi { -fx-font-family: "IBM Plex Mono", monospace; }
+
+/* ---------------- Web şablonu ---------------- */
+.web-cubugu { -fx-padding: 8 10; }
+.adres-cubugu { -fx-background-radius: 20; -fx-border-radius: 20; }
+.adres-cubugu .ikonli-font-icon { -fx-icon-color: -basari; }
+.web-icerik { -fx-padding: 0; }
+
+/* ---------------- Bildirim ---------------- */
+.bildirim {
+    -fx-background-color: -yazi;
+    -fx-background-radius: 10;
+    -fx-text-fill: -yuzey;
+    -fx-padding: 10 16 10 14;
+    -fx-graphic-text-gap: 10;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.25), 16, 0, 0, 4);
+}
+.bildirim .ikonli-font-icon { -fx-icon-color: -parlak; -fx-icon-size: 16; }
+
+/* Working application adaptations: shared native shell and responsive toolbars. */
+.app-shell { -fx-background-color: -zemin; }
+.module-content { -fx-padding: 2 22 18 22; -fx-spacing: 12; }
+.theme-toggle {
+    -fx-background-color: transparent; -fx-border-color: transparent;
+    -fx-text-fill: -kenar-yazi; -fx-alignment: CENTER_LEFT;
+    -fx-padding: 9 4; -fx-graphic-text-gap: 12;
+}
+.theme-toggle .ikonli-font-icon { -fx-icon-color: -kenar-yazi; }
+.theme-toggle:selected { -fx-text-fill: -parlak; }
+.theme-toggle:selected .ikonli-font-icon { -fx-icon-color: -parlak; }
+.theme-toggle:hover { -fx-background-color: rgba(255,255,255,0.06); }
+.grup-basligi { -fx-text-fill: #91A2AE; }
+.workspace-split { -fx-background-color: transparent; -fx-border-width: 0; -fx-padding: 0; }
+.workspace-split > .split-pane-divider { -fx-background-color: transparent; -fx-padding: 0 5; }
+.workspace-split > .split-pane-divider:hover { -fx-background-color: -cizgi; }
+.content-scroll, .content-scroll > .viewport { -fx-background-color: transparent; -fx-border-width: 0; }
+.file-list { -fx-border-width: 0; -fx-background-color: transparent; }
+.file-list .list-cell { -fx-padding: 11 8; -fx-graphic-text-gap: 10; }
+.metadata { -fx-padding: 8; -fx-border-color: -cizgi; -fx-border-radius: 6; }
+.calendar-grid { -fx-background-color: -zemin; }
+.calendar-day { -fx-background-color: -yuzey; -fx-border-color: -cizgi;
+    -fx-background-radius: 8; -fx-border-radius: 8; -fx-padding: 6; }
+.calendar-day.has-events { -fx-background-color: -yuzey-2; }
+.calendar-day.today { -fx-border-color: -vurgu; -fx-border-width: 2; }
+.calendar-day.selected-day, .calendar-day:hover { -fx-background-color: -vurgu-acik; }
+.console-options { -fx-padding: 0 8; }
+.welcome { -fx-padding: 32; }
+.welcome-title { -fx-font-size: 26px; -fx-font-weight: bold; }
+.shortcut-card { -fx-background-color: -yuzey-2; -fx-border-color: -cizgi;
+    -fx-background-radius: 10; -fx-border-radius: 10;
+    -fx-padding: 22; -fx-min-width: 190; -fx-alignment: CENTER_LEFT; }
+.shortcut-card:hover { -fx-background-color: -vurgu-acik; -fx-border-color: -vurgu; }
+
+/* Daily agenda and native course management. */
+.course-tab { -fx-padding: 14 0 0 0; }
+.course-detail-list .list-cell { -fx-cell-size: -1; -fx-padding: 9 10; }
+.form-error { -fx-text-fill: -tehlike; }
+.today-row { -fx-padding: 10 0; -fx-border-color: -cizgi transparent transparent transparent; }
+.lesson-card { -fx-background-color: -vurgu-acik; -fx-text-fill: -yazi;
+    -fx-padding: 10; -fx-background-radius: 8; }
+.schedule-today { -fx-border-color: -vurgu; }
+
+/* Course selection and its result stay together on a single planning surface. */
+.course-planner { -fx-background-color: transparent; -fx-padding: 12 0 0 0; }
+.course-planner > .split-pane-divider { -fx-background-color: -cizgi; -fx-padding: 0 2; }
+.planner-sidebar { -fx-padding: 0 12 0 0; }
+.planner-calendar { -fx-padding: 0 0 0 12; }
+.planner-summary { -fx-background-color: -vurgu-acik; -fx-text-fill: -yazi;
+    -fx-padding: 12; -fx-background-radius: 8; -fx-font-weight: bold; }
+.planner-list { -fx-background-color: transparent; -fx-border-width: 0; }
+.planner-list .list-cell { -fx-cell-size: -1; -fx-padding: 0 0 10 0; -fx-background-color: transparent; }
+.planner-course-card { -fx-padding: 8; -fx-background-color: -yuzey; -fx-border-color: -cizgi;
+    -fx-border-radius: 9; -fx-background-radius: 9; }
+.planner-course-heading { -fx-background-color: transparent; -fx-border-width: 0; -fx-alignment: CENTER_LEFT;
+    -fx-font-weight: bold; -fx-padding: 6; }
+.planner-section { -fx-alignment: CENTER_LEFT; -fx-padding: 10; -fx-font-size: 12px;
+    -fx-background-color: -yuzey-2; -fx-border-color: -cizgi; -fx-background-radius: 7; -fx-border-radius: 7; }
+.planner-section:hover { -fx-border-color: -vurgu; }
+.planner-section:selected { -fx-background-color: -vurgu-acik; -fx-border-color: -vurgu; -fx-text-fill: -yazi; }
+.planner-section-conflict { -fx-border-color: -uyari; }
+.planner-grid-line { -fx-background-color: -cizgi; }
+.planner-day { -fx-alignment: CENTER; -fx-font-weight: bold; -fx-background-color: -yuzey-2; }
+.planner-today { -fx-background-color: -vurgu-acik; -fx-text-fill: -vurgu; }
+.planner-hour { -fx-font-size: 11px; -fx-text-fill: -yazi-soluk; -fx-alignment: CENTER_RIGHT; }
+.planner-block { -fx-alignment: TOP_LEFT; -fx-padding: 5; -fx-font-size: 11px; -fx-text-fill: white;
+    -fx-border-width: 0; -fx-background-radius: 6; }
+.planner-color-0 { -fx-background-color: #137981; }
+.planner-color-1 { -fx-background-color: #476da9; }
+.planner-color-2 { -fx-background-color: #8264a9; }
+.planner-color-3 { -fx-background-color: #ad642e; }
+.planner-color-4 { -fx-background-color: #397d56; }
+.planner-block:hover { -fx-opacity: .88; }
+.planner-block-conflict { -fx-border-color: -tehlike; -fx-border-width: 2; -fx-border-radius: 6; }

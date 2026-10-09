@@ -7,7 +7,6 @@ import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
-import javafx.scene.text.Font;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -51,8 +50,7 @@ public class ReferenceLibraryView {
         allEntries.addAll(fileStore.loadEntries());
 
         Label title = new Label("Referans Kütüphanesi");
-        title.setFont(Font.font(18));
-        title.setStyle("-fx-font-weight: bold;");
+        title.getStyleClass().add("panel-baslik");
 
         infoLabel = new Label("Hazır");
         infoLabel.setWrapText(true);
@@ -107,7 +105,11 @@ public class ReferenceLibraryView {
         deleteButton = new Button("Sil");
         reloadButton = new Button("Diskten Yenile");
 
-        HBox actionBar = new HBox(10, saveButton, newButton, deleteButton, reloadButton);
+        UiTheme.decorate(saveButton, "save", "accent");
+        UiTheme.decorate(newButton, "plus", "flat");
+        UiTheme.decorate(deleteButton, "trash-2", "danger");
+        UiTheme.decorate(reloadButton, "refresh-cw", "flat");
+        FlowPane actionBar = new FlowPane(8, 8, saveButton, newButton, deleteButton, reloadButton);
 
         GridPane form = new GridPane();
         form.setHgap(10);
@@ -146,11 +148,20 @@ public class ReferenceLibraryView {
         VBox.setVgrow(categoryListView, Priority.ALWAYS);
         VBox.setVgrow(topicListView, Priority.ALWAYS);
 
+        leftPane.getStyleClass().add("panel");
+        middlePane.getStyleClass().add("panel");
+        editorPane.getStyleClass().add("panel");
+        leftPane.setMinWidth(110);
+        middlePane.setMinWidth(160);
+        editorPane.setMinWidth(280);
+        categoryListView.getStyleClass().add("favori-listesi");
+        pathLabel.getStyleClass().add("soluk");
+        splitPane.getStyleClass().add("workspace-split");
         splitPane.getItems().addAll(leftPane, middlePane, editorPane);
         splitPane.setDividerPositions(0.20, 0.45);
 
         VBox root = new VBox(10, topBar, splitPane);
-        root.setPadding(new Insets(10));
+        root.setPadding(Insets.EMPTY);
         VBox.setVgrow(splitPane, Priority.ALWAYS);
 
         refreshCategoryList();

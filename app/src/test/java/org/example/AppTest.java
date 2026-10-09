@@ -29,12 +29,7 @@ class AppTest {
     private Stage stage;
 
     @BeforeAll static void startToolkit() throws Exception {
-        CountDownLatch ready = new CountDownLatch(1);
-        Platform.startup(() -> {
-            Platform.setImplicitExit(false);
-            ready.countDown();
-        });
-        assertTrue(ready.await(10, TimeUnit.SECONDS));
+        FxTestSupport.initialize();
     }
 
     @BeforeEach void openApp() throws Exception {
@@ -52,7 +47,7 @@ class AppTest {
     @AfterEach void closeApp() throws Exception {
         fx(() -> {
             if (app != null) app.stop();
-            if (stage != null) stage.close();
+            if (stage != null) { stage.close(); stage.setScene(null); }
             return null;
         });
     }
@@ -117,6 +112,8 @@ class AppTest {
             ModuleItem module = module("long", "script");
             module.setTarget(script.toString());
             open(module);
+            stage.getScene().getRoot().applyCss();
+            stage.getScene().getRoot().layout();
             return null;
         });
         long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
@@ -176,6 +173,145 @@ class AppTest {
         assertEquals("Bekliyor", new TaskStorageService(file).loadTasks().getFirst().getStatus());
     }
 
+    @Test void searchNavigationAndThemePreferenceWorkWithNewShell() throws Exception {
+        fx(() -> {
+            var root = stage.getScene().getRoot();
+            var search = (javafx.scene.control.TextField) root.lookup("#module-search");
+            search.setText("TAKVİM");
+            var calendar = (javafx.scene.control.ToggleButton) root.lookup("#nav-calendar");
+            var documents = (javafx.scene.control.ToggleButton) root.lookup("#nav-documents");
+            assertTrue(calendar.isVisible());
+            assertFalse(documents.isManaged());
+            search.setText("eşleşmeyen-modül");
+            assertFalse(calendar.isVisible());
+            search.clear();
+            assertTrue(documents.isManaged());
+
+            UiTheme testTheme = new UiTheme(directory.resolve("ui.properties"), "light");
+            Field field = App.class.getDeclaredField("theme");
+            field.setAccessible(true);
+            field.set(app, testTheme);
+            var toggle = (javafx.scene.control.ToggleButton) root.lookup("#theme-toggle");
+            toggle.setSelected(false);
+            toggle.fire();
+            assertTrue(root.getStyleClass().contains("dark"));
+            assertTrue(new UiTheme(directory.resolve("ui.properties"), "light").isDark());
+            toggle.fire();
+            assertFalse(root.getStyleClass().contains("dark"));
+            assertFalse(new UiTheme(directory.resolve("ui.properties"), "dark").isDark());
+
+            Files.delete(directory.resolve("ui.properties"));
+            Files.createDirectory(directory.resolve("ui.properties"));
+            toggle.fire();
+            assertFalse(toggle.isSelected());
+            assertFalse(root.getStyleClass().contains("dark"));
+            return null;
+        });
+    }
+
+    @Test void redesignedExplorerKeepsRealEditingAndCollapsiblePanes() throws Exception {
+        Files.writeString(directory.resolve("ders-notlari.md"), "# Çalışma notları\n\nBugünkü hedefler\n");
+        Files.createDirectory(directory.resolve("Dersler"));
+        fx(() -> {
+            ModuleItem module = module("Belgeler", "file_explorer");
+            module.setId("documents");
+            module.setTarget(directory.toString());
+            FileExplorerOptions options = new FileExplorerOptions();
+            options.setShowPreviewPane(true);
+            options.setAllowCreateFolder(true);
+            options.setAllowCreateFile(true);
+            options.setAllowRename(true);
+            options.setAllowDelete(true);
+            options.setAllowDragDropImport(true);
+            module.setExplorerOptions(options);
+            FavoriteLocation favorite = new FavoriteLocation();
+            favorite.setName("Çalışma notları");
+            favorite.setPath(directory.toString());
+            module.setFavorites(List.of(favorite));
+            open(module);
+            stage.getScene().getRoot().applyCss();
+            stage.getScene().getRoot().layout();
+            return null;
+        });
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
+        while (fx(() -> ((ListView<?>) stage.getScene().getRoot().lookup(".file-list")).getItems().isEmpty())
+                && System.nanoTime() < deadline) Thread.sleep(20);
+        fx(() -> {
+            @SuppressWarnings("unchecked")
+            ListView<ExplorerItem> files = (ListView<ExplorerItem>) stage.getScene().getRoot().lookup(".file-list");
+            ExplorerItem note = files.getItems().stream().filter(item -> !item.isDirectory()).findFirst().orElseThrow();
+            files.getSelectionModel().select(note);
+            files.getOnMouseClicked().handle(new javafx.scene.input.MouseEvent(
+                    javafx.scene.input.MouseEvent.MOUSE_CLICKED, 0, 0, 0, 0,
+                    javafx.scene.input.MouseButton.PRIMARY, 2, false, false, false, false,
+                    false, false, false, false, false, true, null));
+            TextArea editor = field("notesArea");
+            assertTrue(editor.getText().contains("Çalışma notları"));
+            editor.setText("# Çalışma notları\n\n- Devre analizi\n- Laboratuvar raporu\n");
+            findButton(field("centerArea"), "Dosyayı Kaydet").fire();
+            assertEquals(editor.getText(), Files.readString(note.getPath()));
+            VBox center = field("centerArea");
+            SplitPane split = (SplitPane) center.getChildren().getFirst();
+            var toggles = split.lookupAll(".toggle-button").stream()
+                    .filter(node -> node instanceof javafx.scene.control.ToggleButton)
+                    .map(node -> (javafx.scene.control.ToggleButton) node).toList();
+            assertEquals(2, toggles.size());
+            toggles.forEach(javafx.scene.control.ToggleButton::fire);
+            assertEquals(1, split.getItems().size());
+            toggles.forEach(javafx.scene.control.ToggleButton::fire);
+            assertEquals(3, split.getItems().size());
+            assertTrue(editor.getText().contains("Devre analizi"));
+            snapshot("design-documents-light", 1440, 900, false);
+            snapshot("design-documents-dark", 1440, 900, true);
+            snapshot("design-documents-compact", 1000, 680, false);
+            return null;
+        });
+    }
+
+    @Test void nativeModuleLayoutsRenderInBothThemes() throws Exception {
+        fx(() -> {
+            VBox center = field("centerArea");
+            var calendar = new CalendarModuleView().build(directory.resolve("tasks.json"));
+            center.getChildren().setAll(calendar);
+            VBox.setVgrow(calendar, javafx.scene.layout.Priority.ALWAYS);
+            snapshot("design-calendar", 1440, 900, false);
+            var tabs = (javafx.scene.control.TabPane) calendar.getChildren().getFirst();
+            tabs.getSelectionModel().select(1);
+            snapshot("design-tasks", 1000, 680, true);
+            var reference = new ReferenceLibraryView().build(directory.resolve("reference.json"));
+            center.getChildren().setAll(reference);
+            VBox.setVgrow(reference, javafx.scene.layout.Priority.ALWAYS);
+            snapshot("design-reference", 1440, 900, false);
+            var uart = new UartConsoleView().build();
+            center.getChildren().setAll(uart);
+            VBox.setVgrow(uart, javafx.scene.layout.Priority.ALWAYS);
+            snapshot("design-uart", 1000, 680, true);
+            return null;
+        });
+    }
+
+    private void snapshot(String name, int width, int height, boolean dark) throws Exception {
+        stage.show();
+        Parent root = stage.getScene().getRoot();
+        UiTheme theme = new UiTheme(directory.resolve("preview.properties"), dark ? "dark" : "light");
+        theme.apply(root);
+        root.resize(width, height);
+        root.applyCss();
+        root.layout();
+        root.applyCss();
+        root.layout();
+        var image = root.snapshot(null, null);
+        var pixels = image.getPixelReader();
+        var png = new java.awt.image.BufferedImage((int) image.getWidth(), (int) image.getHeight(),
+                java.awt.image.BufferedImage.TYPE_INT_ARGB);
+        for (int y = 0; y < png.getHeight(); y++)
+            for (int x = 0; x < png.getWidth(); x++) png.setRGB(x, y, pixels.getArgb(x, y));
+        Path output = Path.of("build/reports/" + name + ".png");
+        Files.createDirectories(output.getParent());
+        javax.imageio.ImageIO.write(png, "png", output.toFile());
+        assertTrue(width >= root.getLayoutBounds().getWidth());
+    }
+
     private ModuleItem module(String name, String type) {
         ModuleItem module = new ModuleItem();
         module.setId(name);
@@ -205,7 +341,9 @@ class AppTest {
     }
 
     private Button findButton(Parent parent, String text) {
-        var children = parent instanceof SplitPane split ? split.getItems() : parent.getChildrenUnmodifiable();
+        var children = parent instanceof SplitPane split ? split.getItems()
+                : parent instanceof javafx.scene.control.ScrollPane scroll ? List.of(scroll.getContent())
+                : parent.getChildrenUnmodifiable();
         for (var node : children) {
             if (node instanceof Button button && text.equals(button.getText())) return button;
             if (node instanceof Parent child) {

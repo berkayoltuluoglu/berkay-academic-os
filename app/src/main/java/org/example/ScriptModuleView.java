@@ -1,11 +1,9 @@
 package org.example;
 
 import javafx.concurrent.Task;
-import javafx.geometry.Insets;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
-import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
@@ -20,11 +18,16 @@ public class ScriptModuleView {
         TextArea output = new TextArea();
         output.setEditable(false);
         output.setWrapText(true);
+        output.getStyleClass().add("terminal");
         Label state = new Label();
         Button run = new Button("Yeniden Çalıştır");
         Button cancel = new Button("İptal");
-        VBox view = new VBox(10, new Label(module.getName()), new HBox(10, run, cancel, state), output);
-        view.setPadding(new Insets(15));
+        UiTheme.decorate(run, "play", "accent");
+        UiTheme.decorate(cancel, "square", "danger");
+        state.getStyleClass().add("soluk");
+        javafx.scene.layout.FlowPane toolbar = new javafx.scene.layout.FlowPane(10, 8, run, cancel, state);
+        toolbar.getStyleClass().add("panel");
+        VBox view = new VBox(12, toolbar, output);
         VBox.setVgrow(output, Priority.ALWAYS);
 
         Runnable start = () -> {

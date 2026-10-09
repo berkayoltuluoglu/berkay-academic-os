@@ -13,19 +13,25 @@ public class ModuleActionHandler {
     private final CalendarModuleView calendarModuleView;
     private final Path projectRoot;
     private ScriptModuleView scriptView;
+    private FinanceModuleView financeView;
+    private CourseModuleView courseView;
+    private TodayModuleView todayView;
+    private final java.util.function.Consumer<String> navigate;
 
     public ModuleActionHandler(
             ScriptModuleRunner scriptModuleRunner,
             UartConsoleView uartConsoleView,
             ReferenceLibraryView referenceLibraryView,
             CalendarModuleView calendarModuleView,
-            Path projectRoot
+            Path projectRoot,
+            java.util.function.Consumer<String> navigate
     ) {
         this.scriptModuleRunner = scriptModuleRunner;
         this.uartConsoleView = uartConsoleView;
         this.referenceLibraryView = referenceLibraryView;
         this.calendarModuleView = calendarModuleView;
         this.projectRoot = projectRoot;
+        this.navigate = navigate;
     }
 
     public boolean handleInternalModule(
@@ -44,24 +50,49 @@ public class ModuleActionHandler {
             }
 
             switch (moduleId.toLowerCase()) {
+                case "today":
+                    todayView = new TodayModuleView(projectRoot, navigate);
+                    VBox todayPanel = todayView.build();
+                    centerArea.getChildren().setAll(todayPanel);
+                    VBox.setVgrow(todayPanel, javafx.scene.layout.Priority.ALWAYS);
+                    statusUpdater.update("Durum: Bugün açık");
+                    return true;
+                case "courses":
+                    courseView = new CourseModuleView(projectRoot.resolve("data/courses/academic.json"));
+                    VBox coursePanel = courseView.build();
+                    centerArea.getChildren().setAll(coursePanel);
+                    VBox.setVgrow(coursePanel, javafx.scene.layout.Priority.ALWAYS);
+                    statusUpdater.update("Durum: Dersler açık");
+                    return true;
+                case "finance":
+                    financeView = new FinanceModuleView();
+                    VBox financePanel = financeView.build(projectRoot.resolve("data/finance/ledger.json"));
+                    centerArea.getChildren().setAll(financePanel);
+                    VBox.setVgrow(financePanel, javafx.scene.layout.Priority.ALWAYS);
+                    statusUpdater.update("Durum: Borç Defteri açık");
+                    return true;
+
                 case "uart":
                     centerArea.getChildren().clear();
                     centerArea.getChildren().add(uartConsoleView.build());
-                    centerArea.setAlignment(Pos.CENTER);
+                    VBox.setVgrow(centerArea.getChildren().getFirst(), javafx.scene.layout.Priority.ALWAYS);
+                    centerArea.setAlignment(Pos.TOP_LEFT);
                     statusUpdater.update("Durum: UART Konsolu açık");
                     return true;
 
                 case "reference":
                     centerArea.getChildren().clear();
                     centerArea.getChildren().add(referenceLibraryView.build(projectRoot.resolve("data/reference-topics.json")));
-                    centerArea.setAlignment(Pos.CENTER);
+                    VBox.setVgrow(centerArea.getChildren().getFirst(), javafx.scene.layout.Priority.ALWAYS);
+                    centerArea.setAlignment(Pos.TOP_LEFT);
                     statusUpdater.update("Durum: Referans açık");
                     return true;
 
                 case "calendar":
                     centerArea.getChildren().clear();
                     centerArea.getChildren().add(calendarModuleView.build(projectRoot.resolve("data/tasks.json")));
-                    centerArea.setAlignment(Pos.CENTER);
+                    VBox.setVgrow(centerArea.getChildren().getFirst(), javafx.scene.layout.Priority.ALWAYS);
+                    centerArea.setAlignment(Pos.TOP_LEFT);
                     statusUpdater.update("Durum: Takvim açık");
                     return true;
 
@@ -84,6 +115,16 @@ public class ModuleActionHandler {
         VBox view = scriptView.build(module, projectRoot, scriptModuleRunner, statusUpdater);
         centerArea.getChildren().setAll(view);
         VBox.setVgrow(view, javafx.scene.layout.Priority.ALWAYS);
+    }
+
+    public void leaveModule() {
+        if (courseView != null) { courseView.dispose(); courseView = null; }
+        if (todayView != null) { todayView.dispose(); todayView = null; }
+        cancelScript();
+        if (financeView != null) {
+            financeView.dispose();
+            financeView = null;
+        }
     }
 
     public void cancelScript() {

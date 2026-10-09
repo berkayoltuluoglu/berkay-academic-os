@@ -3,8 +3,13 @@ package org.example;
 import javafx.application.Application;
 import javafx.animation.PauseTransition;
 import javafx.util.Duration;
-import javafx.scene.control.ScrollPane;
-import javafx.geometry.Insets;
+import javafx.scene.control.TextField;
+import javafx.scene.control.ToggleButton;
+import javafx.scene.control.Button;
+import javafx.scene.layout.Region;
+import javafx.scene.layout.FlowPane;
+import javafx.scene.input.KeyCode;
+import javafx.stage.Screen;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Label;
@@ -26,6 +31,10 @@ public class App extends Application {
     private BorderPane root;
     private VBox centerArea;
     private Label statusLabel;
+    private Label pageTitle;
+    private Label pageDescription;
+    private ModuleItem selectedModule;
+    private UiTheme theme;
     private WebView webView;
     private TextArea notesArea;
     private TextArea webNotesArea;
@@ -57,7 +66,8 @@ public class App extends Application {
                 uartConsoleView,
                 referenceLibraryView,
                 calendarModuleView,
-                getProjectRoot()
+                getProjectRoot(),
+                this::openModuleById
         );
 
         try {
@@ -70,19 +80,53 @@ public class App extends Application {
             e.printStackTrace();
         }
 
-        Label titleLabel = new Label("Berkay Academic OS");
-        titleLabel.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: white;");
+        UiTheme.loadFonts();
+        theme = new UiTheme(getProjectRoot().resolve("data/ui.properties"),
+                appConfig != null && appConfig.getApp() != null ? appConfig.getApp().getTheme() : "light");
+        theme.apply(root);
+        root.getStyleClass().add("app-shell");
 
-        HBox topBar = new HBox(titleLabel);
-        topBar.setPadding(new Insets(15));
+        pageTitle = new Label("Çalışma alanın");
+        pageTitle.getStyleClass().add("sayfa-baslik");
+        pageDescription = new Label("Belgelerin, araçların ve planların tek yerde");
+        pageDescription.getStyleClass().add("soluk");
+        VBox heading = new VBox(3, pageTitle, pageDescription);
+        heading.setMinWidth(180);
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+        TextField search = new TextField();
+        search.setId("module-search");
+        search.setPromptText("Modül ara…  Ctrl+K");
+        search.setAccessibleText("Modül ara");
+        search.setPrefWidth(245);
+        search.setMinWidth(150);
+        search.textProperty().addListener((obs, oldValue, value) -> sidebarBuilder.filter(value));
+        search.setOnAction(e -> sidebarBuilder.openFirstMatch());
+        HBox topBar = new HBox(16, heading, spacer, search);
         topBar.setAlignment(Pos.CENTER_LEFT);
-        topBar.setStyle("-fx-background-color: #2b2b2b;");
+        topBar.getStyleClass().add("ust-cubuk");
 
         VBox sidebar = sidebarBuilder.build(appConfig, this::handleModuleAction);
+        ToggleButton themeSwitch = new ToggleButton("Koyu tema");
+        themeSwitch.setId("theme-toggle");
+        themeSwitch.setSelected(theme.isDark());
+        UiTheme.decorate(themeSwitch, "moon", "theme-toggle");
+        themeSwitch.setMaxWidth(Double.MAX_VALUE);
+        themeSwitch.setOnAction(e -> {
+            try {
+                theme.setDark(themeSwitch.isSelected(), root);
+            } catch (Exception ex) {
+                themeSwitch.setSelected(theme.isDark());
+                statusLabel.setText("Durum: Tema tercihi kaydedilemedi: " + ex.getMessage());
+            }
+        });
+        VBox themeRow = new VBox(themeSwitch);
+        themeRow.getStyleClass().add("tema-satiri");
+        sidebar.getChildren().add(themeRow);
 
-        centerArea = new VBox(new Label("Modül seçiniz"));
-        centerArea.setAlignment(Pos.CENTER);
-        centerArea.setStyle("-fx-background-color: white;");
+        centerArea = new VBox();
+        centerArea.setAlignment(Pos.TOP_LEFT);
+        centerArea.getStyleClass().add("module-content");
         VBox.setVgrow(centerArea, Priority.ALWAYS);
 
         notesArea = new TextArea();
@@ -107,25 +151,39 @@ public class App extends Application {
         }
 
         statusLabel = new Label("Durum: " + defaultStatus);
-        HBox bottomBar = new HBox(statusLabel);
-        bottomBar.setPadding(new Insets(10));
-        bottomBar.setStyle("-fx-background-color: #e9e9e9;");
+        statusLabel.getStyleClass().add("durum-metni");
+        statusLabel.setMaxWidth(Double.MAX_VALUE);
+        HBox.setHgrow(statusLabel, Priority.ALWAYS);
+        Label localBadge = new Label("Kişisel çalışma alanı", UiTheme.icon("grid"));
+        localBadge.getStyleClass().add("durum-rozet");
+        HBox bottomBar = new HBox(12, statusLabel, localBadge);
+        bottomBar.setAlignment(Pos.CENTER_LEFT);
+        bottomBar.getStyleClass().add("durum-cubugu");
 
         if (appConfig == null) {
             statusLabel.setText("Durum: Config yüklenemedi -> " +
                     (configErrorMessage == null ? "Bilinmeyen hata" : configErrorMessage));
         }
 
-        root.setTop(topBar);
-        ScrollPane sidebarScroll = new ScrollPane(sidebar);
-        sidebarScroll.setFitToWidth(true);
-        sidebarScroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
-        sidebarScroll.setPrefWidth(sidebar.getPrefWidth() + 2);
-        root.setLeft(sidebarScroll);
-        root.setCenter(centerArea);
-        root.setBottom(bottomBar);
+        VBox workspace = new VBox(topBar, centerArea, bottomBar);
+        root.setLeft(sidebar);
+        root.setCenter(workspace);
+        showWelcome();
 
-        Scene scene = new Scene(root, 1100, 700);
+        var bounds = Screen.getPrimary().getVisualBounds();
+        Scene scene = new Scene(root, Math.min(1440, bounds.getWidth() - 40),
+                Math.min(900, bounds.getHeight() - 60));
+        scene.getStylesheets().add(App.class.getResource("/ui/style.css").toExternalForm());
+        scene.setOnKeyPressed(event -> {
+            if (event.isShortcutDown() && event.getCode() == KeyCode.K) {
+                search.requestFocus();
+                search.selectAll();
+                event.consume();
+            }
+            if (event.getCode() == KeyCode.ESCAPE && search.isFocused()) search.clear();
+        });
+        stage.setMinWidth(Math.min(900, bounds.getWidth()));
+        stage.setMinHeight(Math.min(600, bounds.getHeight()));
         stage.setTitle("Berkay Academic OS");
         stage.setScene(scene);
         stage.setOnCloseRequest(event -> {
@@ -133,17 +191,19 @@ public class App extends Application {
                 leaveCurrentModule();
             } catch (Exception ex) {
                 event.consume();
-                statusLabel.setText("Durum: Notlar kaydedilemedi, pencere açık tutuldu: " + ex.getMessage());
+                statusLabel.setText("Durum: Değişiklikler kaydedilemedi, pencere açık tutuldu: " + ex.getMessage());
             }
         });
         stage.show();
+        if (appConfig != null) openModuleById("today");
     }
 
     private void leaveCurrentModule() throws Exception {
         notesSaveDelay.stop();
         webNotesSession.close();
         currentWebModule = null;
-        moduleActionHandler.cancelScript();
+        moduleActionHandler.leaveModule();
+        webModuleView.dispose();
         if (webView != null) {
             webView.getEngine().getLoadWorker().cancel();
             webView.getEngine().load(null);
@@ -307,15 +367,23 @@ public class App extends Application {
     private void showNodeInCenter(javafx.scene.Node node) {
         centerArea.getChildren().clear();
         centerArea.getChildren().add(node);
-        centerArea.setAlignment(Pos.CENTER);
+        centerArea.setAlignment(Pos.TOP_LEFT);
         VBox.setVgrow(node, Priority.ALWAYS);
+    }
+
+    private void openModuleById(String id) {
+        if (appConfig == null || appConfig.getModules() == null) return;
+        var module = appConfig.getModules().stream().filter(m -> m.isEnabled() && id.equals(m.getId())).findFirst();
+        if (module.isPresent()) handleModuleAction(module.get());
+        else statusLabel.setText("Durum: Bu modül etkin değil: " + id);
     }
 
     private void handleModuleAction(ModuleItem module) {
         try {
             leaveCurrentModule();
         } catch (Exception ex) {
-            statusLabel.setText("Durum: Notlar kaydedilemedi, modül değişmedi: " + ex.getMessage());
+            sidebarBuilder.select(selectedModule);
+            statusLabel.setText("Durum: Değişiklikler kaydedilemedi, modül değişmedi: " + ex.getMessage());
             return;
         }
         try {
@@ -326,6 +394,10 @@ public class App extends Application {
                 return;
             }
 
+            selectedModule = module;
+            sidebarBuilder.select(module);
+            pageTitle.setText(module.getName());
+            pageDescription.setText(moduleDescription(module));
             switch (type.toLowerCase()) {
                 case "internal":
                     moduleActionHandler.handleInternalModule(module, centerArea, text -> statusLabel.setText(text), this::showTextInCenter);
@@ -345,8 +417,10 @@ public class App extends Application {
                     break;
                 case "calendar":
                     centerArea.getChildren().clear();
-                    centerArea.getChildren().add(calendarModuleView.build(getProjectRoot().resolve("data/tasks.json")));
-                    centerArea.setAlignment(Pos.CENTER);
+                    var calendar = calendarModuleView.build(getProjectRoot().resolve("data/tasks.json"));
+                    centerArea.getChildren().add(calendar);
+                    VBox.setVgrow(calendar, Priority.ALWAYS);
+                    centerArea.setAlignment(Pos.TOP_LEFT);
                     statusLabel.setText("Durum: Takvim açık");
                     break;
                 default:
@@ -359,6 +433,41 @@ public class App extends Application {
             statusLabel.setText("Durum: Hata");
             e.printStackTrace();
         }
+    }
+
+    private void showWelcome() {
+        Label title = new Label("Bugün ne üzerinde çalışıyorsun?");
+        title.getStyleClass().add("welcome-title");
+        Label description = new Label("Bir modül seçerek kaldığın yerden devam et.");
+        description.getStyleClass().add("soluk");
+        FlowPane shortcuts = new FlowPane(12, 12);
+        if (appConfig != null && appConfig.getModules() != null) {
+            for (ModuleItem module : appConfig.getModules()) {
+                if (!module.isEnabled() || "external_web".equals(module.getType())
+                        || "web".equals(module.getType())) continue;
+                Button shortcut = new Button(module.getName());
+                shortcut.getStyleClass().add("shortcut-card");
+                shortcut.setOnAction(e -> handleModuleAction(module));
+                shortcuts.getChildren().add(shortcut);
+            }
+        }
+        VBox welcome = new VBox(12, title, description, shortcuts);
+        welcome.getStyleClass().addAll("panel", "welcome");
+        showNodeInCenter(welcome);
+    }
+
+    private String moduleDescription(ModuleItem module) {
+        return switch (java.util.Objects.toString(module.getId(), "")) {
+            case "today" -> "Günün programı, yaklaşan işler ve ödemeler";
+            case "courses" -> "Derslerin, haftalık programın ve teslim tarihlerin";
+            case "documents" -> "Dosyalarını düzenle, görüntüle ve yönet";
+            case "uart" -> "Seri port bağlantısı ve canlı veri akışı";
+            case "scripts" -> "Çalıştır, çıktıyı izle ve yönet";
+            case "reference" -> "Bilgilerini ve çalışma notlarını düzenle";
+            case "calendar" -> "Takvimin ve görev planın";
+            case "finance" -> "Borçların, hesapların ve ödeme planın";
+            default -> java.util.Objects.toString(module.getCategory(), "Çalışma alanı");
+        };
     }
 
     public static void main(String[] args) {

@@ -71,7 +71,7 @@ public class CalendarModuleView {
 
     private VBox buildCalendarTab() {
         Label title = new Label("Google Calendar Takvimi");
-        title.setStyle("-fx-font-size: 18px; -fx-font-weight: bold;");
+        title.getStyleClass().add("panel-baslik");
 
         Button prevButton = new Button("<");
         Button todayButton = new Button("Bugün");
@@ -85,7 +85,12 @@ public class CalendarModuleView {
         calendarInfoLabel = new Label("Hazır");
         calendarInfoLabel.setWrapText(true);
 
-        HBox header = new HBox(10, title, prevButton, todayButton, nextButton, connectGoogleButton, monthLabel, calendarInfoLabel);
+        UiTheme.iconOnly(prevButton, "chevron-left");
+        UiTheme.iconOnly(nextButton, "chevron-right");
+        UiTheme.decorate(connectGoogleButton, "link", "flat");
+        todayButton.getStyleClass().add("accent");
+        FlowPane header = new FlowPane(10, 8, prevButton, todayButton, nextButton, monthLabel,
+                connectGoogleButton, calendarInfoLabel);
         header.setAlignment(Pos.CENTER_LEFT);
         header.setPadding(new Insets(8));
 
@@ -93,7 +98,13 @@ public class CalendarModuleView {
         calendarGrid.setHgap(6);
         calendarGrid.setVgap(6);
         calendarGrid.setPadding(new Insets(10));
-        calendarGrid.setStyle("-fx-background-color: #f7f7f7; -fx-border-color: #dddddd;");
+        calendarGrid.getStyleClass().add("calendar-grid");
+        for (int i = 0; i < 7; i++) {
+            ColumnConstraints column = new ColumnConstraints();
+            column.setPercentWidth(100.0 / 7);
+            column.setHgrow(Priority.ALWAYS);
+            calendarGrid.getColumnConstraints().add(column);
+        }
 
         List<String> weekdays = List.of("Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz");
         for (int i = 0; i < weekdays.size(); i++) {
@@ -106,6 +117,7 @@ public class CalendarModuleView {
         }
 
         eventListView = new ListView<>(selectedDayEvents);
+        eventListView.setPlaceholder(new Label("Seçili gün için etkinlik yok"));
         eventListView.setCellFactory(param -> new ListCell<>() {
             @Override
             protected void updateItem(CalendarEventItem item, boolean empty) {
@@ -116,7 +128,9 @@ public class CalendarModuleView {
 
         VBox eventsBox = new VBox(8, new Label("Seçili Gün Etkinlikleri"), eventListView);
         VBox.setVgrow(eventListView, Priority.ALWAYS);
-        eventsBox.setPadding(new Insets(10));
+        eventsBox.getStyleClass().add("panel");
+        eventsBox.setPrefHeight(150);
+        eventsBox.setMinHeight(95);
 
         connectGoogleButton.setOnAction(e -> connectGoogleAsync());
 
@@ -140,7 +154,10 @@ public class CalendarModuleView {
 
         BorderPane content = new BorderPane();
         content.setTop(header);
-        content.setCenter(calendarGrid);
+        ScrollPane calendarScroll = new ScrollPane(calendarGrid);
+        calendarScroll.setFitToWidth(true);
+        calendarScroll.getStyleClass().add("content-scroll");
+        content.setCenter(calendarScroll);
         content.setBottom(eventsBox);
         BorderPane.setMargin(eventsBox, new Insets(0, 0, 8, 0));
 
@@ -151,7 +168,7 @@ public class CalendarModuleView {
 
     private VBox buildTaskTab(TaskStorageService storageService) {
         Label title = new Label("Görev Planı");
-        title.setStyle("-fx-font-size: 18px; -fx-font-weight: bold;");
+        title.getStyleClass().add("panel-baslik");
 
         taskFilterCombo = new ComboBox<>();
         taskFilterCombo.getItems().addAll("Bugün", "Bu Hafta", "Tümü", "Seçili Gün");
@@ -161,11 +178,12 @@ public class CalendarModuleView {
         Button useSelectedDayButton = new Button("Takvimdeki Günü Kullan");
         taskInfoLabel = new Label("Hazır");
 
-        HBox topBar = new HBox(10, title, taskFilterCombo, refreshButton, useSelectedDayButton, taskInfoLabel);
+        FlowPane topBar = new FlowPane(10, 8, title, taskFilterCombo, refreshButton, useSelectedDayButton, taskInfoLabel);
         topBar.setPadding(new Insets(10));
         topBar.setAlignment(Pos.CENTER_LEFT);
 
         taskListView = new ListView<>(filteredTasks);
+        taskListView.setPlaceholder(new Label("Bu filtrede görev yok"));
         taskListView.setCellFactory(param -> new ListCell<>() {
             @Override
             protected void updateItem(TaskItem item, boolean empty) {
@@ -214,7 +232,11 @@ public class CalendarModuleView {
         Button deleteButton = new Button("Sil");
         Button markDoneButton = new Button("Tamamlandı Yap");
 
-        HBox actionBar = new HBox(10, addButton, updateButton, deleteButton, markDoneButton);
+        UiTheme.decorate(addButton, "plus", "accent");
+        UiTheme.decorate(updateButton, "save", "flat");
+        UiTheme.decorate(deleteButton, "trash-2", "danger");
+        UiTheme.decorate(markDoneButton, "check", "flat");
+        FlowPane actionBar = new FlowPane(8, 8, addButton, updateButton, deleteButton, markDoneButton);
 
         VBox editorPane = new VBox(
                 10,
@@ -227,7 +249,21 @@ public class CalendarModuleView {
         );
         editorPane.setPadding(new Insets(10));
 
-        SplitPane splitPane = new SplitPane(taskListView, detailPane, editorPane);
+        detailPane.getStyleClass().add("panel");
+        editorPane.getStyleClass().add("panel");
+        taskListView.setMinWidth(140);
+        detailPane.setMinWidth(180);
+        editorPane.setMinWidth(0);
+        taskDatePicker.setMinWidth(0);
+        taskDatePicker.setMaxWidth(Double.MAX_VALUE);
+        descriptionField.setMinWidth(0);
+        ScrollPane editorScroll = new ScrollPane(editorPane);
+        editorScroll.setFitToWidth(true);
+        editorScroll.setMinWidth(230);
+        editorScroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        editorScroll.getStyleClass().add("content-scroll");
+        SplitPane splitPane = new SplitPane(taskListView, detailPane, editorScroll);
+        splitPane.getStyleClass().add("workspace-split");
         splitPane.setDividerPositions(0.32, 0.66);
 
         BorderPane content = new BorderPane();
@@ -495,27 +531,20 @@ public class CalendarModuleView {
 
             StringBuilder text = new StringBuilder();
             text.append(day);
-            if (eventCount > 0) text.append("\nGC: ").append(eventCount);
-            if (taskCount > 0) text.append("\nGT: ").append(taskCount);
+            if (eventCount > 0) text.append("\nEtkinlik: ").append(eventCount);
+            if (taskCount > 0) text.append("\nGörev: ").append(taskCount);
             button.setText(text.toString());
 
-            String style = "-fx-background-radius: 8; -fx-padding: 6;";
-            if (date.equals(LocalDate.now())) {
-                style += "-fx-border-color: #2a7fff; -fx-border-width: 2;";
-            }
-            if (date.equals(selectedDate)) {
-                style += "-fx-background-color: #dbeafe;";
-            } else if (eventCount > 0 && taskCount > 0) {
-                style += "-fx-background-color: #e9fce9;";
-            } else if (eventCount > 0) {
-                style += "-fx-background-color: #fff3cd;";
-            } else if (taskCount > 0) {
-                style += "-fx-background-color: #e8f0ff;";
-            }
-            button.setStyle(style);
+            button.getStyleClass().add("calendar-day");
+            if (date.equals(LocalDate.now())) button.getStyleClass().add("today");
+            if (date.equals(selectedDate)) button.getStyleClass().add("selected-day");
+            if (eventCount > 0 || taskCount > 0) button.getStyleClass().add("has-events");
+            button.setAccessibleText(date + ", " + eventCount + " etkinlik, " + taskCount + " görev");
 
             button.setOnMouseClicked(e -> {
                 selectedDate = date;
+                calendarGrid.getChildren().forEach(node -> node.getStyleClass().remove("selected-day"));
+                button.getStyleClass().add("selected-day");
                 selectedDayEvents.setAll(eventsByDate.getOrDefault(selectedDate, List.of()));
                 updateCalendarHeaderOnly();
 

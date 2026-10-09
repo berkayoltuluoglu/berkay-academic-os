@@ -28,3 +28,10 @@ config/
 
 # Son başarılı görev kaydının yerel yedeği
 data/*.bak
+
+# Kişisel finans kayıtları, yedekleri ve kilit dosyaları
+/data/finance/
+/data/ui.properties
+
+# Yerel ders programı, ödevler, sınavlar ve yedekleri
+/data/courses/

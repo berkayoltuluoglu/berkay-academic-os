@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="tr"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'">
+<title>Borç Defteri</title><style>/* FINANCE_CSS */</style></head>
+<body><div class="shell-pane" data-app="borc">
+<div id="bt-app">
+  <div class="bt-top">
+    <div class="bt-top-inner">
+      <div class="bt-brand">
+        <h1>Borç Defteri</h1>
+        <span id="bt-sync">yükleniyor…</span>
+      </div>
+      <div class="bt-tabs" role="tablist">
+        <button class="bt-tab" role="tab" data-tab="panel" aria-selected="true">Panel</button>
+        <button class="bt-tab" role="tab" data-tab="borclar" aria-selected="false">Borçlar</button>
+        <button class="bt-tab" role="tab" data-tab="abonelik" aria-selected="false">Abonelikler</button>
+        <button class="bt-tab" role="tab" data-tab="kasa" aria-selected="false">Bakiyeler</button>
+        <button class="bt-tab" role="tab" data-tab="plan" aria-selected="false">Gelir ve plan</button>
+        <button class="bt-tab" role="tab" data-tab="hedef" aria-selected="false">Hedefler</button>
+        <button class="bt-tab" role="tab" data-tab="akis" aria-selected="false">Nakit akışı</button>
+        <button class="bt-tab" role="tab" data-tab="ayarlar" aria-selected="false">Oranlar ve ayarlar</button>
+      </div>
+    </div>
+  </div>
+  <div class="bt-wrap">
+    <div id="bt-panel" class="bt-view"></div>
+    <div id="bt-borclar" class="bt-view bt-hidden"></div>
+    <div id="bt-abonelik" class="bt-view bt-hidden"></div>
+    <div id="bt-kasa" class="bt-view bt-hidden"></div>
+    <div id="bt-plan" class="bt-view bt-hidden"></div>
+    <div id="bt-hedef" class="bt-view bt-hidden"></div>
+    <div id="bt-akis" class="bt-view bt-hidden"></div>
+    <div id="bt-ayarlar" class="bt-view bt-hidden"></div>
+  </div>
+</div>
+
+</div><script>/* FINANCE_JS */</script></body></html>

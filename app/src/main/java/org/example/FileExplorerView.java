@@ -7,6 +7,7 @@ import javafx.scene.control.*;
 import javafx.scene.input.Dragboard;
 import javafx.scene.input.TransferMode;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
@@ -76,6 +77,7 @@ public class FileExplorerView {
         previewContainer.getChildren().setAll(editorArea);
         editorArea.setEditable(editable);
         editorArea.setText(content);
+        VBox.setVgrow(editorArea, Priority.ALWAYS);
     }
 
     private void showImagePreview(VBox previewContainer, javafx.scene.image.ImageView imageView, Path file, String metadataText) {
@@ -84,7 +86,7 @@ public class FileExplorerView {
 
         Label metadataLabel = new Label(metadataText == null ? "" : metadataText);
         metadataLabel.setWrapText(true);
-        metadataLabel.setStyle("-fx-text-fill: #374151;");
+        metadataLabel.getStyleClass().add("soluk");
 
         ScrollPane imageScrollPane = new ScrollPane(imageView);
         imageScrollPane.setFitToWidth(true);
@@ -105,14 +107,14 @@ public class FileExplorerView {
 
     private void showFileInfoPreview(VBox previewContainer, Path file, String title, String message, String metadataText, boolean showOpenButton) {
         Label titleLabel = new Label(title);
-        titleLabel.setStyle("-fx-font-size: 15px; -fx-font-weight: bold;");
+        titleLabel.getStyleClass().add("panel-baslik");
 
         Label messageLabel = new Label(message);
         messageLabel.setWrapText(true);
 
         Label metadataLabel = new Label(metadataText);
         metadataLabel.setWrapText(true);
-        metadataLabel.setStyle("-fx-text-fill: #374151; -fx-padding: 8; -fx-border-color: #e5e7eb; -fx-border-radius: 6;");
+        metadataLabel.getStyleClass().addAll("soluk", "metadata");
 
         if (showOpenButton) {
             Button openButton = new Button("Harici Uygulamada Aç");
@@ -135,16 +137,10 @@ public class FileExplorerView {
     }
 
     private void applyDropAreaStyle(Label label, boolean active, boolean allowed) {
-        if (!allowed) {
-            label.setStyle("-fx-text-fill: #6b7280; -fx-border-color: #d1d5db; -fx-border-style: dashed; -fx-padding: 8;");
-            return;
-        }
-
-        if (active) {
-            label.setStyle("-fx-text-fill: #1d4ed8; -fx-font-weight: bold; -fx-border-color: #2563eb; -fx-border-style: dashed; -fx-padding: 8; -fx-background-color: #eff6ff;");
-        } else {
-            label.setStyle("-fx-text-fill: #374151; -fx-border-color: #9ca3af; -fx-border-style: dashed; -fx-padding: 8;");
-        }
+        if (!label.getStyleClass().contains("birakma-alani"))
+            label.getStyleClass().addAll("birakma-alani", "soluk");
+        label.pseudoClassStateChanged(javafx.css.PseudoClass.getPseudoClass("surukleniyor"), active && allowed);
+        label.setDisable(!allowed);
     }
 
     public SplitPane build(
@@ -169,23 +165,28 @@ public class FileExplorerView {
         boolean showPreviewPane = explorerOptions.isShowPreviewPane();
 
         Label leftTitle = new Label("Favoriler");
-        leftTitle.setStyle("-fx-font-size: 15px; -fx-font-weight: bold;");
+        leftTitle.getStyleClass().add("panel-baslik");
 
         Label middleTitle = new Label("İçerik");
-        middleTitle.setStyle("-fx-font-size: 15px; -fx-font-weight: bold;");
+        middleTitle.getStyleClass().add("panel-baslik");
 
         Label editorTitle = new Label(canEditFiles ? "Önizleme / Editör" : "Önizleme / Salt Okunur");
-        editorTitle.setStyle("-fx-font-size: 15px; -fx-font-weight: bold;");
+        editorTitle.getStyleClass().add("panel-baslik");
 
         Label pathLabel = new Label("Klasör: " + rootPath);
         pathLabel.setWrapText(true);
+        pathLabel.getStyleClass().add("soluk");
 
-        Label permissionLabel = new Label(explorerOptions.permissionSummary());
+        Label permissionLabel = new Label(canEditFiles ? "Düzenlenebilir" : "Salt okunur");
+        permissionLabel.setTooltip(new Tooltip(explorerOptions.permissionSummary()));
         permissionLabel.setWrapText(true);
+        permissionLabel.getStyleClass().add("alan-etiketi");
         Label dragDropImportLabel = new Label(canDragDropImport
-                ? "Import alanı: Dosya veya klasörleri bu listeye sürükleyip bırakabilirsiniz."
-                : "Import alanı kapalı: readOnly veya allowDragDropImport ayarı izin vermiyor.");
+                ? "Dosya veya klasörleri buraya sürükleyip bırak."
+                : "Bu klasöre sürükleyerek dosya ekleme kapalı.");
         dragDropImportLabel.setWrapText(true);
+        dragDropImportLabel.setMinHeight(javafx.scene.layout.Region.USE_PREF_SIZE);
+        dragDropImportLabel.setMaxWidth(Double.MAX_VALUE);
         applyDropAreaStyle(dragDropImportLabel, false, canDragDropImport);
 
         ListView<FavoriteLocation> favoriteList = new ListView<>();
@@ -193,12 +194,14 @@ public class FileExplorerView {
 
         Label loadingLabel = new Label("Yükleniyor...");
         loadingLabel.setVisible(false);
+        loadingLabel.managedProperty().bind(loadingLabel.visibleProperty());
 
         favoriteList.setCellFactory(param -> new ListCell<>() {
             @Override
             protected void updateItem(FavoriteLocation item, boolean empty) {
                 super.updateItem(item, empty);
                 setText(empty || item == null ? null : item.getName());
+                setGraphic(empty || item == null ? null : UiTheme.icon("folder"));
             }
         });
 
@@ -210,9 +213,12 @@ public class FileExplorerView {
 
                     if (empty || item == null) {
                         setText(null);
+                        setGraphic(null);
                     } else {
-                        String prefix = item.isDirectory() ? "[Klasör] " : "[Dosya] ";
-                        setText(prefix + item.getPath().getFileName().toString());
+                        setText(item.getPath().getFileName().toString());
+                        var icon = UiTheme.icon(item.isDirectory() ? "folder" : "file-text");
+                        icon.getStyleClass().add(item.isDirectory() ? "klasor-ikonu" : "dosya-ikonu");
+                        setGraphic(icon);
                     }
                 }
             };
@@ -231,6 +237,12 @@ public class FileExplorerView {
             favorites.addAll(module.getFavorites());
         }
         favoriteList.setItems(favorites);
+        favoriteList.getStyleClass().add("favori-listesi");
+        itemList.getStyleClass().add("file-list");
+        itemList.setPlaceholder(new Label("Bu klasör boş"));
+        favoriteList.setPlaceholder(new Label("Favori klasör yok"));
+        editorArea.getStyleClass().remove("kod-editoru");
+        editorArea.getStyleClass().add("kod-editoru");
 
         editorArea.clear();
         editorArea.setEditable(canEditFiles);
@@ -253,8 +265,16 @@ public class FileExplorerView {
         applyButtonPermission(deleteButton, canDelete);
         applyButtonPermission(saveFileButton, canEditFiles);
 
-        HBox middleToolbar = new HBox(
-                10,
+        UiTheme.iconOnly(backButton, "arrow-up");
+        UiTheme.iconOnly(refreshButton, "refresh-cw");
+        UiTheme.iconOnly(newFolderButton, "folder-plus");
+        UiTheme.iconOnly(newFileButton, "file-plus");
+        UiTheme.iconOnly(renameButton, "edit-2");
+        UiTheme.iconOnly(deleteButton, "trash-2");
+        UiTheme.iconOnly(openExternalButton, "external-link");
+        UiTheme.decorate(saveFileButton, "save", "accent");
+        FlowPane middleToolbar = new FlowPane(
+                5, 5,
                 backButton,
                 refreshButton,
                 newFolderButton,
@@ -264,7 +284,7 @@ public class FileExplorerView {
                 openExternalButton
         );
 
-        HBox editorToolbar = new HBox(10, saveFileButton);
+        FlowPane editorToolbar = new FlowPane(8, 8, saveFileButton);
 
         Label previewInfoLabel = new Label("Henüz dosya açılmadı");
         previewInfoLabel.setWrapText(true);
@@ -282,7 +302,19 @@ public class FileExplorerView {
         leftPane.setPadding(new Insets(10));
         VBox.setVgrow(favoriteList, Priority.ALWAYS);
 
-        VBox middlePane = new VBox(10, middleTitle, pathLabel, permissionLabel, dragDropImportLabel, middleToolbar, loadingLabel, itemList);
+        ToggleButton favoritesToggle = new ToggleButton("Favorileri göster");
+        ToggleButton previewToggle = new ToggleButton("Önizlemeyi göster");
+        favoritesToggle.setSelected(true);
+        previewToggle.setSelected(showPreviewPane);
+        UiTheme.iconOnly(favoritesToggle, "sidebar");
+        UiTheme.iconOnly(previewToggle, "columns");
+        previewToggle.setVisible(showPreviewPane);
+        previewToggle.setManaged(showPreviewPane);
+        javafx.scene.layout.Region gap = new javafx.scene.layout.Region();
+        HBox.setHgrow(gap, Priority.ALWAYS);
+        HBox middleHeading = new HBox(8, middleTitle, gap, favoritesToggle, previewToggle);
+        middleHeading.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+        VBox middlePane = new VBox(10, middleHeading, pathLabel, middleToolbar, permissionLabel, loadingLabel, itemList, dragDropImportLabel);
         middlePane.setPadding(new Insets(10));
         VBox.setVgrow(itemList, Priority.ALWAYS);
 
@@ -290,14 +322,34 @@ public class FileExplorerView {
         rightPane.setPadding(new Insets(10));
         VBox.setVgrow(previewContainer, Priority.ALWAYS);
 
+        leftPane.getStyleClass().add("panel");
+        middlePane.getStyleClass().add("panel");
+        rightPane.getStyleClass().add("panel");
+        leftPane.setMinWidth(120);
+        middlePane.setMinWidth(240);
+        rightPane.setMinWidth(190);
+        previewContainer.setMinHeight(0);
         SplitPane splitPane = new SplitPane();
+        splitPane.getStyleClass().add("workspace-split");
         if (showPreviewPane) {
             splitPane.getItems().addAll(leftPane, middlePane, rightPane);
-            splitPane.setDividerPositions(0.22, 0.62);
+            splitPane.setDividerPositions(0.18, 0.61);
         } else {
             splitPane.getItems().addAll(leftPane, middlePane);
             splitPane.setDividerPositions(0.28);
         }
+
+        Runnable arrangePanels = () -> {
+            splitPane.getItems().clear();
+            if (favoritesToggle.isSelected()) splitPane.getItems().add(leftPane);
+            splitPane.getItems().add(middlePane);
+            if (previewToggle.isSelected()) splitPane.getItems().add(rightPane);
+            if (splitPane.getItems().size() == 3) splitPane.setDividerPositions(0.18, 0.61);
+            else if (splitPane.getItems().size() == 2)
+                splitPane.setDividerPositions(favoritesToggle.isSelected() ? 0.25 : 0.55);
+        };
+        favoritesToggle.setOnAction(e -> arrangePanels.run());
+        previewToggle.setOnAction(e -> arrangePanels.run());
 
         Runnable refreshCurrentDirectory = () -> {
             Path currentDirectory = currentDirectoryGetter.get();
@@ -448,8 +500,8 @@ public class FileExplorerView {
         middlePane.setOnDragExited(event -> {
             applyDropAreaStyle(dragDropImportLabel, false, canDragDropImport);
             dragDropImportLabel.setText(canDragDropImport
-                    ? "Import alanı: Dosya veya klasörleri bu listeye sürükleyip bırakabilirsiniz."
-                    : "Import alanı kapalı: readOnly veya allowDragDropImport ayarı izin vermiyor.");
+                    ? "Dosya veya klasörleri buraya sürükleyip bırak."
+                    : "Bu klasöre sürükleyerek dosya ekleme kapalı.");
             event.consume();
         });
 
@@ -470,8 +522,8 @@ public class FileExplorerView {
 
             applyDropAreaStyle(dragDropImportLabel, false, canDragDropImport);
             dragDropImportLabel.setText(canDragDropImport
-                    ? "Import alanı: Dosya veya klasörleri bu listeye sürükleyip bırakabilirsiniz."
-                    : "Import alanı kapalı: readOnly veya allowDragDropImport ayarı izin vermiyor.");
+                    ? "Dosya veya klasörleri buraya sürükleyip bırak."
+                    : "Bu klasöre sürükleyerek dosya ekleme kapalı.");
 
             event.setDropCompleted(completed);
             event.consume();
@@ -750,11 +802,12 @@ public class FileExplorerView {
                 if (showMetadata) {
                     Label metadataLabel = new Label(metadataText);
                     metadataLabel.setWrapText(true);
-                    metadataLabel.setStyle("-fx-text-fill: #374151; -fx-padding: 6; -fx-border-color: #e5e7eb;");
+                    metadataLabel.getStyleClass().addAll("soluk", "metadata");
                     previewContainer.getChildren().setAll(metadataLabel, editorArea);
                     VBox.setVgrow(editorArea, Priority.ALWAYS);
                     editorArea.setEditable(canEditFiles);
                     editorArea.setText(content);
+        VBox.setVgrow(editorArea, Priority.ALWAYS);
                 } else {
                     showTextPreview(previewContainer, editorArea, content, canEditFiles);
                 }

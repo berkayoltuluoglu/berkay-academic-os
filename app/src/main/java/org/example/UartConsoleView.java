@@ -4,7 +4,6 @@ import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
-import javafx.geometry.Insets;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
@@ -12,6 +11,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
@@ -29,12 +29,9 @@ public class UartConsoleView {
     private final ObservableList<String> portItems = FXCollections.observableArrayList();
 
     public VBox build() {
-        Label title = new Label("UART Konsolu");
-        title.setStyle("-fx-font-size: 18px; -fx-font-weight: bold;");
-
         ComboBox<String> portCombo = new ComboBox<>(portItems);
         portCombo.setPromptText("Port seç");
-        portCombo.setPrefWidth(280);
+        portCombo.setPrefWidth(190);
         portCombo.setEditable(true);
 
         ComboBox<String> baudCombo = new ComboBox<>();
@@ -48,10 +45,10 @@ public class UartConsoleView {
         lineEndingCombo.setValue("LF");
         lineEndingCombo.setPrefWidth(90);
 
-        CheckBox timestampCheck = new CheckBox("Saat");
+        CheckBox timestampCheck = new CheckBox("Zaman damgası");
         timestampCheck.setSelected(true);
 
-        CheckBox autoScrollCheck = new CheckBox("Auto-scroll");
+        CheckBox autoScrollCheck = new CheckBox("Otomatik kaydır");
         autoScrollCheck.setSelected(true);
 
         Button scanButton = new Button("Portları Tara");
@@ -62,51 +59,42 @@ public class UartConsoleView {
         Label connectionLabel = new Label("Durum: Bağlı değil");
         connectionLabel.setStyle("-fx-font-weight: bold;");
 
-        HBox topBar = new HBox(
-                10,
-                title,
-                new Label("Port:"),
-                portCombo,
-                new Label("Baud:"),
-                baudCombo,
-                scanButton,
-                connectButton,
-                disconnectButton
-        );
-        topBar.setPadding(new Insets(10));
+        UiTheme.decorate(scanButton, "refresh-cw", "flat");
+        UiTheme.decorate(connectButton, "power", "accent");
+        UiTheme.decorate(disconnectButton, "x", "danger");
+        connectionLabel.getStyleClass().add("baglanti-durumu");
+        FlowPane topBar = new FlowPane(10, 8,
+                new Label("Port"), portCombo, new Label("Baud"), baudCombo,
+                scanButton, connectButton, disconnectButton);
+        topBar.getStyleClass().addAll("panel", "uart-ust");
 
         TextArea logArea = new TextArea();
         logArea.setEditable(false);
+        logArea.getStyleClass().add("terminal");
         logArea.setWrapText(true);
         logArea.setPromptText("Gelen ve gönderilen UART verileri burada görüntülenecek...");
         VBox.setVgrow(logArea, Priority.ALWAYS);
 
         TextField inputField = new TextField();
-        inputField.setPromptText("Gönderilecek veri");
+        inputField.setPromptText("Gönderilecek veri…");
+        inputField.getStyleClass().add("terminal-girdi");
         HBox.setHgrow(inputField, Priority.ALWAYS);
 
         Button sendButton = new Button("Gönder");
         sendButton.setDisable(true);
         Button clearButton = new Button("Log Temizle");
 
-        HBox bottomBar = new HBox(
-                10,
-                inputField,
-                new Label("Satır sonu:"),
-                lineEndingCombo,
-                sendButton,
-                clearButton,
-                timestampCheck,
-                autoScrollCheck,
-                connectionLabel
-        );
-        bottomBar.setPadding(new Insets(10));
-
-        VBox root = new VBox(10, topBar, logArea, bottomBar);
-        root.setPadding(new Insets(10));
+        UiTheme.decorate(sendButton, "send", "accent");
+        UiTheme.decorate(clearButton, "trash-2", "flat");
+        HBox bottomBar = new HBox(10, inputField, lineEndingCombo, sendButton);
+        bottomBar.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+        FlowPane options = new FlowPane(14, 8, timestampCheck, autoScrollCheck, clearButton, connectionLabel);
+        options.getStyleClass().add("console-options");
+        VBox root = new VBox(12, topBar, options, logArea, bottomBar);
 
         Runnable updateConnectionUi = () -> {
             boolean connected = serialPortService.isConnected();
+            connectionLabel.pseudoClassStateChanged(javafx.css.PseudoClass.getPseudoClass("bagli"), connected);
             connectButton.setDisable(connected);
             disconnectButton.setDisable(!connected);
             sendButton.setDisable(!connected);
