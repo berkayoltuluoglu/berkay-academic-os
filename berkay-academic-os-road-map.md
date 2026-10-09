@@ -1,13 +1,200 @@
+<div class="cover-page">
+    <h2>MARMARA ÜNİVERSİTESİ</h2>
+    <h3>Teknoloji Fakültesi</h3>
+    <br><br>
+    <h3>İHA Marmara Kulübü</h3>
+    <br><br><br><br>
+    <h1 style="border:none; font-size: 22pt;">Berkay Academic OS — Tam Durum Dokümanı</h1>
+    <h3 style="font-weight: normal;"></h3>
+    <br><br><br><br><br><br>
+    <p><strong>Hazırlayan:</strong> Berkay Kerem Oltuluoğlu</p>
+    <p><strong>Tarih:</strong> Ağustos 2026</p>
+</div>
+<div style="page-break-after: always;"></div>
+
 # Berkay Academic OS — Tam Durum Dokümanı
 _Güncel teknik özet, yapılanlar, mevcut mimari, dosya düzeni, entegrasyonlar, hatalar, bekleyen işler ve sonraki adımlar_
 
-**Güncelleme durumu:** Bu sürümde **Aşama A, Aşama B, Aşama C, Aşama D ve Aşama E tamamlandı.** Sıradaki aktif aşama **Aşama F — Referans modülü zenginleştirme** olarak belirlendi.
+**Son durum: 5 Ekim 2026.** Kullanıcı, Apple esintili gümüş arayüz demosunu beğendi ve bu tasarımın daha sonra ana JavaFX uygulamasına aktarılmasını istedi. Font aktarım sırasında daha şık bir fontla değiştirilecek; şu anda arayüz veya font değişikliği yapılmayacak. Tasarım kararı ve demo referansı **0.11 bölümünde**. Son uygulama geliştirmesi 1 Ekim'deki ders planlayıcı aktarımıdır: CSV şube kataloğu, elle şube seçimi, kredi/AKTS ve eski kayıtların korunması. İlk aktarım 0.9, aynı ekranda seçim/program iyileştirmesi **0.10 bölümünde**. Önceki A–G aşamalarına ait ayrıntılar geliştirme geçmişidir. Ortak ajanda, çalışma oturumları, müfredat/ÇAP ve LLM sonraki işlerdir.
 
-**Son düzenleme kapsamı:**
+**1 Ekim 2026 inceleme güncellemesi:** Kullanıcı ders planlayıcı projesini `/home/berkay/projects/ders-planlayici` konumunda paylaştı. İlk inceleme bulguları 0.8 bölümünde, ardından yapılan ilk aktarım 0.9 bölümünde. LLM entegrasyonu yapılmadı.
+
+**Önceki düzenleme kapsamı (A–E aşamaları):**
 - Aşama C — Belge Merkezi Drag & Drop import eklendi.
 - Aşama D — UART Konsolu ürünleştirildi.
 - Aşama E — Preview polish tamamlandı.
 - Yol haritası baştan düzenlendi ve eski “Aşama C sıradaki aktif aşama” bilgisi güncellendi.
+
+---
+
+## 0. Güncel Durum ve Sonraki Oturuma Devir — 5 Ekim 2026
+
+### 0.1 Kullanıcının hedefi ve kesinleşen kararlar
+
+- Finans, ders takibi, kişisel görevler ve iş planlarını aynı masaüstü uygulamasında birleştirmek; günlük kullanıma mümkün olduğunca erken geçmek.
+- Java ve JavaFX ile devam etmek. C++ veya başka bir dile geçiş yapılmayacak.
+- Önce kullanıcının her şeyi kendisinin planlayabildiği, LLM gerektirmeyen ilk sürümü tamamlamak. Daha sonra bu planlama işlemlerini bir asistana devretmek.
+- Uzun vadeli hedef, ders programını ve son tarihleri okuyabilen, çalışma planı önerebilen, değişikliklere göre yeniden planlayabilen bir “Jarvis” asistanı. Bu yetenekler henüz mevcut değil.
+- **LLM için son karar:** İlk deneme altyapısını ileride Qwen ile kurmak; şu anda model kurulumu veya LLM entegrasyonu yapmamak. Önceki bulut önerileri kesin sağlayıcı seçimi değildir.
+- Kullanıcının bilgisayarı: RTX 4050 Laptop, 16 GB RAM. Yerel model seçimi konuşuldu; gerçek cihazda hız, bellek ve Türkçe görev başarımı testi yapılmadı.
+- **Güncel arayüz kararı (5 Ekim):** Kullanıcı Apple esintili gümüş arayüz demosunu beğendi; sonraki arayüz aktarımında bu tasarım esas alınacak. Profesyonel ve sade görünüm, minimum yazı, bugünün akışına öncelik ve yumuşak animasyonlar isteniyor. Font daha şık olacak; henüz font seçilmedi. Şu anda uygulama veya demo değiştirilmeyecek; ayrıntılar 0.11'de.
+- Borç Defteri'nin yeni tasarımı şimdilik atlanacak. Burs takibi daha sonraki kapsamda.
+- Commit mesajları **Conventional Commits** biçiminde olmalı (`feat:`, `fix:`, `docs:` vb.).
+- **Ara verme geçmişi:** 30 Eylül'de yalnızca bağlam kaydedilerek duruldu. 1 Ekim'de kullanıcı ders planlayıcının ilk aktarım aşamasını açıkça istedi; bu aşama tamamlandı. Qwen kurulumu ve API bağlantısını erteleme kararı sürüyor.
+
+### 0.2 Kodda mevcut olanlar
+
+| Alan | Mevcut durum |
+| --- | --- |
+| Temel kararlılık | Script çalıştırma/iptal işlemleri arka planda; atomik dosya yazma, görev yedekleri ve web notlarında kayıt yaşam döngüsü korumaları var. |
+| Tasarım | JavaFX kabuğu, sidebar, modül araması (`Ctrl+K`), açık/koyu tema ve belge/takvim/referans/UART/script/web ekranları yenilendi. AtlantaFX, Ikonli ve paketlenmiş fontlar kullanılıyor. |
+| Bugün | Açılış ekranı. Bugünkü dersleri, tamamlanmamış yaklaşan/geciken görev ve ödevleri, sınavları ve ödeme özetlerini toplar. İleriye dönük pencere 7 gün; kaynak hataları ayrı gösterilir. |
+| Dersler | Ders ekleme/düzenleme/silme; dönem tarihleri, öğretim elemanı, oturuma özel derslik, haftalık saatler, şube ve kredi/AKTS. CSV kataloğundan elle şube seçimi ve değişimi. |
+| Ödev ve sınav | Derse bağlı kayıt oluşturma/düzenleme/silme, tarih ve tamamlanma durumu. |
+| Haftalık program | Ders saatlerinin haftalık görünümü ve hafta gezinmesi var. Elle çalışma oturumu planlayıcısı veya çakışma denetimi henüz yok. |
+| Görev Planı | Tarih, başlık, açıklama, durum ve dosya kalıcılığı var. Son teslim saati, süre, öncelik ve alt görevler henüz yok. |
+| Borç Defteri | Burs bölümü hariç seçilen finans ekranları, Java üzerinden kalıcı kayıt ve içe/dışa aktarma. Arayüz paketlenmiş HTML/CSS/JS olarak WebView içinde; tamamı Java arayüzüne çevrilmedi. |
+| Diğer modüller | Belge Merkezi, Referans, UART, scriptler, web/not ekranları ve Google Calendar okuma entegrasyonu mevcut. Bunların eski teknik ayrıntıları sonraki bölümlerde. |
+
+Bugün ekranı bir özet ekranıdır; otomatik çalışma planı oluşturmaz. Ekrandaki ödeme hatırlatmaları işletim sistemi bildirimi değildir. Aboneliklerde ödeme durumu ayrıca takip edilmiyor. Google Calendar, yerel görevler ve dersler henüz tek bir ortak ajandada birleşmiş değil.
+
+### 0.3 Temel dosyalar ve veri modeli
+
+Java kaynakları `app/src/main/java/org/example/` altında:
+
+- `UiTheme.java`: tema ve fontlar; kaynaklar `app/src/main/resources/ui/` altında.
+- `TodayModuleView.java`, `TodayService.java`: kayıtları değiştirmeyen günlük özet.
+- `CourseData.java`, `CourseModuleView.java`, `CourseStorageService.java`: dersler, haftalık ders oturumları, ödev ve sınav kayıtları.
+- `CourseCsvImporter.java`, `CourseCatalogService.java`, `CourseImportDialog.java`: doğrulanan CSV okuma, katalog/şube seçimi ve arka planda önizleme.
+- `FinanceModuleView.java`, `FinanceStorageService.java`: yerel WebView ve doğrulanan finans kaydı; arayüz `app/src/main/resources/finance/` altında.
+- `TaskItem.java`, `TaskStorageService.java`, `CalendarModuleView.java`: mevcut görev ve takvim yapısı.
+- `AtomicFileWriter.java`, `WebNotesSession.java`, `ScriptModuleView.java`: kayıt ve arka plan çalışma iyileştirmeleri.
+- `App.java`, `ModuleActionHandler.java`, `SidebarBuilder.java`, `app/src/main/resources/config.json`: başlangıç, yönlendirme ve modüller.
+
+| Veri | Konum / sınır |
+| --- | --- |
+| Dersler ve ödevler | `data/courses/academic.json`; sürümlü şema, atomik kayıt, yedek, dosya kilidi ve eski veri üzerinden yazmayı önleme. |
+| Finans | `data/finance/ledger.json`; doğrulama, atomik kayıt, yedek ve eski veri üzerinden yazmayı önleme. |
+| Görevler | `data/tasks.json`; atomik kayıt ve yedek. Mevcut `TaskItem` sabit kimlik, saat ve süre içermiyor. |
+| Tema | `data/ui.properties`; açık/koyu tercih kalıcı. |
+
+`CourseData.Work` şu anda `id`, `courseId`, `title`, `kind`, `date`, `done` alanlarını taşır. Ödev/sınav tarihi gün düzeyindedir; saat ve çalışma süresi henüz yok. Ders oturumlarında başlangıç/bitiş saati bulunur.
+
+Yeni planlama alanları eklenirken eski kayıtlar korunmalı ve gerektiğinde şema geçişi yapılmalı. Finans/ders/tema verileri Git dışında tutuluyor; tüm veri dosyalarının aynı politikaya sahip olduğu varsayılmamalı (`data/tasks.json` için mevcut Git istisnası var). Günlük kullanıma geçmeden kişisel veri konumu ve Git kapsamı gözden geçirilmeli.
+
+### 0.4 İlk kullanılabilir sürüm için önerilen sıra
+
+Bu sıra son konuşmada önerildi; uygulamaya geçilmeden kullanıcı geliştirmeyi durdurdu.
+
+1. **Elle çalışma planı:** Bir göreve/derse bağlı başlangıç-bitiş saatli çalışma oturumu ekleme, düzenleme, erteleme ve tamamlama. Son teslim tarihi ile çalışma zamanı ayrı kavramlar olmalı.
+2. **Ortak günlük/haftalık ajanda:** Dersleri, ödev/sınav son tarihlerini, kişisel görevleri ve çalışma oturumlarını birlikte gösterme; saat çakışmalarını belirtme.
+3. **Görev ayrıntıları:** Sabit kimlik, teslim saati, tahmini/kalan çalışma süresi, öncelik ve alt görevler. LLM gelmeden de kullanıcı bu alanları elle yönetebilmeli.
+4. **Hatırlatmalar:** Teslim ve çalışma oturumu bildirimleri; uygulama açıkken/kapalıyken beklenen davranışı netleştirme.
+5. **Ayarlar ve toplu yedekleme:** Veri konumu, çalışma tercihleri, tüm kayıtları dışa aktarma/geri yükleme. Mevcut `.bak` dosyaları tam yedekleme arayüzü yerine geçmiyor.
+6. **Paketleme ve kullanım doğrulaması:** Terminal gerektirmeyen başlatıcı, proje klasöründen bağımsız sabit veri konumu, güncellemelerde veri koruma ve gerçek günlük akışları deneme.
+
+Referans modülü geliştirmeleri, gelişmiş PDF/Markdown önizleme, UART ek özellikleri, burs takibi, animasyonlar ve LLM ilk sürümün ön koşulu değil. Tema/koyu mod artık tamamlanan işler arasında; içerikte arayan global arama ve ayarlar ekranı bununla karıştırılmamalı.
+
+### 0.5 Kullanıcıdan gelecek tasarım ve ders projesi
+
+- Mevcut Borç Defteri'nin kaynak örneği: `/home/berkay/İndirilenler/takip-paneli.html`.
+- Genel tasarım referansı: `/home/berkay/İndirilenler/akademik-os-tasarim` klasörü. Bu referans incelenerek diğer modüllerin tasarımı uygulandı.
+- Kullanıcı ders planlayıcı HTML/JS projesini **1 Ekim 2026'da `/home/berkay/projects/ders-planlayici` konumunda paylaştı**. Kaynak incelendi; ilk aşama JavaFX'e aktarıldı. İnceleme 0.8, uygulama kapsamı 0.9 bölümünde.
+- Borç Defteri için yeni tasarım bekleniyor; önceki tasarımı yeniden yapmak veya Java'ya taşımak için verilmiş güncel bir uygulama talimatı yok.
+- Yukarıdaki dosyalar depo dışındaki referanslardır; başka ortamda mevcut oldukları varsayılmamalı.
+- **5 Ekim'de kabul edilen yeni genel arayüz referansı:** Apple esintili gümüş demo; bağlantı, görseller ve sonraki uygulama talebi 0.11'de. Borç Defteri'ne özel tasarımın ertelenmesi ayrı bir karardır.
+
+### 0.6 Sonraki LLM aşaması için tasarım notları — henüz uygulanmadı
+
+- İlk deneme adayı Qwen. Qwen3.5 4B/9B yerel seçenekleri ve çeşitli bulut sağlayıcıları konuşuldu; kesin model/sürüm ve sağlayıcı seçilmedi. Kurulum ve API anahtarı ayarı yapılmadı.
+- Kullanıcı başarıyı maliyetten daha önemli görüyor; önceki fiyat ve model önerileri kalıcı teknik karar değil. Entegrasyon tarihinde güncel belgeler yeniden kontrol edilmeli.
+- Aynı Java işlemleri hem elle kullanım hem asistan için kullanılmalı: kayıt okuma, görev ekleme, boş zaman bulma, çalışma oturumu önerme/değiştirme.
+- Modelin rolü doğal dili anlamak, eksik bilgiyi sormak, işleri parçalamak ve gerekçeli öneri üretmek. Zaman hesabı, çakışma/son tarih kontrolü ve kalıcı kayıt Java tarafında doğrulanmalı.
+- Tercihler ve geçmiş uygulama verilerinde tutulmalı; her program değişiminde model eğitimi gerekmez. Modele yalnızca ilgili kayıtlar verilmeli, tüm finans verileri her planlama isteğine eklenmemeli.
+- İlk aşamada öneri ve kullanıcı tarafından uygulama akışı; tamamlanmış veya sabitlenmiş oturumları koruma ve yapılamayan planı açıkça belirtme düşünülüyor.
+- Qwen ile gerçek Türkçe senaryolar, araç çağrılarının doğruluğu, geçerli plan üretimi ve gecikme ölçülmeden başarı/hız garantisi verilmemeli. Sesli giriş/çıkış ayrı bir sonraki özellik.
+
+### 0.7 Doğrulama ve çalışma ağacı notları
+
+- 1 Ekim ilk aktarım ve gerçek CSV uyumluluğu düzeltmesi sonunda `./gradlew :app:test :app:installDist --no-daemon` başarılı. Son raporlar: **54 test, 0 başarısızlık, 0 hata, 0 atlanan**. JavaFX CSV önizleme/şube değiştirme akışı gerçek pencerelerde test edildi.
+- Görsel kontrol çıktıları `app/build/reports/` altında: `courses-week.png`, `today-preview.png` ve `design-*.png`. Bunlar build çıktısıdır; kalıcı kaynak değildir.
+- Çalıştırma: proje kökünde `./gradlew :app:run`.
+- Borç Defteri, tasarım, Bugün ve Dersler değişiklikleri çalışma ağacında; bu devir kaydında commit/push yapılmadı. Sonraki oturumda önce `git status` kontrol edilmeli, mevcut kullanıcı değişiklikleri korunmalı.
+- Bu Markdown dosyası oturum başında zaten değiştirilmişti; önceki teknik içerik korunarak güncellendi. Aynı adlı PDF otomatik güncellenmedi ve bu yeni kararların kaynağı sayılmamalı.
+
+### 0.8 Paylaşılan ders planlayıcının incelenmesi — 1 Ekim 2026
+
+- Kaynak bağımsız HTML/CSS/JavaScript uygulaması: `index.html`, `style.css`, `script.js`, `planner.js`, `study-plan.js`, `curriculum.js`, `curriculum-ui.js`, `workflow.js`. Kullanım ve kapsam notları `to-do.txt`, testler `tests/` altında. Kaynak proje değiştirilmedi.
+- CSV'den ders/şube/hoca/saat/kredi/AKTS okuma; müfredat PDF'sinden yarıyıl ve seçmeli havuzu çıkarma; iki bölüm/ÇAP, bağımsız ders geçmişi ve kullanıcı onaylı eşdeğerlikler var. PDF okuyucu belirli metin/tablo biçimini bekliyor; OCR veya genel amaçlı her PDF'yi okuma desteği değil.
+- Elle şube seçimi, sabit haftalık etkinlikler, çakışma gösterimi, bölüm ilerlemesi, Excel çıktısı ve tarayıcı üzerinden yazdır/PDF kaydet akışları mevcut. Manuel ders seçimi akışı bile CSV ve kontrol edilmiş müfredat bilgisi istiyor; ana uygulamadaki dosyasız elle ders girişini korumak gerekir.
+- Otomatik düzenleme LLM kullanmıyor. `StudyPlan.alternatives` kesin/esnek saat ve gün koşulları, hoca sırası, ders/kredi/AKTS/günlük yük ve yoğunluk tercihlerinden en fazla üç alternatif arıyor. Arama sınırı 120.000 düğüm veya 5 saniye; sınırda en iyi sonucu bulduğu garanti edilmiyor. Alternatifler kullanıcı uygulayana kadar takvimi değiştirmiyor.
+- Bu çözücü **ders şubesi/dönem programı seçiyor**; ödev son tarihine göre kişisel çalışma saatlerini dağıtan bir planlayıcı değil. Manuel etkinliklerde haftanın günü ve saat var; gerçek tarih, ödev bağlantısı, kalan süre ve tamamlanma takibi yok.
+- Kayıtlar `localStorage` içindeki `ders-planlayici:v1` anahtarında, veri sürümü 2 olarak saklanıyor. Java uygulamasına aktarımda merkezi, sürümlü dosya kaydı ve yedekleme; dönem tarihleri ve sabit kimlikler gerekli. Seçim kimliği şu anda kaynak/kod/hoca/saat içeriğinden üretiliyor.
+- CSV, Excel ve PDF bileşenleri CDN'den geliyor. Masaüstü aktarımında bunlar paketlenmeli veya Java karşılıkları kullanılmalı; WebView'e gömme seçilirse PDF, dosya seçimi/indirme, yazdırma ve tarayıcı API uyumluluğu ayrıca sınanmalı. JavaFX'e taşıma henüz uygulanmış veya kesinleştirilmiş değil.
+- **Doğrulanan kusur:** `script.js:131` içindeki `parseSchedule`, hücrenin yalnızca okunabilen bölümünü kabul edebiliyor. `Pazartesi 09:00-10:00 [D1] | Salı 13.00-14.00 [D2]` girdisi hata vermeden yalnızca pazartesiyi döndürüyor. Okunamayan ikinci oturum aktarımda kaybolabilir; kısmi ayrıştırma açık hata/inceleme gerektirmeli. Bu incelemede düzeltilmedi.
+- **Test kapsamı:** Mevcut testlerin DOM gerektirmeyen ilk 18 senaryosu kaynak dosyalarıyla V8 üzerinde çalıştırıldı; 18/18 başarılı. Tarayıcı arayüzü, gerçek PDF/CSV dosya yükleme, CDN, Excel indirme ve yazdırma testleri bu incelemede çalıştırılmadı. Kısmi saat ayrıştırma kusuru ayrıca örnek girdiyle yeniden üretildi.
+- Önerilen aktarım: önce ders/şube ve müfredat modelini mevcut Java ders kaydına bağlamak, elle seçim ve ortak ajandayı tamamlamak; ardından LLM'siz alternatif program çözücüsünü taşımak. Mevcut ödev/sınav kayıtları korunmalı. Kullanıcının güncel isteği incelemeydi; kapsamlı aktarım henüz başlatılmadı.
+
+### 0.9 İlk aktarım aşaması tamamlandı — 1 Ekim 2026
+
+Bu bölüm 0.8'deki incelemeden sonra kullanıcının verdiği uygulama talimatının sonucudur.
+
+- **Tamamen Java/JavaFX:** Dersler modülüne “CSV'den şube aktar” ve “Şube kataloğu” eklendi. Kaynak HTML gömülmedi, dış projedeki dosyalar değiştirilmedi; bu akış CDN veya internet gerektirmiyor.
+- CSV dosyası arka planda okunur ve önizlenir. Kullanıcı “Kataloğa aktar” demeden veri kaydedilmez. Katalog aktarımı mevcut programı değiştirmez; kullanıcı bir şubeyi seçip dönem tarihleriyle “Şubeyi programa al” düğmesine basar.
+- UTF-8/BOM, virgül/noktalı virgül/sekme ayırıcıları, tırnaklı çok satırlı alanlar, Türkçe ve temel İngilizce başlıklar desteklenir. Dosya sınırı 10 MB, katalog sınırı 5000 şube; kalıcı ders dosyası sınırı 5 MB olarak sürer.
+- **Zorunlu CSV başlıkları:** `Ders Kodu` ve `Gün Saat`. Önerilen tam başlık: `Ders Kodu;Ders Adı;Öğretim Elemanı;Gün Saat;Kredi;AKTS`. Kredi/AKTS boşsa bilinmiyor olarak tutulur; sıfır varsayılmaz. Saat hücresi boş olabilir ve önizlemede belirtilir.
+- Kaynak planlayıcıdaki gibi `EE201.1` kodunda `EE201` ders kodu, tam kod ise şubeyi belirtir. Oturumlar `Pazartesi 09:00-10:50 [D101] | Çarşamba 13:00-14:50 [Lab]` biçimindedir. Gece yarısını geçen oturum bu aşamada desteklenmez.
+- **Gerçek sunulan dersler CSV uyumluluğu:** `Gün Saat Derslik` başlığı ve `|` olmadan boşlukla art arda yazılan oturumlar da desteklenir. Aynı gün/saat/derslik tekrarları tekilleştirilir; okunamayan parçalar ve gerçek oturum çakışmaları reddedilir. Fazladan kontenjan/öğrenci sayısı sütunları aktarımı engellemez. Örnek CSV bu saat başlığına göre güncellendi; örnekteki AKTS sütunu isteğe bağlıdır.
+- `/home/berkay/İndirilenler/` altındaki dört gerçek dosya güncel Java okuyucusuyla, kalıcı verilere yazmadan doğrulandı: `SunulanDersListesi.csv` (351 şube / 1267 oturum), `SunulanDersListesi_20260621_153216.csv` (339 / 1273), `SunulanDersListesi_20260917_180359.csv` (353 / 1267), `SunulanDersListesi_YeniMufredat.csv` (63 / 235). Dördü de okunuyor; hiçbirinde AKTS sütunu olmadığından bu bilgi boş kalıyor. Bu kullanıcı dosyaları depoya kopyalanmadı.
+- Eksik/bozuk saat parçası, hatalı satır, geçersiz kredi ve bozuk UTF-8 bütün aktarımı durdurur; satır numarasıyla hata gösterilir. İncelemede bulunan kısmi saat kaybı yeni Java okuyucusunda engellendi; dış HTML projesindeki okuyucu değiştirilmedi.
+- Aynı içeriğin yeniden aktarımı aynı şube kimliğini üretir ve katalogda çoğalmaz. İçeriği değişmiş şubeler yeni seçenek olarak eklenir; önceki seçimler sessizce güncellenmez.
+- Aynı ders kodu ve çakışan dönem için şube değişiminde ders kimliği korunur; ödev/sınav ilişkileri kaybolmaz. Farklı, çakışmayan dönem için ayrı ders kaydı oluşturulur. Aynı dönemde birden fazla eşleşen ders varsa belirsiz seçim reddedilir.
+- Elle ders ekleme/düzenleme korunarak şube, kredi/AKTS ve oturuma özel derslik alanları eklendi. Dersler ekranından elle düzenlenen kayıt katalog seçimine bağlı otomatik güncelleme olarak değerlendirilmez.
+- Veri şeması **2**: `CourseData.sections` katalog, derslerde `section`, `credit`, `ects`, `sectionId`; oturumlarda `room`. Şema 1 okunduğunda bellekte yükseltilir, dosya hemen yeniden yazılmaz. İlk başarılı kayıtta eski dosyanın tam içeriği `.bak` olarak korunur. Bütün ders/ödev işlemleri kataloğu da korur.
+- Seçilen şubenin saatleri ve derslikleri hem Haftalık program hem Bugün ekranında gösterilir.
+- Yeni testler: `CourseCsvImporterTest`, `CourseCatalogServiceTest`; `CourseModuleViewTest` genişletildi. Eski verinin göçü/yedeği, tekrar aktarım, şube değişiminde ödev koruma, dönem ayrımı ve hatalı CSV'de dosyanın değişmemesi doğrulandı. Şube liste görünümü `app/build/reports/courses-catalog.png` ile kontrol edildi.
+
+Kullanım:
+
+1. Proje kökünde `./gradlew :app:run`.
+2. Dersler → CSV'den şube aktar → Dosya seç / Önizle → Kataloğa aktar.
+3. Şube kataloğu → şubeyi seç → dönem tarihlerini kontrol et → Şubeyi programa al.
+4. Haftalık programdan sonucu kontrol et. Deneme verisi: `examples/dersler.csv`.
+
+**Sonraki kapsam:** Müfredat PDF'si/ÇAP aktarımı, otomatik alternatif çözücüsü, kişisel çalışma oturumları ve ortak ajanda henüz uygulanmadı. Mevcut dersler arasında genel çakışma gösterimi de bu aşamaya dahil değil. Borç Defteri tasarımı ve LLM ertelenmeye devam ediyor. Commit/push yapılmadı.
+
+### 0.10 Ders seçimi ve program aynı ekranda — 1 Ekim 2026
+
+Kullanıcı ilk aktarımı hızlı fakat kaynak projeye göre yeterince pratik bulmadı; temel sorununu **ders seçerken programı görememek** olarak belirtti. Bu bölüm 0.9'daki ayrı katalog/program sekmelerinin yerini alan güncel kullanımı açıklar.
+
+- Dersler açılınca **Planlayıcı** görünür: solda ders koduna göre gruplanmış şubeler, sağda saatlere orantılı haftalık çizelge. Bölümler arasındaki ayırıcı sürüklenebilir. Ders kayıtları ve ödev/sınavlar ayrı sekmelerde korunur.
+- **CSV yükle → Önizle → Kataloğa aktar → ders ara → şubeye tıkla.** Sonucu görmek için sekme değiştirilmez. Dönem tarihleri soldaki açılır bölümden belirlenir. Örnek: `examples/dersler.csv`.
+- Şube değiştirmek tek tıklamadır; başarılı kayıttan sonra çizelge yenilenir. Arama, filtreler, açılmış ders grupları ve görüntülenen hafta korunur. Kayıt hatasında eski seçim ve program geri gösterilir.
+- Ders kodu/adı/hocasıyla arama, “Seçtiklerim” ve “Çakışmayanlar” filtreleri; seçilen ders/kredi/AKTS toplamı eklendi. Eksik kredi/AKTS bilinmiyor olarak ayrıca sayılır.
+- Çakışmalar uyarıyla gösterilir ve takvimde yan yana yerleştirilir; kullanıcının çakışan ders seçmesi engellenmez. Bitiş ile başlangıcın aynı olduğu oturumlar çakışmaz. Çakışma kontrolü dönem kesişiminde ilgili günün gerçekten bulunmasını dikkate alır.
+- Haftalık görünüm önceki/sonraki hafta ve “Bu hafta” ile gezilir. Dönem hafta ortasında başlıyorsa ilk görünüm, mümkünse ilk tam haftadır; böylece Pazartesi seçimi boş görünmez. Hafta sonu dersi olduğunda ilgili günler otomatik açılır. Takvim bloklarına tıklayarak ders düzenlenir. Dar pencerelerde kaydırma kullanılabilir.
+- Seçili şubeye tekrar tıklamak dersi **programdan çıkarır**, ders kaydını veya bağlı ödev/sınavı silmez. Yeniden seçilince aynı ders kimliği kullanılır. Elle eklenen dersin formunda da “Haftalık programda göster” seçeneği vardır.
+- Şema 2'ye isteğe bağlı `Course.planned` eklendi; eski dosyalarda eksikse `true` kabul edilir. `false` olan ders Bugün ekranına ve haftalık çizelgeye girmez; ödevleri görünmeye devam eder. İlk okuma dosyayı yeniden yazmaz.
+- Yeni görünüm `CoursePlannerView` ve `CourseWeekView` içinde, JavaFX/CSS ile uygulanır. Kaynak HTML projesi ve Borç Defteri tasarımı değiştirilmedi. Müfredat/ÇAP, alternatif çözücü, çalışma planı ve LLM kapsamı genişletilmedi.
+- `./gradlew :app:test :app:installDist --no-daemon` başarılı: **58 test, 0 hata, 0 atlanan**. Commit/push yapılmadı.
+- Doğrulama: form/CSV/şube değiştirme, seçimi kaldırıp geri alma, kayıt hatasında görsel geri dönüş, çakışma filtresi, yan yana bloklar, hafta sonu görünümü ve eski veri uyumluluğu otomatik testlerle kontrol edilir. Görsel çıktılar: `app/build/reports/courses-planner-light.png`, `courses-planner-dark.png`, `courses-planner-conflicts.png`.
+
+### 0.11 Kabul edilen gümüş arayüz tasarımı — 5 Ekim 2026
+
+Kullanıcı önce örnek görsel, ardından sohbetten açılabilen küçük etkileşimli demo istedi. Demo beğenildi. Son talep: **“fontu daha şık bir font yaparsın şu an yapmana gerek yok. bunu hafızanda tut sonrasında işleyeceksin ana uygulamaya bu tasarımı.”**
+
+- **Görsel yön:** Tamamen Apple esintili, profesyonel ve sade; ağırlıklı gümüş, inci beyazı, açık gri ve grafit. İnce çizgiler, ölçülü gölgeler, ferah boşluklar ve yuvarlatılmış yüzeyler. Renk vurgusu sınırlı.
+- **Bilgi yoğunluğu:** Minimum yazıyla neyin nerede ve nasıl kullanılacağı anlaşılmalı. Uzun açıklamalar ve yoğun istatistik kartları ana ekrana eklenmemeli; ayrıntılar etkileşimle açılmalı.
+- **Ana odak:** Bugünün akışı. Solda sade gezinme, ortada sıradaki etkinlik ve günlük zaman çizelgesi, sağda odak sayacı ve kısa görev listesi.
+- **Etkileşim referansı:** Görevleri işaretleme, odak sayacını başlatma/duraklatma/sıfırlama, çalışma oturumlarını sürükleyerek taşıma, artı düğmesinden ekleme, ayrıntı pencereleri ve arama. Yumuşak geçişler, küçük hover/tıklama tepkileri ve animasyonları azaltma seçeneği.
+- **Font:** Demo fontu nihai kabul edilmedi. Ana uygulamaya aktarımda daha şık, okunaklı ve Türkçe karakterleri destekleyen bir font seçilecek. Belirli font ailesi kararlaştırılmadı; şimdi font kurulumu veya değişikliği yapılmayacak.
+- **Demo:** [Academic OS · Gümüş Tasarım Demosu](https://academic-os-silver-demo.oltuluoglumehmeteren.chatgpt.site). Sites ile ayrı, kullanıcıya özel bir demo olarak oluşturuldu; gerçek uygulama verileri kullanılmadı. Örnek kayıtlar tarayıcıda tutulur. Ana uygulamaya bağlanmadı.
+- **Görsel referanslar:** [Masaüstü görünümü](notes/design-references/academic-os-silver-demo-desktop.png), [dar ekran görünümü](notes/design-references/academic-os-silver-demo-mobile.png). Kabul edilen tasarımı sonraki oturumlar için korur.
+- **Demo kaynağı:** Sites proje kimliği `appgprj_6ac3dd314d04819199fd214307d02012`; yayınlanan kaynak commit'i `26c161a1d11a35b5cbac44bbf8ada6f3361e17dc`. Gerekirse Sites kaynak deposundan yeniden açılabilir. Geçici `/tmp/academic-os-silver-demo` klasörünün kalıcı olduğu varsayılmamalı.
+- **Doğrulama:** Demo üzerinde görev, sayaç, oturum ekleme, yeniden zamanlama/çakışma, sürükleme, gezinme, arama, animasyon ayarı, sıfırlama ve dar ekranda taşma kontrolleri tarayıcıda geçti. Bunlar JavaFX uygulamasına yönelik testler değildir.
+- **Sonraki oturum:** Kullanıcı ana uygulamaya aktarma işini başlattığında bu tasarım ve daha şık font tercihi esas alınacak. Mevcut dersler, ödevler, sınavlar ve kalıcılık korunmalı. Demo özellikleri ana uygulamada tamamlanmış sayılmamalı; özellikle çalışma oturumları ve odak sayacı için gerçek veri/yaşam döngüsü bağlantısı gerekir.
+- **Bu oturumun sınırı:** Ana uygulama kodu ve mevcut demo değiştirilmedi. Yalnızca bu karar ve tasarım referansları kaydedildi. Java/JavaFX ile devam etme, LLM'yi erteleme ve commit/push yapmama kararları sürüyor.
+
 
 ---
 
@@ -1187,7 +1374,7 @@ Kalan geliştirme notları:
 ## 10.6 Referans modülü zenginleştirme
 
 Durum:
-- **Sıradaki aktif aşama: Aşama F.**
+- **Ertelendi.** Güncel öncelik 0. bölümdeki elle planlama ve ortak ajanda; Aşama F ilk sürümün ön koşulu değil.
 
 Yapılacaklar:
 - Arama
@@ -1200,6 +1387,8 @@ Yapılacaklar:
 ---
 
 # 11. Bundan Sonra Yapacağım İşler (Öncelik Sırasıyla)
+
+> Aşağıdaki A–G sırası önceki yol haritasını belgeler. 30 Eylül 2026 itibarıyla güncel geliştirme sırası 0.4 bölümündedir; çalışmaya ara verilmiştir.
 
 ## Aşama A — Takvim / Google Calendar stabilizasyonu
 
@@ -1296,7 +1485,7 @@ Tamamlananlar:
 ## Aşama F — Referans modülü zenginleştirme
 
 Durum:
-- **Sıradaki aktif aşama.**
+- **Ertelendi; önceki yol haritasının Aşama F başlığı.**
 
 Yapılacaklar:
 1. Referans konularında arama
@@ -1318,7 +1507,7 @@ Yapılacaklar:
 Aşama F sonrası düşünülebilecek işler:
 - Global arama
 - Ayarlar ekranı
-- Tema / koyu mod
+- Tema / koyu mod — 30 Eylül 2026 itibarıyla tamamlandı
 - Veritabanı veya index tabanlı arama
 - Google Drive ile gerçek senkronizasyon
 - Belge Merkezi import geçmişi
@@ -1338,15 +1527,15 @@ Aşama F sonrası düşünülebilecek işler:
 - Belge Merkezi Drag & Drop import için Aşama C tamamlandı
 - UART ürünleşmesi için Aşama D tamamlandı
 - Preview polish için Aşama E tamamlandı
-- sıradaki ana odak Referans modülünün zenginleştirilmesi oldu
+- sonraki geliştirme önerisi elle çalışma planı ve ortak ajandadır; kullanıcı şu anda geliştirmeye ara verdi
 
-Kalan en kritik ana başlıklar:
+Önceki yol haritasından kalan ek geliştirmeler (ilk sürüm öncelikleri için 0.4 bölümüne bakın):
 1. Referans modülü zenginleştirme
 2. UART gelişmiş log/hex özellikleri
 3. PDF için gerçek dahili renderer
 4. Markdown preview
 5. Google Calendar disconnect/reconnect ve ileride yazma desteği
-6. Global ayarlar / tema / arama altyapısı
+6. Global ayarlar ve içerik araması (tema tamamlandı; mevcut modül araması içerik araması değildir)
 
 ---
 
@@ -1422,9 +1611,7 @@ Aşama E sonrası kullanılan dosyalar:
 
 Bu doküman, şu ana kadar yapılan ve bundan sonra yapılacak işleri topluca teknik referans olarak tutmak için baştan düzenlendi.
 
-Şu anda en aktif odak:
-
-## **Aşama F — Referans modülü zenginleştirme**
+30 Eylül 2026 itibarıyla geliştirmeye ara verildi. Devam edildiğinde önerilen ilk odak **elle çalışma planı ve ortak ajanda**; güncel kapsam ve kullanıcı kararları 0. bölümde tutulur.
 
 Tamamlanan son ana aşamalar:
 - **Aşama A:** Takvim + Google Calendar stabilizasyonu
@@ -1433,6 +1620,6 @@ Tamamlanan son ana aşamalar:
 - **Aşama D:** UART ürünleştirme
 - **Aşama E:** Preview polish
 
-Bundan sonraki ana ürünleştirme hattı:
+Bundan sonraki ana ürünleştirme önerisi:
 
-**Referans modülü zenginleştirme + Markdown preview + global arama + gelişmiş ayarlar.**
+**Elle planlama + ortak ajanda + görev ayrıntıları + hatırlatma + yedekleme/ayarlar + paketleme.** Referans/önizleme geliştirmeleri ve LLM sonraki aşamalardır. Qwen ile deneme şu anda başlatılmayacak.
