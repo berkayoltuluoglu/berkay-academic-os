@@ -9,7 +9,7 @@
    =================================================================== */
 
 .root {
-    -fx-font-family: "IBM Plex Sans", "Segoe UI", "Noto Sans", sans-serif;
+    -fx-font-family: "Poppins", "Segoe UI", "Noto Sans", sans-serif;
     -fx-font-size: 13.5px;
 }
 
@@ -110,7 +110,7 @@
 }
 .logo-kutu .ikonli-font-icon { -fx-icon-color: #FFFFFF; -fx-icon-size: 17; }
 .logo-ad {
-    -fx-font-family: "IBM Plex Sans SmBld", "IBM Plex Sans";
+    -fx-font-family: "Poppins SemiBold", "Poppins";
     -fx-font-size: 16px;
     -fx-text-fill: #FFFFFF;
 }
@@ -159,7 +159,7 @@
 /* ---------------- Üst çubuk ---------------- */
 .ust-cubuk { -fx-padding: 18 14 14 24; }
 .sayfa-baslik {
-    -fx-font-family: "IBM Plex Sans SmBld", "IBM Plex Sans";
+    -fx-font-family: "Poppins SemiBold", "Poppins";
     -fx-font-size: 22px;
     -fx-text-fill: -yazi;
 }
@@ -192,7 +192,7 @@
     -fx-padding: 14 16;
 }
 .panel-baslik {
-    -fx-font-family: "IBM Plex Sans SmBld", "IBM Plex Sans";
+    -fx-font-family: "Poppins SemiBold", "Poppins";
     -fx-font-size: 15px;
     -fx-text-fill: -yazi;
 }
@@ -237,7 +237,7 @@
 }
 .yol-parcasi.son {
     -fx-text-fill: -yazi;
-    -fx-font-family: "IBM Plex Sans Medm", "IBM Plex Sans";
+    -fx-font-family: "Poppins Medium", "Poppins";
 }
 .yol-ayraci { -fx-icon-color: -cizgi; -fx-icon-size: 13; }
 
@@ -459,3 +459,133 @@
 .planner-color-4 { -fx-background-color: #397d56; }
 .planner-block:hover { -fx-opacity: .88; }
 .planner-block-conflict { -fx-border-color: -tehlike; -fx-border-width: 2; -fx-border-radius: 6; }
+
+/* Accepted silver design: shared by the shell and all native modules. */
+.root { -fx-font-family: "Poppins"; -fx-font-size: 13px; }
+.uygulama {
+    -zemin: #FAFBFD; -yuzey: #FFFFFF; -yuzey-2: #F1F3F6;
+    -cizgi: #E1E5EC; -yazi: #24262B; -yazi-soluk: #7D8595;
+    -kenar: #EFF1F5; -kenar-yazi: #545C68;
+    -vurgu: #7D8797; -vurgu-koyu: #616C7D; -vurgu-acik: #E5E9EF;
+    -parlak: #353D48; -basari: #66826E; -tehlike: #B95C5C; -uyari: #A67A42; -klasor: #8795A7;
+    -color-accent-muted: rgba(125,135,151,0.24);
+    -silver-blue: #397DF6;
+}
+.uygulama.dark {
+    -zemin: #191C22; -yuzey: #22262E; -yuzey-2: #2B3039;
+    -cizgi: #383E49; -yazi: #ECEEF3; -yazi-soluk: #9CA6B8;
+    -kenar: #20242B; -kenar-yazi: #B5BECF;
+    -vurgu: #A3AFC2; -vurgu-koyu: #B8C2D0; -vurgu-acik: #333C4B;
+    -parlak: #E0E6EF; -basari: #96B7A0; -tehlike: #E68B8B; -uyari: #D5B485; -klasor: #AFBCD0;
+    -color-accent-muted: rgba(163,175,194,0.24);
+}
+.button, .toggle-button, .menu-button, .text-field, .combo-box-base {
+    -fx-background-radius: 10; -fx-border-radius: 10; -fx-cursor: hand;
+}
+.button:focused, .toggle-button:focused, .menu-button:focused { -fx-focus-color: -vurgu; }
+.ikonli-font-icon { -fx-icon-color: -yazi-soluk; -fx-icon-size: 17; }
+.silver-titlebar {
+    -fx-background-color: linear-gradient(to right, -yuzey-2, -kenar);
+    -fx-padding: 16 26; -fx-border-color: transparent transparent -cizgi transparent;
+}
+.silver-brand { -fx-font-family: "Poppins SemiBold"; -fx-text-fill: -yazi; -fx-graphic-text-gap: 12; -fx-font-size: 14px; }
+.silver-brand .ikonli-font-icon { -fx-icon-color: -yazi; -fx-icon-size: 20; }
+.silver-profile { -fx-background-color: -cizgi; -fx-background-radius: 30; -fx-text-fill: -kenar-yazi;
+    -fx-font-family: "Poppins SemiBold"; -fx-min-width: 32; -fx-min-height: 32; -fx-alignment: CENTER; }
+#module-search { -fx-background-color: -yuzey; -fx-border-color: -cizgi; -fx-background-radius: 18; -fx-border-radius: 18; -fx-padding: 7 14; }
+.kenar-cubugu { -fx-background-color: -kenar; -fx-padding: 28 12 16 12;
+    -fx-border-color: transparent -cizgi transparent transparent; }
+.nav { -fx-font-size: 13px; -fx-text-fill: -yazi; -fx-padding: 14 14; -fx-background-radius: 11; -fx-border-radius: 11; }
+.nav .ikonli-font-icon { -fx-icon-color: -kenar-yazi; -fx-icon-size: 19; }
+.nav:hover, .nav:hover .ikonli-font-icon { -fx-text-fill: -yazi; -fx-icon-color: -yazi; }
+.nav:hover { -fx-background-color: -yuzey-2; }
+.nav:selected, .nav:selected:hover { -fx-background-color: -cizgi; -fx-text-fill: -yazi; -fx-font-family: "Poppins SemiBold"; }
+.nav:selected .ikonli-font-icon { -fx-icon-color: -kenar-yazi; }
+.nav:focus-visible { -fx-border-color: -vurgu; }
+.grup-basligi { -fx-text-fill: -yazi-soluk; -fx-font-size: 10px; -fx-padding: 20 14 7 14; }
+.tema-satiri { -fx-padding: 12 8 0 8; -fx-border-color: -cizgi transparent transparent transparent; }
+.theme-toggle { -fx-font-size: 11px; -fx-text-fill: -yazi-soluk; }
+.theme-toggle:hover { -fx-background-color: -cizgi; }
+.theme-toggle:selected, .theme-toggle:selected .ikonli-font-icon { -fx-text-fill: -yazi; -fx-icon-color: -yazi; }
+.ust-cubuk { -fx-padding: 26 30 16 30; }
+.sayfa-baslik { -fx-font-family: "Poppins SemiBold"; -fx-font-size: 30px; }
+.module-content { -fx-padding: 16 30 18 30; -fx-spacing: 16; }
+.durum-cubugu { -fx-background-color: transparent; -fx-border-width: 0; -fx-padding: 6 30 10 30; }
+.durum-metni, .durum-rozet { -fx-font-size: 10px; }
+.panel { -fx-background-radius: 16; -fx-border-radius: 16; -fx-padding: 20 22; }
+.panel-baslik { -fx-font-family: "Poppins SemiBold"; -fx-font-size: 14px; }
+.planner-summary { -fx-background-color: -yuzey-2; -fx-font-weight: normal; }
+.planner-section:selected { -fx-background-color: -cizgi; -fx-border-color: -vurgu; }
+.planner-block { -fx-text-fill: -yazi; -fx-border-color: -cizgi; -fx-border-width: 1; -fx-background-radius: 8; -fx-border-radius: 8; }
+.planner-color-0 { -fx-background-color: -yuzey-2; }
+.planner-color-1 { -fx-background-color: -vurgu-acik; }
+.planner-color-2 { -fx-background-color: -cizgi; }
+.planner-color-3 { -fx-background-color: -yuzey-2; }
+.planner-color-4 { -fx-background-color: -vurgu-acik; }
+.planner-block-conflict { -fx-border-color: -tehlike; -fx-border-width: 2; }
+.silver-today { -fx-padding: 4 0 0 0; }
+.silver-page-title { -fx-font-family: "Poppins SemiBold"; -fx-font-size: 38px; -fx-text-fill: -yazi; }
+.silver-date { -fx-text-fill: -yazi-soluk; -fx-font-size: 12px; }
+.silver-add { -fx-background-color: -yuzey-2; -fx-border-color: -cizgi; -fx-padding: 10 12; }
+.silver-add .arrow-button { -fx-padding: 0; }
+.silver-add .arrow { -fx-shape: ""; -fx-padding: 0; }
+.silver-add .ikonli-font-icon { -fx-icon-size: 21; -fx-icon-color: -yazi; }
+.silver-section-title { -fx-font-family: "Poppins SemiBold"; -fx-text-fill: -yazi; -fx-font-size: 16px; }
+.silver-next { -fx-background-color: linear-gradient(to right, -yuzey-2, -kenar); -fx-border-color: -cizgi;
+    -fx-background-radius: 14; -fx-border-radius: 14; -fx-padding: 18 20; -fx-alignment: CENTER_LEFT; }
+.silver-next:hover { -fx-background-color: -vurgu-acik; }
+.silver-next .separator { -fx-min-height: 30; -fx-max-height: 30; }
+.silver-blue-dot { -fx-fill: -silver-blue; }
+.silver-event-name { -fx-font-family: "Poppins SemiBold"; -fx-text-fill: -yazi; -fx-font-size: 12px; }
+.silver-event-detail { -fx-text-fill: -yazi-soluk; -fx-font-size: 10px; }
+.silver-hour { -fx-text-fill: -yazi-soluk; -fx-font-size: 10px; -fx-alignment: TOP_LEFT; }
+.silver-time-line { -fx-border-color: -cizgi; -fx-border-width: 1 0 0 0; -fx-border-style: segments(3, 4); }
+.silver-event { -fx-background-color: -yuzey-2; -fx-border-color: -cizgi;
+    -fx-background-radius: 12; -fx-border-radius: 12; -fx-padding: 8 14; -fx-alignment: CENTER_LEFT; }
+.lesson-event { -fx-background-color: -vurgu-acik; }
+.silver-event:hover { -fx-border-color: -vurgu; }
+.study-event .ikonli-font-icon { -fx-icon-size: 15; }
+.completed-event { -fx-opacity: .55; }
+.completed-event .silver-event-name { -fx-text-fill: -yazi-soluk; }
+.conflicting-event { -fx-border-color: -uyari; }
+.silver-now-line { -fx-background-color: -silver-blue; }
+.silver-now-time { -fx-background-color: -silver-blue; -fx-background-radius: 6; -fx-text-fill: white; -fx-font-size: 10px; -fx-alignment: CENTER; }
+.silver-focus-card { -fx-padding: 22; }
+.focus-track { -fx-fill: transparent; -fx-stroke: -cizgi; -fx-stroke-width: 5; }
+.focus-progress { -fx-fill: transparent; -fx-stroke: -vurgu; -fx-stroke-width: 5; -fx-stroke-line-cap: round; }
+.focus-time { -fx-font-family: "Poppins"; -fx-font-size: 37px; -fx-text-fill: -yazi; }
+.silver-focus-button { -fx-background-color: -vurgu-acik; -fx-border-color: -cizgi; -fx-padding: 8 22; -fx-min-width: 120; -fx-text-fill: -yazi; }
+.silver-todo-card { -fx-spacing: 12; -fx-padding: 22; }
+.silver-todo-row { -fx-padding: 12 0; -fx-border-color: transparent transparent -cizgi transparent; }
+.silver-todo-row .check-box > .box { -fx-background-color: transparent; -fx-border-color: -vurgu;
+    -fx-border-radius: 30; -fx-background-radius: 30; -fx-padding: 4; }
+.silver-todo-row .check-box:selected > .box { -fx-background-color: -vurgu; }
+.silver-todo-row .check-box:selected .mark { -fx-background-color: -yuzey; }
+.silver-todo-name, .silver-todo-done { -fx-font-size: 11px; -fx-text-fill: -yazi; -fx-cursor: hand; }
+.silver-todo-done { -fx-text-fill: -yazi-soluk; -fx-opacity: .7; }
+.silver-todo-date { -fx-font-size: 9px; -fx-text-fill: -yazi-soluk; }
+.silver-todo-card .progress-bar > .track { -fx-background-color: -cizgi; -fx-background-insets: 0; -fx-pref-height: 3; }
+.silver-todo-card .progress-bar > .bar { -fx-background-color: -vurgu; -fx-background-insets: 0; -fx-padding: 2; }
+.silver-reminders > .title { -fx-background-color: transparent; -fx-border-color: -cizgi;
+    -fx-background-radius: 10; -fx-border-radius: 10; -fx-padding: 12; }
+.silver-reminders > .content { -fx-background-color: -yuzey; -fx-padding: 14; -fx-border-color: -cizgi; }
+.dialog-pane { -fx-background-color: -yuzey; -fx-padding: 16; }
+.nav-group-toggle { -fx-alignment: CENTER_LEFT; -fx-background-color: transparent; -fx-border-width: 0;
+    -fx-padding: 16 14 8 14; -fx-text-fill: -yazi-soluk; -fx-font-size: 11px; -fx-graphic-text-gap: 10; }
+.nav-group-toggle .ikonli-font-icon { -fx-icon-size: 13; }
+.nav-group-toggle:hover { -fx-background-color: -yuzey-2; }
+.nav-group-toggle:selected { -fx-text-fill: -yazi; }
+
+/* Weekly planner uses the existing light/dark palette and no motion. */
+.planner-pool-card { -fx-padding: 10; -fx-cursor: hand; }
+.planner-pool-card:hover { -fx-border-color: -color-accent-emphasis; }
+.planner-block { -fx-padding: 6; -fx-cursor: move; -fx-background-radius: 6; }
+.planner-block:focused, .planner-selected { -fx-border-color: -color-accent-emphasis; -fx-border-width: 2; }
+.planner-fixed { -fx-opacity: 0.72; -fx-cursor: default; }
+.planner-resize { -fx-background-color: -color-fg-muted; -fx-opacity: 0.35; -fx-cursor: v-resize; }
+.planner-today { -fx-background-color: -color-accent-subtle; }
+.planner-deadline { -fx-text-fill: -color-danger-fg; -fx-font-size: 10px; -fx-background-color: -color-bg-default; }
+.planner-selection, .planner-drop-target { -fx-background-color: -color-accent-subtle; -fx-border-color: -color-accent-emphasis; }
+.planner-ghost { -fx-opacity: 0.62; -fx-border-style: segments(6, 4); -fx-border-color: -color-accent-emphasis; -fx-border-width: 2; }
+
+.planner-conflict-preview { -fx-background-color: -color-danger-subtle; -fx-border-color: -color-danger-fg; -fx-opacity: 0.65; }

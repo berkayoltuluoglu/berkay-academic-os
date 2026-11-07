@@ -198,12 +198,7 @@ public class ReferenceLibraryView {
     }
 
     private Path resolveDefaultDataFile() {
-        Path workingDir = Paths.get(System.getProperty("user.dir")).toAbsolutePath();
-        Path projectRoot = workingDir;
-        if (workingDir.getFileName() != null && "app".equals(workingDir.getFileName().toString())) {
-            projectRoot = workingDir.getParent();
-        }
-        return projectRoot.resolve("data/reference-library/index.json");
+        return AppPaths.root().resolve("data/reference-library/index.json");
     }
 
     private void refreshCategoryList() {

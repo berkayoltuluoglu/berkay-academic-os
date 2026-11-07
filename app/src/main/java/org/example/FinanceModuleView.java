@@ -21,6 +21,10 @@ import java.util.function.Supplier;
 /** An offline HTML/CSS panel; only this trusted document receives the narrow Java bridge. */
 public final class FinanceModuleView {
     private final VBox root = new VBox(12);
+    private final VBox workspace = new VBox();
+    private ScholarshipModuleView scholarships;
+    private javafx.scene.Parent themeRoot;
+    private final javafx.collections.ListChangeListener<String> themeListener = change -> applyPanelTheme();
     private WebView webView;
     private Bridge bridge; // Strong reference required by the WebEngine JavaScript bridge.
     private Task<String> loading;
@@ -29,8 +33,12 @@ public final class FinanceModuleView {
 
     public VBox build(Path file) {
         FinanceStorageService storage = new FinanceStorageService(file);
+        scholarships = new ScholarshipModuleView(file.resolveSibling("applications.json"));
+        TabPane tabs = new TabPane(new Tab("Finans", root), new Tab("Burs ve başvurular", scholarships.build()));
+        tabs.setId("finance-tabs"); tabs.setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE);
+        workspace.getChildren().setAll(tabs); VBox.setVgrow(tabs, Priority.ALWAYS);
         load(storage);
-        return root;
+        return workspace;
     }
 
     private void load(FinanceStorageService storage) {
@@ -71,7 +79,7 @@ public final class FinanceModuleView {
 
     private void showPanel(FinanceStorageService storage, String initialData) {
         try {
-            String html = resource("index.html").replace("/* FINANCE_CSS */", resource("styles.css"))
+            String html = resource("index.html").replace("/* FINANCE_CSS */", fontCss() + resource("styles.css"))
                     .replace("/* FINANCE_JS */", resource("ledger.js"));
             webView = new WebView();
             webView.setContextMenuEnabled(false);
@@ -108,6 +116,10 @@ public final class FinanceModuleView {
                         String encoded = new ObjectMapper().writeValueAsString(initialData);
                         engine.executeScript("window.financeApp.initialize(" + encoded + ")");
                         ready = true;
+                        if (root.getScene() != null) {
+                            themeRoot = root.getScene().getRoot(); themeRoot.getStyleClass().addListener(themeListener);
+                        }
+                        applyPanelTheme();
                     } catch (Exception ex) {
                         bridge.active = false;
                         showLoadError(storage, "Panel başlatılamadı: " + ex.getMessage());
@@ -132,6 +144,21 @@ public final class FinanceModuleView {
         }
     }
 
+    private String fontCss() throws IOException {
+        StringBuilder css = new StringBuilder();
+        for (String face : new String[]{"Regular", "SemiBold"}) try (var stream = App.class.getResourceAsStream("/ui/fonts/Poppins-" + face + ".ttf")) {
+            if (stream == null) throw new IOException("Finans yazı tipi bulunamadı.");
+            css.append("@font-face{font-family:Poppins;font-weight:").append(face.equals("Regular") ? 400 : 600)
+                    .append(";src:url(data:font/ttf;base64,").append(java.util.Base64.getEncoder().encodeToString(stream.readAllBytes())).append(") format('truetype');}");
+        }
+        return css.toString();
+    }
+    private void applyPanelTheme() {
+        if (!ready || disposed) return;
+        boolean dark = root.getScene() != null && root.getScene().getRoot().getStyleClass().contains("dark");
+        webView.getEngine().executeScript("document.documentElement.classList.toggle('dark'," + dark + ")");
+    }
+
     private boolean confirm(String message) {
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION, message, ButtonType.YES, ButtonType.NO);
         if (root.getScene() != null) alert.initOwner(root.getScene().getWindow());
@@ -141,7 +168,10 @@ public final class FinanceModuleView {
     }
 
     public void dispose() {
+        if (scholarships != null) scholarships.requireIdle();
         disposed = true;
+        if (scholarships != null) scholarships.dispose();
+        if (themeRoot != null) themeRoot.getStyleClass().removeListener(themeListener);
         if (loading != null) loading.cancel(true);
         if (bridge != null) bridge.active = false;
         if (webView != null) {

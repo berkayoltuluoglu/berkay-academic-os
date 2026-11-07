@@ -27,12 +27,23 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 public class App extends Application {
+    private final Path projectRootOverride;
+    private final Path dataRoot;
+
+    public App() { this(null); }
+    App(Path projectRoot) {
+        projectRootOverride = projectRoot;
+        dataRoot = projectRoot == null ? AppPaths.root() : projectRoot;
+        calendarModuleView = new CalendarModuleView(new CalendarSyncService(getProjectRoot()));
+    }
 
     private BorderPane root;
     private VBox centerArea;
     private Label statusLabel;
     private Label pageTitle;
     private Label pageDescription;
+    private HBox pageHeading;
+    private javafx.animation.FadeTransition pageFade;
     private ModuleItem selectedModule;
     private UiTheme theme;
     private WebView webView;
@@ -50,16 +61,39 @@ public class App extends Application {
     private final SidebarBuilder sidebarBuilder = new SidebarBuilder();
     private final UartConsoleView uartConsoleView = new UartConsoleView();
     private final ReferenceLibraryView referenceLibraryView = new ReferenceLibraryView();
-    private final CalendarModuleView calendarModuleView = new CalendarModuleView();
+    private final CalendarModuleView calendarModuleView;
     private final FileOperationService fileOperationService = new FileOperationService();
     private final PreviewService previewService = new PreviewService();
     private String configErrorMessage = null;
 
     private ModuleActionHandler moduleActionHandler;
     private ModuleItem currentWebModule;
+    private final TrayController tray = new TrayController();
+    private ReminderService reminders;
+    private javafx.animation.Timeline focusPulse;
+    private java.nio.channels.FileChannel instanceChannel;
+    private java.nio.channels.FileLock instanceLock;
+    private boolean restartRequired;
 
     @Override
     public void start(Stage stage) {
+        if (projectRootOverride == null) {
+            try {
+                Files.createDirectories(getProjectRoot());
+                instanceChannel = java.nio.channels.FileChannel.open(getProjectRoot().resolve(".instance.lock"),
+                        java.nio.file.StandardOpenOption.CREATE, java.nio.file.StandardOpenOption.WRITE);
+                instanceLock = instanceChannel.tryLock();
+                if (instanceLock == null) {
+                    new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.INFORMATION,
+                            "Academic OS zaten çalışıyor. Sistem tepsisinden mevcut pencereyi açabilirsin.").showAndWait();
+                    javafx.application.Platform.exit(); return;
+                }
+            } catch (Exception failure) {
+                new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.ERROR,
+                        "Veri klasörü açılamadı: " + failure.getMessage()).showAndWait();
+                javafx.application.Platform.exit(); return;
+            }
+        }
         root = new BorderPane();
         moduleActionHandler = new ModuleActionHandler(
                 scriptModuleRunner,
@@ -67,12 +101,14 @@ public class App extends Application {
                 referenceLibraryView,
                 calendarModuleView,
                 getProjectRoot(),
-                this::openModuleById
+                this::openModuleById,
+                busy -> root.setDisable(busy),
+                () -> { restartRequired = true; root.setDisable(true); }
         );
 
         try {
             ConfigLoader configLoader = new ConfigLoader();
-            appConfig = configLoader.load();
+            appConfig = configLoader.load(getProjectRoot());
             configErrorMessage = null;
         } catch (Exception e) {
             appConfig = null;
@@ -102,9 +138,16 @@ public class App extends Application {
         search.setMinWidth(150);
         search.textProperty().addListener((obs, oldValue, value) -> sidebarBuilder.filter(value));
         search.setOnAction(e -> sidebarBuilder.openFirstMatch());
-        HBox topBar = new HBox(16, heading, spacer, search);
+        pageHeading = new HBox(16, heading);
+        pageHeading.setAlignment(Pos.CENTER_LEFT);
+        pageHeading.getStyleClass().add("ust-cubuk");
+        Label brand = new Label("Academic OS", UiTheme.icon("command"));
+        brand.getStyleClass().add("silver-brand");
+        Label profile = new Label("B"); profile.getStyleClass().add("silver-profile");
+        HBox topBar = new HBox(18, brand, spacer, search, profile);
         topBar.setAlignment(Pos.CENTER_LEFT);
-        topBar.getStyleClass().add("ust-cubuk");
+        topBar.getStyleClass().add("silver-titlebar");
+        search.setPromptText("Ara…  Ctrl+K");
 
         VBox sidebar = sidebarBuilder.build(appConfig, this::handleModuleAction);
         ToggleButton themeSwitch = new ToggleButton("Koyu tema");
@@ -120,7 +163,19 @@ public class App extends Application {
                 statusLabel.setText("Durum: Tema tercihi kaydedilemedi: " + ex.getMessage());
             }
         });
-        VBox themeRow = new VBox(themeSwitch);
+        ToggleButton reducedMotion = new ToggleButton("Hareketi azalt");
+        reducedMotion.setId("motion-toggle"); reducedMotion.setSelected(theme.isReducedMotion());
+        UiTheme.decorate(reducedMotion, "wind", "theme-toggle"); reducedMotion.setMaxWidth(Double.MAX_VALUE);
+        reducedMotion.setOnAction(e -> {
+            try {
+                theme.setReducedMotion(reducedMotion.isSelected(), root);
+                if (reducedMotion.isSelected() && pageFade != null) { pageFade.stop(); centerArea.setOpacity(1); }
+            } catch (Exception ex) {
+                reducedMotion.setSelected(theme.isReducedMotion());
+                statusLabel.setText("Durum: Görünüm tercihi kaydedilemedi: " + ex.getMessage());
+            }
+        });
+        VBox themeRow = new VBox(2, themeSwitch, reducedMotion);
         themeRow.getStyleClass().add("tema-satiri");
         sidebar.getChildren().add(themeRow);
 
@@ -165,7 +220,9 @@ public class App extends Application {
                     (configErrorMessage == null ? "Bilinmeyen hata" : configErrorMessage));
         }
 
-        VBox workspace = new VBox(topBar, centerArea, bottomBar);
+        VBox workspace = new VBox(pageHeading, centerArea, bottomBar);
+        workspace.getStyleClass().add("silver-workspace");
+        root.setTop(topBar);
         root.setLeft(sidebar);
         root.setCenter(workspace);
         showWelcome();
@@ -180,6 +237,7 @@ public class App extends Application {
                 search.selectAll();
                 event.consume();
             }
+            if(event.isShortcutDown() && event.isShiftDown() && event.getCode()==KeyCode.F){moduleActionHandler.startFocusShortcut(stage,statusLabel::setText);event.consume();}
             if (event.getCode() == KeyCode.ESCAPE && search.isFocused()) search.clear();
         });
         stage.setMinWidth(Math.min(900, bounds.getWidth()));
@@ -189,12 +247,38 @@ public class App extends Application {
         stage.setOnCloseRequest(event -> {
             try {
                 leaveCurrentModule();
+                if (!restartRequired && projectRootOverride == null && tray.isAvailable()
+                        && AppPreferences.load(getProjectRoot()).keepRunningOnClose()) {
+                    event.consume(); stage.hide();
+                } else if (projectRootOverride == null) javafx.application.Platform.exit();
             } catch (Exception ex) {
                 event.consume();
                 statusLabel.setText("Durum: Değişiklikler kaydedilemedi, pencere açık tutuldu: " + ex.getMessage());
             }
         });
         stage.show();
+        focusPulse=new javafx.animation.Timeline(new javafx.animation.KeyFrame(javafx.util.Duration.seconds(1),event->{
+            var timer=moduleActionHandler.focusTimer();long seconds=(timer.remainingMillis()+999)/1000;
+            String caption=timer.running()?String.format(java.util.Locale.ROOT,"Odak %02d:%02d · Berkay Academic OS",seconds/60,seconds%60):"Berkay Academic OS";
+            stage.setTitle(caption);tray.setCaption(caption);
+        }));focusPulse.setCycleCount(javafx.animation.Animation.INDEFINITE);focusPulse.play();
+        if (projectRootOverride == null) {
+            try {
+                boolean available = tray.install(() -> {
+                    stage.show(); stage.toFront();
+                    if (!restartRequired) openModuleById(selectedModule == null ? "today" : selectedModule.getId());
+                }, () -> {
+                    try { leaveCurrentModule(); javafx.application.Platform.exit(); }
+                    catch (Exception failure) { stage.show(); statusLabel.setText(failure.getMessage()); }
+                });
+                if (available) javafx.application.Platform.setImplicitExit(false);
+                reminders = new ReminderService(getProjectRoot(), tray::notify);
+                reminders.setStatusListener(error -> { if (error != null) javafx.application.Platform.runLater(() -> statusLabel.setText(error)); });
+                reminders.start();
+                moduleActionHandler.startBackgroundSync();
+            } catch (Exception failure) { statusLabel.setText("Başlangıç/bildirim hatası: " + failure.getMessage()); }
+        }
+        if(projectRootOverride==null && Boolean.getBoolean("academic.os.packaged")) Thread.ofVirtual().name("agent-guide-install").start(()->{try{AgentGuide.install(getProjectRoot());}catch(Exception error){javafx.application.Platform.runLater(()->statusLabel.setText("Ajan kılavuzu kurulamadı: "+error.getMessage()));}});
         if (appConfig != null) openModuleById("today");
     }
 
@@ -212,15 +296,17 @@ public class App extends Application {
 
     @Override
     public void stop() throws Exception {
-        leaveCurrentModule();
+        try { leaveCurrentModule(); }
+        finally {
+            if(focusPulse!=null)focusPulse.stop();
+            if (reminders != null) reminders.close(); tray.close();
+            if (moduleActionHandler != null) moduleActionHandler.stopBackgroundSync();
+            if (instanceLock != null) instanceLock.close(); if (instanceChannel != null) instanceChannel.close();
+        }
     }
 
     private Path getProjectRoot() {
-        Path workingDir = Paths.get(System.getProperty("user.dir")).toAbsolutePath();
-        if (workingDir.getFileName() != null && workingDir.getFileName().toString().equals("app")) {
-            return workingDir.getParent();
-        }
-        return workingDir;
+        return dataRoot;
     }
 
     private String sanitizeFileName(String name) {
@@ -379,6 +465,7 @@ public class App extends Application {
     }
 
     private void handleModuleAction(ModuleItem module) {
+        if (restartRequired) return;
         try {
             leaveCurrentModule();
         } catch (Exception ex) {
@@ -396,6 +483,8 @@ public class App extends Application {
 
             selectedModule = module;
             sidebarBuilder.select(module);
+            boolean daily = "today".equals(module.getId()) || "agenda".equals(module.getId());
+            pageHeading.setVisible(!daily); pageHeading.setManaged(!daily);
             pageTitle.setText(module.getName());
             pageDescription.setText(moduleDescription(module));
             switch (type.toLowerCase()) {
@@ -428,6 +517,12 @@ public class App extends Application {
                     statusLabel.setText("Durum: Hata");
                     break;
             }
+            if (pageFade != null) pageFade.stop();
+            centerArea.setOpacity(1);
+            if (!theme.isReducedMotion()) {
+                pageFade = new javafx.animation.FadeTransition(Duration.millis(170), centerArea);
+                pageFade.setFromValue(.65); pageFade.setToValue(1); pageFade.play();
+            }
         } catch (Exception e) {
             showTextInCenter("İşlem hatası: " + e.getMessage());
             statusLabel.setText("Durum: Hata");
@@ -459,6 +554,8 @@ public class App extends Application {
     private String moduleDescription(ModuleItem module) {
         return switch (java.util.Objects.toString(module.getId(), "")) {
             case "today" -> "Günün programı, yaklaşan işler ve ödemeler";
+            case "agenda" -> "Derslerin ve çalışma oturumların";
+            case "tasks" -> "Yapılacakların ve teslim tarihlerin";
             case "courses" -> "Derslerin, haftalık programın ve teslim tarihlerin";
             case "documents" -> "Dosyalarını düzenle, görüntüle ve yönet";
             case "uart" -> "Seri port bağlantısı ve canlı veri akışı";

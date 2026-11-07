@@ -9,42 +9,51 @@ import java.util.function.Consumer;
 public class SidebarBuilder {
     private final Map<ModuleItem, ToggleButton> buttons = new LinkedHashMap<>();
     private final Map<String, VBox> sections = new LinkedHashMap<>();
+    private final Map<String, ToggleButton> groupButtons = new LinkedHashMap<>();
+    private final Set<String> expandedGroups = new HashSet<>();
     private final ToggleGroup selection = new ToggleGroup();
     private final Label empty = new Label("Eşleşen modül yok");
+    private String currentQuery = "";
 
     public VBox build(AppConfig config, Consumer<ModuleItem> onClick) {
         buttons.clear();
         sections.clear();
+        groupButtons.clear();
         selection.getToggles().clear();
-        VBox sidebar = new VBox(22);
+        VBox sidebar = new VBox(16);
         sidebar.getStyleClass().add("kenar-cubugu");
-        sidebar.setPrefWidth(236);
-        sidebar.setMinWidth(210);
-        sidebar.setMaxWidth(236);
-        StackPane badge = new StackPane(UiTheme.icon("book-open"));
-        badge.getStyleClass().add("logo-kutu");
-        Label name = new Label("Berkay");
-        name.getStyleClass().add("logo-ad");
-        Label subtitle = new Label("Academic OS");
-        subtitle.getStyleClass().add("logo-alt");
-        HBox logo = new HBox(12, badge, new VBox(1, name, subtitle));
-        logo.setAlignment(Pos.CENTER_LEFT);
-        logo.getStyleClass().add("logo");
+        sidebar.setPrefWidth(218);
+        sidebar.setMinWidth(184);
+        sidebar.setMaxWidth(218);
 
         VBox menu = new VBox(3);
         if (config != null && config.getModules() != null) {
-            for (String group : List.of("Çalışma alanı", "Finans", "Web")) {
+            for (String group : List.of("Çalışma alanı", "Araçlar", "Web")) {
                 Label title = new Label(group);
                 title.getStyleClass().add("grup-basligi");
+                title.setManaged(false); title.setVisible(false);
                 VBox section = new VBox(3, title);
                 sections.put(group, section);
+                if (!group.equals("Çalışma alanı")) {
+                    ToggleButton expand = new ToggleButton(group, UiTheme.icon("chevron-right"));
+                    expand.getStyleClass().add("nav-group-toggle"); expand.setMaxWidth(Double.MAX_VALUE);
+                    expand.setSelected(expandedGroups.contains(group));
+                    expand.setOnAction(e -> {
+                        if (expand.isSelected()) expandedGroups.add(group); else expandedGroups.remove(group);
+                        filter(currentQuery);
+                    });
+                    groupButtons.put(group, expand); menu.getChildren().add(expand);
+                }
                 menu.getChildren().add(section);
             }
-            for (ModuleItem module : config.getModules()) {
+            List<String> primary = List.of("today", "agenda", "courses", "tasks", "finance");
+            var ordered = new ArrayList<>(config.getModules());
+            ordered.sort(Comparator.comparingInt(m -> primary.contains(m.getId()) ? primary.indexOf(m.getId()) : 10));
+            for (ModuleItem module : ordered) {
                 if (!module.isEnabled()) continue;
                 String type = Objects.toString(module.getType(), "");
                 String group = type.contains("web") ? "Web"
-                        : "finance".equals(module.getId()) ? "Finans" : "Çalışma alanı";
+                        : primary.contains(module.getId()) ? "Çalışma alanı" : "Araçlar";
                 ToggleButton button = new ToggleButton(module.getName(), UiTheme.icon(moduleIcon(module)));
                 button.setId("nav-" + module.getId());
                 button.getStyleClass().add("nav");
@@ -62,7 +71,7 @@ public class SidebarBuilder {
         scroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         scroll.getStyleClass().add("menu-kaydirma");
         VBox.setVgrow(scroll, Priority.ALWAYS);
-        sidebar.getChildren().addAll(logo, scroll);
+        sidebar.getChildren().add(scroll);
         filter("");
         return sidebar;
     }
@@ -74,16 +83,20 @@ public class SidebarBuilder {
     }
 
     void filter(String query) {
+        currentQuery = query;
         String needle = normalize(query);
         buttons.forEach((module, button) -> {
             boolean match = normalize(module.getName() + " " + module.getCategory()).contains(needle);
             button.setVisible(match);
             button.setManaged(match);
         });
-        sections.values().forEach(section -> {
-            boolean visible = section.getChildren().stream().skip(1).anyMatch(javafx.scene.Node::isVisible);
+        sections.forEach((name, section) -> {
+            boolean matches = section.getChildren().stream().skip(1).anyMatch(javafx.scene.Node::isVisible);
+            boolean visible = matches && (name.equals("Çalışma alanı") || !needle.isEmpty() || expandedGroups.contains(name));
             section.setVisible(visible);
             section.setManaged(visible);
+            var group = groupButtons.get(name);
+            if (group != null) { group.setVisible(matches); group.setManaged(matches); }
         });
         boolean noResults = buttons.values().stream().noneMatch(javafx.scene.Node::isVisible);
         empty.setVisible(noResults);
@@ -100,7 +113,8 @@ public class SidebarBuilder {
 
     private String moduleIcon(ModuleItem module) {
         return switch (Objects.toString(module.getIcon(), "")) {
-            case "sun" -> "sun";
+            case "sun" -> "home";
+            case "tasks" -> "check-square";
             case "courses" -> "book-open";
             case "folder" -> "folder";
             case "terminal" -> "terminal";
@@ -108,6 +122,7 @@ public class SidebarBuilder {
             case "book" -> "bookmark";
             case "calendar" -> "calendar";
             case "wallet" -> "credit-card";
+            case "cloud" -> "cloud";
             case "play" -> "youtube";
             case "bot" -> "message-circle";
             default -> "globe";

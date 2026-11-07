@@ -24,8 +24,14 @@ public final class CourseModuleView {
     private boolean saving, disposed;
     private TabPane tabs;
     private CoursePlannerView planner;
+    private AdvancedCoursePlannerView advancedPlanner;
+    private final Path profileRoot;
 
-    public CourseModuleView(Path file) { storage = new CourseStorageService(file); }
+    public CourseModuleView(Path file) {
+        storage = new CourseStorageService(file);
+        Path parent = file.toAbsolutePath().getParent();
+        profileRoot = parent.getFileName().toString().equals("courses") ? parent.getParent().getParent() : parent;
+    }
 
     public VBox build() {
         UiTheme.decorate(reload, "refresh-cw", "flat");
@@ -87,6 +93,7 @@ public final class CourseModuleView {
 
     public void dispose() {
         if (saving) throw new IllegalStateException("Ders kaydı sürüyor; tamamlanmasını bekle");
+        if (advancedPlanner != null) advancedPlanner.dispose();
         disposed = true;
         if (pending != null) pending.cancel();
     }
@@ -94,12 +101,14 @@ public final class CourseModuleView {
     private void render() {
         if (tabs == null) {
             planner = new CoursePlannerView(this::save, this::editCourse);
+            advancedPlanner = new AdvancedCoursePlannerView(profileRoot, this::save);
             tabs = new TabPane(); tabs.setId("courses-tabs");
-            tabs.getTabs().setAll(new Tab("Planlayıcı", planner), new Tab("Ders kayıtları"), new Tab("Ödev ve sınavlar"));
+            tabs.getTabs().setAll(new Tab("Planlayıcı", planner), new Tab("Ders kayıtları"), new Tab("Ödev ve sınavlar"), new Tab("Müfredat / ÇAP ve alternatifler", advancedPlanner));
             tabs.getTabs().forEach(tab -> tab.setClosable(false));
             body.getChildren().setAll(tabs); VBox.setVgrow(tabs, Priority.ALWAYS);
         }
         planner.update(data);
+        advancedPlanner.update(data);
         tabs.getTabs().get(1).setContent(courseList());
         tabs.getTabs().get(2).setContent(workList());
     }
@@ -131,7 +140,7 @@ public final class CourseModuleView {
             long count = data.work().stream().filter(w -> w.courseId().equals(selected.id())).count();
             Alert confirm = new Alert(Alert.AlertType.CONFIRMATION,
                     selected.name() + " dersi, programı ve bağlı " + count + " ödev/sınav silinsin mi?", ButtonType.CANCEL, ButtonType.OK);
-            confirm.initOwner(root.getScene().getWindow());
+            UiTheme.styleDialog(confirm, root);
             if (confirm.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK)
                 save(new CourseData(VERSION, data.courses().stream().filter(c -> !c.id().equals(selected.id())).toList(),
                         data.work().stream().filter(w -> !w.courseId().equals(selected.id())).toList(), data.sections()));
@@ -211,7 +220,8 @@ public final class CourseModuleView {
             @Override protected void updateItem(Work w, boolean empty) {
                 super.updateItem(w, empty);
                 setText(empty || w == null ? null : (w.done() ? "✓ " : "") + w.title() + "\n" +
-                        courseName(w.courseId()) + " · " + w.kind() + " · " + w.date());
+                        courseName(w.courseId()) + " · " + w.kind() + " · " + (w.date().isBlank() ? "Son tarih yok" : w.date())
+                        + (w.dueTime().isBlank() ? "" : " " + w.dueTime()) + " · " + w.priority());
             }
         });
         Button add = button("Ödev / sınav ekle", "plus", "accent", "work-add");
@@ -225,13 +235,13 @@ public final class CourseModuleView {
         done.setOnAction(e -> {
             Work selected = list.getSelectionModel().getSelectedItem();
             List<Work> next = data.work().stream().map(w -> w.id().equals(selected.id())
-                    ? new Work(w.id(), w.courseId(), w.title(), w.kind(), w.date(), !w.done()) : w).toList();
+                    ? w.withDone(!w.done()) : w).toList();
             save(data.withWork(next));
         });
         remove.setOnAction(e -> {
             Work selected = list.getSelectionModel().getSelectedItem();
             Alert confirm = new Alert(Alert.AlertType.CONFIRMATION, selected.title() + " silinsin mi?", ButtonType.CANCEL, ButtonType.OK);
-            confirm.initOwner(root.getScene().getWindow());
+            UiTheme.styleDialog(confirm, root);
             if (confirm.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK)
                 save(data.withWork(data.work().stream().filter(w -> !w.id().equals(selected.id())).toList()));
         });
@@ -248,28 +258,41 @@ public final class CourseModuleView {
         TextField title = field("Başlık", old == null ? "" : old.title(), "work-title");
         ComboBox<String> kind = new ComboBox<>(); kind.getItems().setAll("Ödev", "Sınav"); kind.setValue(old == null ? "Ödev" : old.kind());
         kind.setId("work-kind");
-        DatePicker date = new DatePicker(old == null ? LocalDate.now() : LocalDate.parse(old.date())); date.setId("work-date");
+        DatePicker date = new DatePicker(old == null ? LocalDate.now() : old.date().isBlank() ? null : LocalDate.parse(old.date())); date.setId("work-date");
+        CheckBox noDue = new CheckBox("Son tarih yok"); noDue.setSelected(old != null && old.date().isBlank()); noDue.setId("work-no-due");
+        date.disableProperty().bind(noDue.selectedProperty());
         CheckBox done = new CheckBox("Tamamlandı"); done.setSelected(old != null && old.done());
         Label error = new Label(); error.setWrapText(true); error.getStyleClass().add("form-error");
+        TaskMetadataEditor metadata = new TaskMetadataEditor(false);
+        if (old != null) {
+            TaskItem fields = new TaskItem(old.title(), old.date().isBlank() ? LocalDate.now() : LocalDate.parse(old.date()), "", "Bekliyor");
+            fields.setDueTime(old.dueTime().isBlank() ? null : LocalTime.parse(old.dueTime()));
+            fields.setPriority(old.priority()); fields.setEstimatedMinutes(old.estimatedMinutes()); fields.setLoggedMinutes(old.loggedMinutes());
+            metadata.load(fields);
+            try { metadata.showProgress(new StudyProgressService().forWork(old,
+                    new StudyStorageService(profileRoot.resolve("data/study/sessions.json")).load(), new StudyTimeLogService(profileRoot).load())); }
+            catch (Exception failure) { status.setText("Çalışma süresi okunamadı: " + failure.getMessage()); }
+        }
         VBox form = new VBox(8, new Label("Ders *"), course, new Label("Başlık *"), title,
-                new Label("Tür"), kind, new Label("Teslim / sınav tarihi *"), date, done, error);
+                new Label("Tür"), kind, new Label("Teslim / sınav tarihi"), date, noDue, metadata, done, error);
         String id = old == null ? UUID.randomUUID().toString() : old.id();
         formDialog(old == null ? "Ödev / sınav ekle" : "Kaydı düzenle", form, error, () -> {
+            TaskItem fields = new TaskItem(title.getText().trim(), date.getValue(), "", "Bekliyor");
+            metadata.apply(fields);
             Work work = new Work(id, course.getValue().id(), title.getText().trim(), kind.getValue(),
-                    Objects.requireNonNull(date.getValue(), "Tarih gerekiyor").toString(), done.isSelected());
+                    noDue.isSelected() ? "" : Objects.requireNonNull(date.getValue(), "Tarih gerekiyor").toString(), done.isSelected(),
+                    fields.getDueTime() == null ? "" : fields.getDueTime().toString(),
+                    fields.getEstimatedMinutes(), fields.getLoggedMinutes(), fields.getPriority());
             List<Work> next = new ArrayList<>(data.work()); next.removeIf(w -> w.id().equals(id)); next.add(work);
             return data.withWork(next);
         }).ifPresent(this::save);
     }
 
     private Optional<CourseData> formDialog(String title, VBox form, Label error, Supplier<CourseData> candidate) {
-        Dialog<CourseData> dialog = new Dialog<>(); dialog.setTitle(title); dialog.initOwner(root.getScene().getWindow());
+        Dialog<CourseData> dialog = new Dialog<>(); dialog.setTitle(title); UiTheme.styleDialog(dialog, root);
         ScrollPane scroll = new ScrollPane(form); scroll.setFitToWidth(true);
         scroll.setPrefViewportWidth(550); scroll.setPrefViewportHeight(Math.min(610, javafx.stage.Screen.getPrimary().getVisualBounds().getHeight() - 190));
         form.setPadding(new Insets(12));
-        dialog.getDialogPane().getStylesheets().add(CourseModuleView.class.getResource("/ui/style.css").toExternalForm());
-        dialog.getDialogPane().getStyleClass().add("uygulama");
-        if (root.getScene().getRoot().getStyleClass().contains("dark")) dialog.getDialogPane().getStyleClass().add("dark");
         dialog.getDialogPane().setContent(scroll);
         ButtonType save = new ButtonType("Kaydet", ButtonBar.ButtonData.OK_DONE);
         dialog.getDialogPane().getButtonTypes().setAll(ButtonType.CANCEL, save);

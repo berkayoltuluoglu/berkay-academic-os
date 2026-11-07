@@ -46,7 +46,7 @@ public class WebModuleView {
         UiTheme.decorate(external, "external-link", "flat");
         external.setOnAction(e -> {
             try {
-                new ProcessBuilder("xdg-open", engine.getLocation()).start();
+                DesktopIntegration.browse(engine.getLocation());
             } catch (Exception ex) {
                 Alert alert = new Alert(Alert.AlertType.ERROR, "Tarayıcı açılamadı: " + ex.getMessage());
                 alert.initOwner(webView.getScene().getWindow());

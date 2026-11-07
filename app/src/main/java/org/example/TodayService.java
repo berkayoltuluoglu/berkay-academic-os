@@ -20,7 +20,7 @@ public final class TodayService {
         Section tasks;
         try {
             tasks = ok(new TaskStorageService(root.resolve("data/tasks.json")).loadTasks().stream()
-                    .filter(t -> !"Tamamlandı".equals(t.getStatus()) && !t.getDate().isAfter(until))
+                    .filter(t -> !"Tamamlandı".equals(t.getStatus()) && t.getDate() != null && !t.getDate().isAfter(until))
                     .map(t -> new Entry(t.getTitle(), t.getDate(), t.getStatus(), "calendar", null))
                     .sorted(Comparator.comparing(Entry::date)).toList());
         } catch (Exception ex) { tasks = error("Görevler okunamadı: " + ex.getMessage()); }
@@ -30,7 +30,7 @@ public final class TodayService {
             lessons = ok(lessonsOn(data, today));
             Map<String, String> names = new HashMap<>();
             data.courses().forEach(c -> names.put(c.id(), c.name()));
-            coursework = ok(data.work().stream().filter(w -> !w.done() && !LocalDate.parse(w.date()).isAfter(until))
+            coursework = ok(data.work().stream().filter(w -> !w.done() && !w.date().isBlank() && !LocalDate.parse(w.date()).isAfter(until))
                     .map(w -> new Entry(w.title(), LocalDate.parse(w.date()), w.kind() + " · " + names.get(w.courseId()), "courses", null))
                     .sorted(Comparator.comparing(Entry::date)).toList());
         } catch (Exception ex) { lessons = error("Dersler okunamadı: " + ex.getMessage()); coursework = lessons; }

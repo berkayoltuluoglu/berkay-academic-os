@@ -12,7 +12,8 @@ import java.util.Optional;
 final class CourseImportDialog {
     static Optional<CourseData> show(Parent owner, CourseData base) {
         Dialog<CourseData> dialog = new Dialog<>();
-        dialog.setTitle("CSV'den şube aktar"); dialog.initOwner(owner.getScene().getWindow());
+        dialog.setTitle("CSV'den şube aktar");
+        UiTheme.styleDialog(dialog, owner);
         dialog.setResizable(true);
         TextField path = new TextField(); path.setPromptText("UTF-8 CSV dosyasının yolu"); path.setId("csv-path");
         Button browse = new Button("Dosya seç"), read = new Button("Önizle"); read.setId("csv-preview");
@@ -35,9 +36,6 @@ final class CourseImportDialog {
         VBox content = new VBox(12, info, fileRow, message, list); content.setPadding(new javafx.geometry.Insets(12));
         VBox.setVgrow(list, Priority.ALWAYS);
         dialog.getDialogPane().setContent(content); dialog.getDialogPane().setPrefWidth(760);
-        dialog.getDialogPane().getStylesheets().add(CourseImportDialog.class.getResource("/ui/style.css").toExternalForm());
-        dialog.getDialogPane().getStyleClass().add("uygulama");
-        if (owner.getStyleClass().contains("dark")) dialog.getDialogPane().getStyleClass().add("dark");
         ButtonType accept = new ButtonType("Kataloğa aktar", ButtonBar.ButtonData.OK_DONE);
         dialog.getDialogPane().getButtonTypes().setAll(ButtonType.CANCEL, accept);
         Button commit = (Button) dialog.getDialogPane().lookupButton(accept); commit.setId("csv-import-save"); commit.setDisable(true);

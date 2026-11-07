@@ -83,7 +83,11 @@ public final class CourseStorageService {
                 require(courses.contains(work.courseId()), "Ödev veya sınav bir derse bağlı olmalı");
                 text(work.title(), 300, true);
                 require(Set.of("Ödev", "Sınav").contains(work.kind()), "Geçersiz teslim türü");
-                LocalDate.parse(work.date());
+                if (!work.date().isBlank()) LocalDate.parse(work.date());
+                if (!work.dueTime().isEmpty()) LocalTime.parse(work.dueTime());
+                require(Set.of("Düşük", "Normal", "Yüksek").contains(work.priority())
+                        && work.estimatedMinutes() >= 0 && work.estimatedMinutes() <= 100000
+                        && work.loggedMinutes() >= 0 && work.loggedMinutes() <= 1000000, "Teslim çalışma süresi/önceliği geçersiz");
             }
         } catch (RuntimeException ex) { throw new IOException("Ders bilgileri geçersiz: " + ex.getMessage(), ex); }
     }

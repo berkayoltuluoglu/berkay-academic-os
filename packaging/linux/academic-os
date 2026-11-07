@@ -1,0 +1,29 @@
+#!/bin/sh
+# Resolve the installed symlink and always use the Java shipped with this release.
+set -eu
+umask 077
+APP_DIR=$(dirname -- "$(readlink -f -- "$0")")
+run_app() {
+    "$APP_DIR/runtime/bin/java" -Dacademic.os.packaged=true \
+        -cp "$APP_DIR/app/lib/*" org.example.AppLauncher "$@"
+}
+if [ "$#" -gt 0 ]; then
+    run_app "$@"
+    exit $?
+fi
+STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/berkay-academic-os"
+mkdir -p -- "$STATE_DIR"
+LOG="$STATE_DIR/application.log"
+if [ -f "$LOG" ] && [ "$(wc -c < "$LOG")" -gt 5242880 ]; then
+    mv -f -- "$LOG" "$LOG.previous"
+fi
+if run_app >> "$LOG" 2>&1; then
+    exit 0
+else
+    RESULT=$?
+    if command -v zenity >/dev/null 2>&1; then
+        zenity --error --title="Berkay Academic OS" \
+            --text="Uygulama açılamadı. Hata kaydı: $LOG" 2>/dev/null || true
+    fi
+    exit "$RESULT"
+fi

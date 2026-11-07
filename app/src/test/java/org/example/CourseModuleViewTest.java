@@ -8,7 +8,7 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 import org.junit.jupiter.api.*;
-import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.junit.jupiter.api.condition.EnabledIf;
 import org.junit.jupiter.api.io.TempDir;
 import java.nio.file.*;
 import java.time.LocalDate;
@@ -17,7 +17,7 @@ import java.util.function.Consumer;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.example.FxTestSupport.fx;
 
-@EnabledIfEnvironmentVariable(named = "DISPLAY", matches = ".+")
+@EnabledIf("org.example.FxTestSupport#isGuiAvailable")
 class CourseModuleViewTest {
     @TempDir Path root;
     private CourseModuleView view;

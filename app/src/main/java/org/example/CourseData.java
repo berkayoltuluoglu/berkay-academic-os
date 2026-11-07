@@ -48,5 +48,18 @@ public record CourseData(int schemaVersion, List<Course> courses, List<Work> wor
                           BigDecimal credit, BigDecimal ects, List<Lesson> lessons) {
         public Section { lessons = List.copyOf(lessons); }
     }
-    public record Work(String id, String courseId, String title, String kind, String date, boolean done) {}
+    public record Work(String id, String courseId, String title, String kind, String date, boolean done,
+                       String dueTime, int estimatedMinutes, int loggedMinutes, String priority) {
+        public Work {
+            date = date == null ? "" : date;
+            dueTime = dueTime == null ? "" : dueTime;
+            priority = priority == null ? "Normal" : priority;
+        }
+        public Work(String id, String courseId, String title, String kind, String date, boolean done) {
+            this(id, courseId, title, kind, date, done, "", 0, 0, "Normal");
+        }
+        public Work withDone(boolean value) {
+            return new Work(id, courseId, title, kind, date, value, dueTime, estimatedMinutes, loggedMinutes, priority);
+        }
+    }
 }

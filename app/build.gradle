@@ -7,6 +7,8 @@ repositories {
     mavenCentral()
 }
 
+version = '1.5.0'
+
 dependencies {
     implementation 'io.github.mkpaz:atlantafx-base:2.0.1'
     implementation 'org.kordamp.ikonli:ikonli-javafx:12.3.1'
@@ -17,6 +19,7 @@ dependencies {
     implementation 'com.google.oauth-client:google-oauth-client-jetty:1.39.0'
     implementation 'com.google.apis:google-api-services-calendar:v3-rev20250404-2.0.0'
     implementation 'com.google.http-client:google-http-client-gson:1.47.0'
+    implementation 'org.apache.pdfbox:pdfbox:3.0.8'
 }
 
 java {
@@ -28,12 +31,42 @@ java {
 javafx {
     version = '21.0.2'
     modules = [ 'javafx.controls', 'javafx.fxml', 'javafx.web' ]
+    if (project.hasProperty('javafxPlatform')) platform = project.property('javafxPlatform')
 }
 
 application {
-    mainClass = 'org.example.App'
+    mainClass = 'org.example.AppLauncher'
 }
 
 tasks.named('test') {
+    dependsOn tasks.named('installDist')
     useJUnitPlatform()
+}
+
+tasks.register('stageWindows', Sync) {
+    dependsOn tasks.named('jar')
+    into layout.buildDirectory.dir('windows/input/lib')
+    from tasks.named('jar')
+    from configurations.runtimeClasspath
+    doFirst {
+        if (!project.hasProperty('javafxPlatform') || project.property('javafxPlatform') != 'win') {
+            throw new GradleException('Windows paketi için -PjavafxPlatform=win kullan.')
+        }
+    }
+}
+
+// Headless planning CLI, distributed beside the desktop launcher.
+def agentScripts = tasks.register('agentStartScripts', CreateStartScripts) {
+    dependsOn tasks.named('jar')
+    mainClass = 'org.example.AgentCli'
+    applicationName = 'academic-os'
+    outputDir = layout.buildDirectory.dir('agent-scripts').get().asFile
+    classpath = files(tasks.named('jar')) + configurations.runtimeClasspath
+}
+distributions {
+    main {
+        contents {
+            from(agentScripts) { into 'bin'; filePermissions { unix('rwxr-xr-x') } }
+        }
+    }
 }

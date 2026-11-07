@@ -120,7 +120,7 @@ public class FileExplorerView {
             Button openButton = new Button("Harici Uygulamada Aç");
             openButton.setOnAction(e -> {
                 try {
-                    new ProcessBuilder("xdg-open", file.toString()).start();
+                    DesktopIntegration.open(file);
                 } catch (Exception ignored) {
                 }
             });
@@ -748,7 +748,7 @@ public class FileExplorerView {
             }
 
             try {
-                new ProcessBuilder("xdg-open", selectedPath.toString()).start();
+                DesktopIntegration.open(selectedPath);
                 statusUpdater.accept("Durum: Dış uygulamada açıldı");
             } catch (Exception ex) {
                 statusUpdater.accept(readableErrorMessage(ex, "Durum: Harici uygulama açılamadı"));
@@ -840,7 +840,7 @@ public class FileExplorerView {
                         metadataText,
                         true
                 );
-                new ProcessBuilder("xdg-open", file.toString()).start();
+                DesktopIntegration.open(file);
                 statusUpdater.accept("Durum: Dosya harici görüntüleyicide açıldı");
                 break;
 

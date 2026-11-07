@@ -1,0 +1,4 @@
+#!/bin/sh
+set -eu
+bundle=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+exec "$bundle/runtime/bin/java" -Dacademic.os.packaged=true -cp "$bundle/app/lib/*" org.example.AgentCli "$@"

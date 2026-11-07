@@ -15,7 +15,7 @@
 # Berkay Academic OS — Tam Durum Dokümanı
 _Güncel teknik özet, yapılanlar, mevcut mimari, dosya düzeni, entegrasyonlar, hatalar, bekleyen işler ve sonraki adımlar_
 
-**Son durum: 5 Ekim 2026.** Kullanıcı, Apple esintili gümüş arayüz demosunu beğendi ve bu tasarımın daha sonra ana JavaFX uygulamasına aktarılmasını istedi. Font aktarım sırasında daha şık bir fontla değiştirilecek; şu anda arayüz veya font değişikliği yapılmayacak. Tasarım kararı ve demo referansı **0.11 bölümünde**. Son uygulama geliştirmesi 1 Ekim'deki ders planlayıcı aktarımıdır: CSV şube kataloğu, elle şube seçimi, kredi/AKTS ve eski kayıtların korunması. İlk aktarım 0.9, aynı ekranda seçim/program iyileştirmesi **0.10 bölümünde**. Önceki A–G aşamalarına ait ayrıntılar geliştirme geçmişidir. Ortak ajanda, çalışma oturumları, müfredat/ÇAP ve LLM sonraki işlerdir.
+**Son durum: 7 Kasım 2026 — 1.5.0 haftalık planlayıcı, oturuma bağlı odak ve dış ajan CLI/öneri akışı eklendi.** Başlangıçtaki kaynak değişiklikleri ve kullanıcı verisi korundu. Son doğrulama **195 uygulama testi + 5 Linux kurulum testi başarılı**; Linux 1.5.0 paketi geçici profilde CLI, yedek/yeniden kurulum ve gerçek JavaFX pencere kontrolünden geçti. Kılavuzla temiz bağlamlı ajan denemesi başarılı. Ayrıntılar **0.20**, `docs/planner-delivery.md`, `AGENTS.md` ve `packaging/LINUX.md` içinde. Windows kabulü ve rapordaki sınırlar açık; commit/push kullanıcıdadır.
 
 **1 Ekim 2026 inceleme güncellemesi:** Kullanıcı ders planlayıcı projesini `/home/berkay/projects/ders-planlayici` konumunda paylaştı. İlk inceleme bulguları 0.8 bölümünde, ardından yapılan ilk aktarım 0.9 bölümünde. LLM entegrasyonu yapılmadı.
 
@@ -27,7 +27,7 @@ _Güncel teknik özet, yapılanlar, mevcut mimari, dosya düzeni, entegrasyonlar
 
 ---
 
-## 0. Güncel Durum ve Sonraki Oturuma Devir — 5 Ekim 2026
+## 0. Güncel Durum ve Sonraki Oturuma Devir — 12 Ekim 2026
 
 ### 0.1 Kullanıcının hedefi ve kesinleşen kararlar
 
@@ -35,11 +35,12 @@ _Güncel teknik özet, yapılanlar, mevcut mimari, dosya düzeni, entegrasyonlar
 - Java ve JavaFX ile devam etmek. C++ veya başka bir dile geçiş yapılmayacak.
 - Önce kullanıcının her şeyi kendisinin planlayabildiği, LLM gerektirmeyen ilk sürümü tamamlamak. Daha sonra bu planlama işlemlerini bir asistana devretmek.
 - Uzun vadeli hedef, ders programını ve son tarihleri okuyabilen, çalışma planı önerebilen, değişikliklere göre yeniden planlayabilen bir “Jarvis” asistanı. Bu yetenekler henüz mevcut değil.
-- **LLM için son karar:** İlk deneme altyapısını ileride Qwen ile kurmak; şu anda model kurulumu veya LLM entegrasyonu yapmamak. Önceki bulut önerileri kesin sağlayıcı seçimi değildir.
+- **LLM için son karar (7 Kasım 2026):** Uygulamanın içinde model, LLM istemcisi, model indirme veya AI API anahtarı olmayacak. Planlama dışarıdaki Codex/Claude Code benzeri ajanlara CLI ve kullanıcı onaylı öneri kutusuyla açılır. Önceki Qwen/yerel model kararı geçersizdir.
 - Kullanıcının bilgisayarı: RTX 4050 Laptop, 16 GB RAM. Yerel model seçimi konuşuldu; gerçek cihazda hız, bellek ve Türkçe görev başarımı testi yapılmadı.
-- **Güncel arayüz kararı (5 Ekim):** Kullanıcı Apple esintili gümüş arayüz demosunu beğendi; sonraki arayüz aktarımında bu tasarım esas alınacak. Profesyonel ve sade görünüm, minimum yazı, bugünün akışına öncelik ve yumuşak animasyonlar isteniyor. Font daha şık olacak; henüz font seçilmedi. Şu anda uygulama veya demo değiştirilmeyecek; ayrıntılar 0.11'de.
+- **Güncel arayüz (9 Ekim):** 5 Ekim’de kabul edilen Apple esintili gümüş tasarım JavaFX’e aktarıldı. Font Poppins; bugünün akışı, sınırlı renk, sade gezinme ve hareketi azaltma tercihi esas alındı. Kabul geçmişi 0.11, uygulama ayrıntıları 0.12’de.
 - Borç Defteri'nin yeni tasarımı şimdilik atlanacak. Burs takibi daha sonraki kapsamda.
 - Commit mesajları **Conventional Commits** biçiminde olmalı (`feat:`, `fix:`, `docs:` vb.).
+- **12 Ekim yeni özellik öncelikleri:** Kullanıcı son sıralamadaki ilk ve üçüncü başlıkları değiştirip finansı ilk, gelişmiş ders planlayıcıyı üçüncü istedi. İlk dokuz maddelik listenin numaralarıyla güncel sıra **7 → 6 → 3 → 8 → 9 → 5 → 4 → 2 → 1**. Güncel sıra ve kapsam 0.15 bölümünde; son öncelik yapay zekâ/Jarvis asistanıdır.
 - **Ara verme geçmişi:** 30 Eylül'de yalnızca bağlam kaydedilerek duruldu. 1 Ekim'de kullanıcı ders planlayıcının ilk aktarım aşamasını açıkça istedi; bu aşama tamamlandı. Qwen kurulumu ve API bağlantısını erteleme kararı sürüyor.
 
 ### 0.2 Kodda mevcut olanlar
@@ -48,22 +49,26 @@ _Güncel teknik özet, yapılanlar, mevcut mimari, dosya düzeni, entegrasyonlar
 | --- | --- |
 | Temel kararlılık | Script çalıştırma/iptal işlemleri arka planda; atomik dosya yazma, görev yedekleri ve web notlarında kayıt yaşam döngüsü korumaları var. |
 | Tasarım | JavaFX kabuğu, sidebar, modül araması (`Ctrl+K`), açık/koyu tema ve belge/takvim/referans/UART/script/web ekranları yenilendi. AtlantaFX, Ikonli ve paketlenmiş fontlar kullanılıyor. |
-| Bugün | Açılış ekranı. Bugünkü dersleri, tamamlanmamış yaklaşan/geciken görev ve ödevleri, sınavları ve ödeme özetlerini toplar. İleriye dönük pencere 7 gün; kaynak hataları ayrı gösterilir. |
+| Bugün | Gümüş açılış ekranı; gerçek ders/çalışma zaman çizelgesi, sıradaki etkinlik, görev/ödev işaretleme, hızlı ekleme ve kalıcı odak sayacı. Yaklaşan teslim/ödeme ayrıntıları açılır bölümde; kaynak hataları görünür. |
 | Dersler | Ders ekleme/düzenleme/silme; dönem tarihleri, öğretim elemanı, oturuma özel derslik, haftalık saatler, şube ve kredi/AKTS. CSV kataloğundan elle şube seçimi ve değişimi. |
-| Ödev ve sınav | Derse bağlı kayıt oluşturma/düzenleme/silme, tarih ve tamamlanma durumu. |
-| Haftalık program | Ders saatlerinin haftalık görünümü ve hafta gezinmesi var. Elle çalışma oturumu planlayıcısı veya çakışma denetimi henüz yok. |
-| Görev Planı | Tarih, başlık, açıklama, durum ve dosya kalıcılığı var. Son teslim saati, süre, öncelik ve alt görevler henüz yok. |
+| Ödev ve sınav | Derse bağlı kayıt oluşturma/düzenleme/silme, isteğe bağlı teslim tarihi ve saati, öncelik, tahmini/elle kaydedilen süre, çalışma oturumu bağlantısı ve tamamlanma durumu. |
+| Haftalık program | Derslerin haftalık programına ek olarak Ajanda içinde ortak günlük/haftalık ders, çalışma, görev, Google etkinlikleri ve Classroom teslimleri görünümü var. Saat çakışmaları gösterilir. |
+| Görev Planı | Sabit kimlik, teslim tarihi/saati, başlık/açıklama, durum, öncelik, tahmini/harcanan/kalan süre ve alt görevler. Atomik kayıt, yedek ve eski veri üzerinden yazmayı önleme korunur. |
+| Hatırlatma ve odak | Süresi ayarlanabilen, göreve/ödeve bağlanabilen odak sayacı; teslim/oturum/odak bitiş bildirimleri. Desteklenen sistem tepsisinde pencere kapansa da işlem sürer. |
+| Ayarlar ve yedek | Veri konumu, çalışma/bildirim/arka plan tercihleri, Google istemci seçimi ve bağlantı kaldırma; doğrulanan toplu ZIP dışa aktarma/geri yükleme. |
+| Google entegrasyonları | Ana takvim hesabı görünür; etkinlik okuma/oluşturma/düzenleme/silme var. Classroom öğrenci dersleri, kendi ödevleri ve teslim durumu okunur; seçilen ders yerel Dersler modülüne aktarılır. |
 | Borç Defteri | Burs bölümü hariç seçilen finans ekranları, Java üzerinden kalıcı kayıt ve içe/dışa aktarma. Arayüz paketlenmiş HTML/CSS/JS olarak WebView içinde; tamamı Java arayüzüne çevrilmedi. |
-| Diğer modüller | Belge Merkezi, Referans, UART, scriptler, web/not ekranları ve Google Calendar okuma entegrasyonu mevcut. Bunların eski teknik ayrıntıları sonraki bölümlerde. |
+| Diğer modüller | Belge Merkezi, Referans, UART, scriptler ve web/not ekranları mevcut. Google Calendar okuma/yazma entegrasyonu 0.13 bölümünde. |
 
-Bugün ekranı bir özet ekranıdır; otomatik çalışma planı oluşturmaz. Ekrandaki ödeme hatırlatmaları işletim sistemi bildirimi değildir. Aboneliklerde ödeme durumu ayrıca takip edilmiyor. Google Calendar, yerel görevler ve dersler henüz tek bir ortak ajandada birleşmiş değil.
+Bugün ekranı günlük akış ve elle planlama ekranıdır; otomatik çalışma planı oluşturmaz. Ekrandaki finans ödeme özeti mevcut davranışını korur; yeni işletim sistemi bildirimleri çalışma/teslim/odak kapsamındadır. Aboneliklerde ödeme durumu ayrıca takip edilmiyor. Google etkinlikleri son başarılı yerel kopyadan ortak ajandaya alınır; dış değişiklikler bağlı takvimde yenilemeyle güncellenir.
 
 ### 0.3 Temel dosyalar ve veri modeli
 
 Java kaynakları `app/src/main/java/org/example/` altında:
 
 - `UiTheme.java`: tema ve fontlar; kaynaklar `app/src/main/resources/ui/` altında.
-- `TodayModuleView.java`, `TodayService.java`: kayıtları değiştirmeyen günlük özet.
+- `TodayModuleView.java`, `DailyTimelineView.java`, `DailyAgendaService.java`: günlük akış ve kullanıcı işlemleri. `TodayService.java`: kayıtları değiştirmeyen teslim/ödeme özeti.
+- `StudySession.java`, `StudyStorageService.java`: tarihli çalışma oturumları. `FocusTimerService.java`: kalıcı odak sayacı.
 - `CourseData.java`, `CourseModuleView.java`, `CourseStorageService.java`: dersler, haftalık ders oturumları, ödev ve sınav kayıtları.
 - `CourseCsvImporter.java`, `CourseCatalogService.java`, `CourseImportDialog.java`: doğrulanan CSV okuma, katalog/şube seçimi ve arka planda önizleme.
 - `FinanceModuleView.java`, `FinanceStorageService.java`: yerel WebView ve doğrulanan finans kaydı; arayüz `app/src/main/resources/finance/` altında.
@@ -75,23 +80,31 @@ Java kaynakları `app/src/main/java/org/example/` altında:
 | --- | --- |
 | Dersler ve ödevler | `data/courses/academic.json`; sürümlü şema, atomik kayıt, yedek, dosya kilidi ve eski veri üzerinden yazmayı önleme. |
 | Finans | `data/finance/ledger.json`; doğrulama, atomik kayıt, yedek ve eski veri üzerinden yazmayı önleme. |
-| Görevler | `data/tasks.json`; atomik kayıt ve yedek. Mevcut `TaskItem` sabit kimlik, saat ve süre içermiyor. |
+| Görevler | `data/tasks.json`; sabit kimlik, teslim saati/öncelik/süre/alt görevler, atomik kayıt, yedek, dosya kilidi ve eski veri üzerinden yazmayı önleme. |
+| Çalışma oturumları | `data/study/sessions.json`; şema 1, atomik kayıt, yedek ve eski veri üzerinden yazmayı önleme. |
+| Odak sayacı | `data/focus.properties`; kalan süre ve gerçek bitiş zamanı. |
 | Tema | `data/ui.properties`; açık/koyu tercih kalıcı. |
+| Tercihler | `data/preferences.json`; odak süresi, bildirim ve arka plan davranışı. |
+| Odak çalışma geçmişi | `data/time/focus-log.json`; tamamlanan odak dönemleri hedef kimliğiyle, tekrar kaydı önlenerek tutulur. |
+| Google yerel kopyaları | `data/calendar/` ve `data/classroom/catalog.json`; hesap bilgisi ve son başarılı okuma. |
+| Hatırlatma geçmişi | `data/reminders/delivered.json`; aynı bildirimin yeniden başlatmada tekrarlanmasını önler. |
 
-`CourseData.Work` şu anda `id`, `courseId`, `title`, `kind`, `date`, `done` alanlarını taşır. Ödev/sınav tarihi gün düzeyindedir; saat ve çalışma süresi henüz yok. Ders oturumlarında başlangıç/bitiş saati bulunur.
+`CourseData.Work`, önceki alanlarına ek olarak `dueTime`, `estimatedMinutes`, `loggedMinutes`, `priority` taşır. Teslim tarihi olmayan Classroom işleri tarih uydurulmadan saklanır. `StudySession`, isteğe bağlı `taskId`/`workId` bağlantısı ve `actualMinutes` içerir. Eski kayıtlar varsayılanlarla okunur; sırf okuma nedeniyle yeniden yazılmaz.
 
 Yeni planlama alanları eklenirken eski kayıtlar korunmalı ve gerektiğinde şema geçişi yapılmalı. Finans/ders/tema verileri Git dışında tutuluyor; tüm veri dosyalarının aynı politikaya sahip olduğu varsayılmamalı (`data/tasks.json` için mevcut Git istisnası var). Günlük kullanıma geçmeden kişisel veri konumu ve Git kapsamı gözden geçirilmeli.
 
 ### 0.4 İlk kullanılabilir sürüm için önerilen sıra
 
-Bu sıra son konuşmada önerildi; uygulamaya geçilmeden kullanıcı geliştirmeyi durdurdu.
+Kullanıcı ilk Windows paketinden önce bu ürün özelliklerinin tamamlanmasını istedi. 12 Ekim'deki uygulama durumu:
 
-1. **Elle çalışma planı:** Bir göreve/derse bağlı başlangıç-bitiş saatli çalışma oturumu ekleme, düzenleme, erteleme ve tamamlama. Son teslim tarihi ile çalışma zamanı ayrı kavramlar olmalı.
-2. **Ortak günlük/haftalık ajanda:** Dersleri, ödev/sınav son tarihlerini, kişisel görevleri ve çalışma oturumlarını birlikte gösterme; saat çakışmalarını belirtme.
-3. **Görev ayrıntıları:** Sabit kimlik, teslim saati, tahmini/kalan çalışma süresi, öncelik ve alt görevler. LLM gelmeden de kullanıcı bu alanları elle yönetebilmeli.
-4. **Hatırlatmalar:** Teslim ve çalışma oturumu bildirimleri; uygulama açıkken/kapalıyken beklenen davranışı netleştirme.
-5. **Ayarlar ve toplu yedekleme:** Veri konumu, çalışma tercihleri, tüm kayıtları dışa aktarma/geri yükleme. Mevcut `.bak` dosyaları tam yedekleme arayüzü yerine geçmiyor.
-6. **Paketleme ve kullanım doğrulaması:** Terminal gerektirmeyen başlatıcı, proje klasöründen bağımsız sabit veri konumu, güncellemelerde veri koruma ve gerçek günlük akışları deneme.
+1. **Elle çalışma planını genişletme — kod tamamlandı:** Görev/ödev bağlantısı, gerçek çalışma süresi ve kalan süre hesabı eklendi. Teslim tarihi ile çalışma zamanı ayrı tutulur.
+2. **Ortak günlük/haftalık ajanda — kod tamamlandı:** Dersler, çalışma oturumları, görev/ödev teslimleri, Google etkinlikleri ve Classroom teslimleri birlikte gösterilir; çakışmalar belirtilir.
+3. **Görev ayrıntıları — kod tamamlandı:** Teslim saati, tahmini/harcanan/kalan süre, öncelik ve alt görevler eklendi.
+4. **Hatırlatmalar — kod tamamlandı:** Kullanıcı pencere kapanınca arka planda sürmesini seçti. Sistem tepsisi destekleniyorsa süreç açık kalır; tamamen çıkış veya bilgisayarın kapanması bildirimi durdurur. Windows üzerinde canlı doğrulama bekler.
+5. **Ayarlar ve toplu yedekleme — kod tamamlandı:** Veri konumu, çalışma/bildirim tercihleri ve doğrulanan ZIP yedekleme/geri yükleme eklendi.
+6. **Paketleme — EXE üretimi mevcut:** Java dahil, terminal gerektirmeyen Windows x64 kurulum ve sabit kullanıcı profili hazırlandı. Gerçek Windows kurulum/açılış/güncelleme/kaldırma test akışı depoda; bu makine Linux. Push işlemleri kullanıcıya bırakıldı.
+
+Kullanıcının ek kararıyla Classroom ilk sürüme dahil edildi. Dağıtımda mevcut Google Desktop OAuth istemcisi kullanılır; her kullanıcı kendi hesabıyla izin verir. Kişisel token ve veriler paketlenmez.
 
 Referans modülü geliştirmeleri, gelişmiş PDF/Markdown önizleme, UART ek özellikleri, burs takibi, animasyonlar ve LLM ilk sürümün ön koşulu değil. Tema/koyu mod artık tamamlanan işler arasında; içerikte arayan global arama ve ayarlar ekranı bununla karıştırılmamalı.
 
@@ -104,7 +117,9 @@ Referans modülü geliştirmeleri, gelişmiş PDF/Markdown önizleme, UART ek ö
 - Yukarıdaki dosyalar depo dışındaki referanslardır; başka ortamda mevcut oldukları varsayılmamalı.
 - **5 Ekim'de kabul edilen yeni genel arayüz referansı:** Apple esintili gümüş demo; bağlantı, görseller ve sonraki uygulama talebi 0.11'de. Borç Defteri'ne özel tasarımın ertelenmesi ayrı bir karardır.
 
-### 0.6 Sonraki LLM aşaması için tasarım notları — henüz uygulanmadı
+### 0.6 Eski LLM tasarım notları — 7 Kasım 2026 kararıyla geçersiz
+
+Bu alt bölüm tarihsel bağlamdır. Güncel dış ajan kararı 0.1 ve 0.20 içindedir; aşağıdaki Qwen entegrasyonu uygulanmayacak.
 
 - İlk deneme adayı Qwen. Qwen3.5 4B/9B yerel seçenekleri ve çeşitli bulut sağlayıcıları konuşuldu; kesin model/sürüm ve sağlayıcı seçilmedi. Kurulum ve API anahtarı ayarı yapılmadı.
 - Kullanıcı başarıyı maliyetten daha önemli görüyor; önceki fiyat ve model önerileri kalıcı teknik karar değil. Entegrasyon tarihinde güncel belgeler yeniden kontrol edilmeli.
@@ -119,7 +134,7 @@ Referans modülü geliştirmeleri, gelişmiş PDF/Markdown önizleme, UART ek ö
 - 1 Ekim ilk aktarım ve gerçek CSV uyumluluğu düzeltmesi sonunda `./gradlew :app:test :app:installDist --no-daemon` başarılı. Son raporlar: **54 test, 0 başarısızlık, 0 hata, 0 atlanan**. JavaFX CSV önizleme/şube değiştirme akışı gerçek pencerelerde test edildi.
 - Görsel kontrol çıktıları `app/build/reports/` altında: `courses-week.png`, `today-preview.png` ve `design-*.png`. Bunlar build çıktısıdır; kalıcı kaynak değildir.
 - Çalıştırma: proje kökünde `./gradlew :app:run`.
-- Borç Defteri, tasarım, Bugün ve Dersler değişiklikleri çalışma ağacında; bu devir kaydında commit/push yapılmadı. Sonraki oturumda önce `git status` kontrol edilmeli, mevcut kullanıcı değişiklikleri korunmalı.
+- Önceki modüller ve tasarım referansları `a49137b` / `0b28e92` commit’lerine alınmış. 9 Ekim gümüş arayüz aktarımı çalışma ağacında; bu oturumda commit/push yapılmadı. Sonraki oturumda önce `git status` kontrol edilmeli.
 - Bu Markdown dosyası oturum başında zaten değiştirilmişti; önceki teknik içerik korunarak güncellendi. Aynı adlı PDF otomatik güncellenmedi ve bu yeni kararların kaynağı sayılmamalı.
 
 ### 0.8 Paylaşılan ders planlayıcının incelenmesi — 1 Ekim 2026
@@ -195,6 +210,172 @@ Kullanıcı önce örnek görsel, ardından sohbetten açılabilen küçük etki
 - **Sonraki oturum:** Kullanıcı ana uygulamaya aktarma işini başlattığında bu tasarım ve daha şık font tercihi esas alınacak. Mevcut dersler, ödevler, sınavlar ve kalıcılık korunmalı. Demo özellikleri ana uygulamada tamamlanmış sayılmamalı; özellikle çalışma oturumları ve odak sayacı için gerçek veri/yaşam döngüsü bağlantısı gerekir.
 - **Bu oturumun sınırı:** Ana uygulama kodu ve mevcut demo değiştirilmedi. Yalnızca bu karar ve tasarım referansları kaydedildi. Java/JavaFX ile devam etme, LLM'yi erteleme ve commit/push yapmama kararları sürüyor.
 
+
+---
+
+### 0.12 Gümüş tasarım ana uygulamaya aktarıldı — 9 Ekim 2026
+
+Kullanıcı gümüş arayüzü ana koda entegre etmeyi istedi. Çalışma başlangıcında Git ağacı temizdi; mevcut modüller ve 5 Ekim tasarım referansları commit edilmişti.
+
+- **Native JavaFX:** Açık gümüş/grafit kabuk, sade üst çubuk, Bugün/Ajanda/Dersler/Görevler/Borç Defteri gezinmesi. Diğer araçlar ve web modülleri açılabilir gruplarda; modül araması bunları da bulur. Ders planlayıcı ve diğer native ekranlar ortak gümüş renklerden beslenir. Borç Defteri’nin kendi HTML tasarımı korunur.
+- **Font:** Poppins Regular/Medium/SemiBold/Bold uygulama kaynaklarına paketlendi. Çalışma sırasında font indirme veya sistem kurulumu gerekmez. Monospace alanlar IBM Plex Mono kullanmaya devam eder. [Poppins lisans kaynağı](https://github.com/google/fonts/blob/main/ofl/poppins/OFL.txt); dağıtılan lisans `app/src/main/resources/ui/fonts/Poppins-OFL.txt` içinde.
+- **Bugün:** Gerçek dersler ve çalışma oturumları saatlere orantılı çizelgede; sıradaki/halen süren etkinlik, gerçek saat çizgisi, kısa görev listesi ve açılır teslim/ödeme ayrıntıları. Örnek kayıtlar kullanıcı verisine eklenmez. Dar pencerede sağ sütun akışın altına geçer.
+- **Etkileşim:** Görev ve ödev/sınav doğrudan işaretlenebilir; artı menüsünden görev veya çalışma oturumu eklenir. Etkinlik ve görev ayrıntıları açılır; dersler kendi modülünde düzenlenir. Kayıt başarısız olursa arayüz son başarılı duruma döner.
+- **Çalışma oturumları:** Başlık, tarih, başlangıç/bitiş, isteğe bağlı ders bağlantısı ve tamamlanma durumu. Düzenleme, silme ve 15 dakikaya yuvarlanan sürükleyerek taşıma var. Tamamlanmamış oturumlar ders veya başka bir açık çalışma oturumuyla çakışıyorsa işlem reddedilir; mevcut ders çakışmaları çizelgede gösterilir. Gece yarısını geçen oturum desteklenmez.
+- **Ajanda:** Tarih seçimi ve önceki/sonraki gün gezinmesiyle günlük ders/çalışma görünümü. Google Calendar eski Takvim aracında durur; bu günlük çizelgeye veya ortak haftalık görünüme birleştirilmedi.
+- **Odak:** 25 dakikalık başlat/duraklat/sıfırla sayacı. Gerçek bitiş zamanı dosyada tutulduğundan modül değiştirmek, sistemin uyuması veya uygulamanın kapanıp açılması süreyi dondurmaz. Duraklatılan sayaç duraklatılmış açılır. İşletim sistemi bildirimi veya otomatik görev tamamlama yok.
+- **Görünüm tercihleri:** Koyu tema ve hareketi azaltma aynı `data/ui.properties` dosyasında korunur. Modül geçişlerinde kısa fade; hareketi azaltma seçilince geçiş kaldırılır. Ders/CSV pencereleri de ortak temayı kullanır.
+- **Veri koruma:** `TaskItem.id` eklendi. Kimliksiz eski görevler ilk okumada dosya değiştirilmeden deterministik kimlik alır; ilk başarılı kayıtta eski içerik `.bak` olarak korunur. Takvimde düzenleme/tamamlama kimliği değiştirmez. Görev yazımlarına dosya kilidi ve başka yerde değişen veriyi ezmeme kontrolü eklendi. Çalışma oturumları `data/study/sessions.json` şema 1’de, sayaç `data/focus.properties` içinde; ikisi Git dışında. Ders ve finans şemaları değişmedi.
+- **Yeni kaynaklar:** `DailyAgendaService`, `DailyTimelineView`, `StudySession`, `StudyStorageService`, `FocusTimerService`; `TodayModuleView` yenilendi. Başlangıç, yönlendirme, sidebar, tema, görev depolama ve kaynak CSS/config güncellendi. `App` testlerinde geçici veri kökü kullanılarak gerçek kişisel kayıtlar ayrıldı.
+- **Doğrulama:** İlk `./gradlew :app:test :app:installDist --offline --no-daemon` başarılı: **69 test, 0 başarısızlık, 0 hata, 0 atlanan**. Eski görev kimliklerinin/ham yedeğinin korunması, yinelenen başlıklardan doğru görevin seçilmesi, ödev ilişkisinin korunması, çalışma çakışmaları ve bitişik saatler, başarısız yedek/eski veri koruması, sayaç yeniden açma/duraklatma ve gerçek JavaFX hızlı ekleme/işaretleme/tarih gezinmesi test edildi.
+- **Doğrulama sınırı:** Bu başarılı koşudan sonra yan menü grupları katlanabilir hale getirildi, güncel saat çizelge aralığına alındı, ders/CSV pencere teması ortak yardımcıya geçirildi ve ekran görüntüsü bekleme koşulu düzeltildi. İkinci Gradle çalıştırması kullanıcı tarafından reddedildi; bu son düzenlemeler yeniden derlenip test edilmedi. Sürükleme hesapları/çakışma modeli test edildi, fiziksel sürükleme hareketi otomatik GUI testinde yapılmadı. `app/build/reports/silver-home-light.png`, `silver-home-dark.png`, `silver-home-compact.png` ilk koşuya ait ara görüntülerdir; en son katlanabilir menüyü göstermez. Dağıtım çıktısı da ilk başarılı koşuya aittir.
+- **Sonraki kontrol:** İzin verildiğinde son kaynakla test/dağıtım komutu yeniden çalıştırılmalı, katlanabilir gruplar ve ders/CSV pencereleri açık-koyu modda kontrol edilmeli. Ortak haftalık ajanda, doğrudan görev/ödev çalışma bağlantısı, süre takibi, hatırlatmalar, toplu yedekleme ve paketleme kalan kapsamdır. Qwen/LLM entegrasyonu yapılmadı. Commit/push yapılmadı.
+
+---
+
+### 0.13 Google Calendar iki yönlü etkinlik işlemleri — 11 Ekim 2026
+
+- **Ekran:** Takvim aracında bağlı ana takvim hesabı görünür. `Etkinlik ekle`, seçili etkinliği `Düzenle` ve onayla `Sil` işlemleri Google'a doğrudan gönderilir. Başlık, açıklama, konum, başlangıç/bitiş tarihleri, saatler ve tüm gün seçeneği vardır. Çok günlük ve gece yarısını geçen Google etkinlikleri kapsadıkları günlerde gösterilir.
+- **Senkronizasyon:** Google'daki değişiklikler `Yenile` veya ay gezinmesiyle alınır. Yazım başarılı olunca Google yanıtı gösterilir ve ay yeniden okunur. Okuma hatasında son doğrulanmış etkinlikler korunur. Yerel görevler otomatik olarak Google'a aktarılmaz; çevrimdışı yazım kuyruğu veya anlık Google push senkronizasyonu yoktur.
+- **Veri koruma:** Düzenleme yalnızca form alanlarını PATCH ile değiştirir; davetliler, hatırlatmalar, tekrar kuralı ve Meet verileri korunur. Düzenleme/silmede `If-Match`/ETag kontrolü başka yerde değişmiş kaydı ezmeyi engeller. Tekrarlı etkinlikte seçili tekrar değişir. Özel/kilitli Google etkinlikleri yalnızca görüntülenir. Kayıt hatasında form ve girilen bilgiler korunur; silme hatasında etkinlik listeden kaldırılmaz. Oluşturma tekrarlarında sabit etkinlik kimliği kullanılır.
+- **İzin geçişi:** `calendar.events.owned` ve `calendar.calendars.readonly` istenir. Eski okuma tokenları silinmez; yeni düzenleme tokenları `config/google-calendar-tokens/events-write-v1/` altına yazılır. İlk bağlantıda mevcut Google hesabıyla iki izin de onaylanmalıdır. OAuth yerel, boş bir portta callback ve PKCE kullanır; eksik izin kaydedilmez, `invalid_grant` sonrasında yeni yetkilendirme başlar.
+- **Kaynaklar:** `CalendarEventDraft`, `GoogleCalendarEventDialog`; mevcut Calendar servis, OAuth, etkinlik modeli ve modül görünümü genişletildi. Google tokenları/credentials Git dışında tutulur.
+- **Doğrulama:** `./gradlew :app:test :app:installDist --offline --no-daemon` ile 91 test geçti. Mock Google HTTP istekleriyle oluşturma/PATCH/silme, ETag uyuşmazlığı, tarih/saat dönüşümleri, yeniden denemede kimlik koruma ve OAuth izin geçişi doğrulandı. Gerçek JavaFX formunda hata sonrası tekrar kayıt, düzenleme, silme hatasında kaydı koruma ve yenileme sınandı. Bu bölüm, 0.12'deki son kaynakların tekrar test edilmemiş olması notunu günceller.
+- **Canlı hesap sınırı:** Önceki okuma bağlantısı mevcut hesapla doğrulandı. Yeni yazma izni kullanıcının Google onayını gerektirir; yeni izinle gerçek hesaba etkinlik yazımı henüz doğrulanmadı. Classroom entegrasyonu yapılmadı.
+
+---
+
+### 0.14 İlk sürüm özellikleri ve Windows kurulumu — 12 Ekim 2026
+
+Kullanıcı notlardaki ilk sürüm özelliklerini Windows paketinden önce tamamlamayı, hatırlatmaların pencere kapanınca arka planda sürmesini ve Classroom ders/ödev okumasının ilk sürüme alınmasını seçti. Dağıtım için mevcut Google Desktop OAuth istemcisinin kullanılması onaylandı. Son karar: **push işlemleri kullanıcıda; bu oturumda commit/push yapılmadı.**
+
+- **Planlama ve görevler:** Görev teslim saati, öncelik, tahmini/elle kaydedilen çalışma süresi ve alt görevler; ödev/sınavda teslim saati/öncelik/süre. Çalışma oturumları göreve veya ödeve bağlanabilir; gerçek süre kaydedilir. Odak sayacı süre ve hedef seçimine izin verir; tamamlanan süre bir kez kaydedilir. Aynı tamamlanan çalışma oturumunun içindeki odak kaydı süre hesabında iki kez sayılmaz.
+- **Ortak ajanda:** Günlük ve haftalık görünüm dersleri, çalışma oturumlarını, görev/ödev teslimlerini, Google etkinliklerini ve Classroom teslimlerini birleştirir. Google'nın son başarılı ay okumaları hesapla ilişkilendirilmiş yerel kopyada tutulur; yenileme dış değişiklikleri alır. Çevrimdışı Google yazımı veya Google push bildirimi yoktur. İki aya yayılan haftada bir ayın okuma hatası diğer ayın başarısıyla gizlenmez.
+- **Classroom:** Ayrı ve salt okuma OAuth izni; aktif öğrenci dersleri, kendi ödevleri ve teslim durumu, tüm sayfalar, UTC teslim saatini yerel saate çevirme, tarihsiz ödevi tarih uydurmadan koruma. Seçilen ders ve ödevler yerel Dersler modülüne tekrar oluşturmadan aktarılır; sonraki senkronizasyon elle değiştirilen başlık/tarih/süre/önceliği korur. Aktarım gerçek ders saatlerini kendiliğinden üretmez, Classroom'a teslim veya not yazmaz. Google'nın eşdeğer `classroom.student-submissions.me.readonly` izin yanıtı desteklenir.
+- **Hatırlatmalar:** Teslim, çalışma/Google etkinliği başlangıcı ve odak bitişi; önceden bildirim süresi ve saatsiz teslimlerin saati ayarlanır. Kalıcı bildirim geçmişi yeniden açmada tekrarı önler. Sistem tepsisi destekleniyorsa pencerenin çarpısı yalnızca gizler; tepsi menüsündeki tam çıkış uygulamayı kapatır. Tepsi desteklenmiyorsa açık pencere bildirimi kullanılır; bu durumda pencere kapandıktan sonra sürmez. Windows oturum açılışında otomatik başlama veya tamamen kapalı uygulamayı uyandırma eklenmedi.
+- **Ayarlar ve veri:** Odak/bildirim/arka plan tercihleri, profil konumu değiştirme, Google istemci dosyası seçme ve iki Google bağlantısını yerelden kaldırma. Profil taşıma ve geri yükleme yeniden başlatma gerektirir. Windows kurulumunda veri `%LOCALAPPDATA%\\BerkayAcademicOS` altında; program klasörünün dışında kalır. Paket yapılandırması geliştiricinin Linux belge yollarını kullanıcı profiline uyarlar. Linux'a bağlı Script/UART modülleri Windows varsayılan menüsünde kapalıdır; geliştirici sürümünde korunur.
+- **Toplu yedek:** Veri/notlar ve uygulama yapılandırması SHA-256 doğrulamalı ZIP'e alınır. Google OAuth giriş tokenları ve istemci dosyaları yedek ZIP'ine dahil edilmez; taşınan profilde korunur. Arşiv yolları/boyutları/şemaları/kilitleri doğrulanır; başarılı geri yüklemeden önce mevcut kayıtların ayrıca yedeği alınır. Yazım hatasında geri alma ve korunan önceki yedek vardır.
+- **Kurulum:** `packaging/build_windows.py` Windows x64 JavaFX kütüphaneleri ve sağlama toplamı doğrulanan Windows Java 21 JRE ile NSIS EXE üretir. Başlatıcı konsol açmaz; Java'yı ayrıca kurmak gerekmez. Türkçe sihirbaz, kullanıcıya özel kurulum, masaüstü/Başlat kısayolları, kaldırıcı ve sürüm bilgisi vardır. Güncellemede eski sürüm JAR/runtime dosyaları temizlenir; kullanıcı profili programdan ayrı korunur. Mevcut Desktop OAuth istemcisi pakettedir; her kullanıcı kendi hesabına giriş yapar. Kişisel erişim/yenileme tokenları, dersler, finans, görevler ve notlar pakete alınmaz.
+- **Çıktı:** `app/build/windows/dist/BerkayAcademicOS-1.3.0-setup.exe` (yaklaşık 77 MB), yanında `.sha256`. Kullanım/yeniden üretim ve Windows doğrulama komutları `packaging/README.md` içinde.
+- **Doğrulama:** Ürün koduyla `./gradlew :app:test :app:installDist --offline --no-daemon`: **124 test, 0 başarısızlık, 0 hata, 0 atlanan**. Eski veri uyumluluğu, süre/odak tekrar kaydı, ZIP doğrulama/geri alma, hatırlatma saati/gece yarısı/tekrar önleme, Classroom sayfalama/aktarım/elle değişiklikleri koruma ve gerçek JavaFX görev/haftalık ajanda/ayarlar akışları kapsandı. Son test başlatıcısı ayrıca derlenip boş profille normal boyutta gerçek JavaFX penceresi çizilerek doğrulandı. Görüntü `app/build/reports/academic-os-release-1.3.0.png`. Uygulama mevcut kişisel veriyle de açıldı.
+- **Canlı Google:** `oltuluoglumehmeteren@gmail.com` hesabında geçici etkinlik oluşturma, düzenleme, Google'dan yeniden okuma ve silme başarılı; test etkinliği kaldırıldı. Classroom izin adlandırması düzeltildikten ve kullanıcı `berkay-academic-os` projesinde API'yi etkinleştirdikten sonra aynı hesaptan **18 ders, 36 ödev** başarıyla okundu. Gerçek dersler otomatik olarak yerel programa topluca aktarılmadı; seçim kullanıcıda.
+- **Windows doğrulama sınırı:** Bu bilgisayarda Linux kullanılıyor. EXE üretildi, ancak gerçek Windows üzerinde kurulum/çalıştırma/güncelleme/kaldırma ve sistem tepsisi bildirimleri henüz denenmedi. `.github/workflows/windows-package.yml` ve `packaging/verify_windows.ps1` bu akışı otomatik yapmaya hazır. Push kullanıcıya bırakıldığı için Windows CI çalıştırılmadı. Dijital kod imzalama ve otomatik güncelleme henüz eklenmedi.
+- **Sonraki kapsam:** Windows kabul testi; dağıtılacak hesaplar için Google OAuth uygulama kitlesi/yayın durumunu doğrulama. Qwen/LLM, ses, müfredat/ÇAP ve alternatif program çözücüsü, ileri PDF/Markdown önizleme, içerik araması, referans filtreleri, ileri UART/Script Windows uyarlaması ve burs takip ekranı önceki erteleme kararlarına göre sonraki sürümlerde.
+
+---
+
+### 0.15 Kullanıcının belirlediği sonraki özellik sırası — 12 Ekim 2026
+
+Kullanıcı kalan dokuz özellik grubunu önce **3, 6, 7, 8, 9, 5, 4, 2, 1** olarak sıraladı. Ardından ilk ve üçüncü öncelikleri değiştirerek **"Finans ilk, gelişmiş ders planlayıcı üçüncü olsun"** diye netleştirdi. İlk listenin numaralarıyla güncel sıra **7, 6, 3, 8, 9, 5, 4, 2, 1**. Önceki numaralar konuşmadaki ilk listeyi belirtir; bundan sonraki yeni özellik geliştirme sırası aşağıdaki tablodur. 13 Ekim 2026’da kullanıcının ilk üç grubu sırasıyla uygulama isteği tamamlandı; diğer altı grup sonraki kapsamdadır.
+
+| Öncelik | Önceki liste no. | Özellik | Planlanan kapsam |
+| --- | --- | --- | --- |
+| 1 | 7 | Finans | Burs takip ekranı ve ertelenen Borç Defteri tasarım yenilemesi. Tasarım uygulama aşamasında mevcut kullanıcı referansı/tercihi esas alınacak. |
+| 2 | 6 | Google senkronizasyonu | Drive ile gerçek dosya senkronizasyonu; Calendar'da anlık değişiklik alma ve çevrimdışı yazımları bağlantı gelince gönderme. |
+| 3 | 3 | Gelişmiş ders planlayıcı | Müfredat PDF'sini içe aktarma, ÇAP/iki bölüm, ders geçmişi ve eşdeğerlikler, tercihlere göre alternatif ders programları. |
+| 4 | 8 | UART ve scriptler | UART loglarını dosyaya kaydetme, gelişmiş hex araçları ve Windows uyarlaması. |
+| 5 | 9 | Bakım araçları | Uygulama içi hata raporu paneli. |
+| 6 | 5 | Belge araçları ve içerik araması | Uygulama içinde PDF görüntüleme, Markdown önizleme, dosya içe aktarma geçmişi ve tüm içeriklerde arama. |
+| 7 | 4 | Referans kütüphanesi | Konu/içerik araması, etiket filtreleri, kategori yönetimi, Markdown önizleme ve kaynak bağlantıları. |
+| 8 | 2 | Sesli kullanım | Konuşarak komut verme ve sesli cevap alma. |
+| 9 | 1 | Yapay zekâ/Jarvis asistanı | Doğal dille görev işlemleri, son tarihlere göre çalışma planı önerme ve değişikliklerde yeniden planlama. İlk deneme adayı Qwen; kesin model/sağlayıcı seçilmedi. |
+
+**İlk üç öncelik 1.4.0’da tamamlandı:** Finans/burs, Google senkronizasyonu ve gelişmiş ders planlayıcı. Sıradaki özellik UART/scriptlerdir. Ders planlayıcı kaynağı ve önceki aktarım notları 0.8–0.10 bölümlerinde; uygulanan kapsam ve sınırlar 0.16 bölümündedir.
+
+Dağıtımın bekleyen Windows kabul testi ve Google OAuth uygulama kitlesi doğrulaması 0.14'teki durumunu korur. Kod imzalama ve otomatik güncelleme dağıtım kapsamındaki açık işlerdir. Push işlemleri kullanıcıya bırakılmaya devam eder.
+
+---
+
+### 0.16 İlk üç önceliğin uygulanması — 13 Ekim 2026
+
+Kullanıcı **finans → Google senkronizasyonu → gelişmiş ders planlayıcı** sırasıyla üç aşamanın gerçekleştirilmesini istedi. Push işlemleri kullanıcıda kalır.
+
+- **1. Finans tamamlandı:** Finans ekranı gümüş/Poppins tasarıma ve açık/koyu temaya uyarlandı. Burs, staj ve diğer başvurular için ayrı native sekme eklendi; kurum, kapsam, son başvuru/başvurulan/sonuç tarihleri, durum, sonuç, not, bağlantı ve hazır belge kontrol listesi var. Kayıtlar `data/finance/applications.json` şema 1'de atomik kayıt, yedek, dosya kilidi ve eski veri üzerinden yazmayı önleme ile korunur. Başvuru/sonuç tarihleri ortak ajandaya ve mevcut hatırlatma akışına katılır. Kaynak dokuz sütunlu CSV içe alınabilir; genişletilmiş CSV kimlikleri ve belge hazırlığını korur. Toplu profil yedeği yeni kayıtları doğrulayarak geri yükler. Başvuru kaydı kendiliğinden gelir kaydı oluşturmaz. **131 test başarılı, 0 başarısızlık, 0 hata, 0 atlanan.**
+- **2. Google senkronizasyonu tamamlandı:** Kullanıcının seçimiyle uygulamaya özel **Academic OS Drive klasörü** ve **sunucusuz 30 saniyelik Calendar kontrolü** eklendi. Drive yerel/uzak dosyaları son ortak MD5 ile karşılaştırır; iki taraf değişmişse yerel dosya ve uzaktan indirilen çakışma kopyası korunur. Değişiklikler sürüm/ETag koşuluyla yazılır, silmeler Drive çöp kutusuna veya yerel kurtarma kopyasına gider. Belirsiz oluşturma aynı üretilmiş kimlikle tekrar denenir. Yerel klasör seçimi uygulama profilini/kimlik bilgilerini reddeder. Varsayılan yerel klasör `data/documents`; Drive otomasyonu ekrandan açılabilir. `drive.file` kapsamı uygulamanın oluşturduğu/tek tek izin verilmiş dosyalarla sınırlıdır; tarayıcıdan klasöre eklenen her yeni dosya otomatik görülemez. Google Dokümanları otomatik ikili dosya aktarımına dahil değil. Dosya sınırı 200 MB, toplam 10.000 kayıt, derinlik 50. Drive v3 liste/oluşturma; koşullu yazım için v2 ETag/If-Match kullanılır. Calendar artımlı `syncToken`, 410 durumunda yeniden tam okuma, kalıcı çevrimdışı işlem kuyruğu ve yalnızca aynı hesabın kuyruğunu gönderme destekler. Kuyruk ortak ajandada da görünür. Çakışmış işlemler Google senkronizasyonu ekranında kullanıcı kararı bekler. Canlı doğrulama: **oltuluoglumehmeteren@gmail.com**, Calendar tam/artımlı okuma; Drive yükleme, sürüm korumalı güncelleme, bağımsız indirme ve çöp kutusuna taşıma başarılı. Geçici test dosyaları temizlendi, Academic OS klasörü korundu.
+- **3. Gelişmiş ders planlayıcı tamamlandı:** `Dersler → Müfredat / ÇAP ve alternatifler` native JavaFX sekmesi eklendi. Apache PDFBox 3.0.8 ile metin içeren PDF/TXT müfredat aktarımı çevrimdışı çalışır; yarıyıl ders sırası, kredi/AKTS toplamları, seçmeli havuzları ve varsa genel ders sayısı doğrulanır. 50 MB / 100 sayfa sınırı; OCR ve her biçimde PDF okuma desteği değil. İçe aktarmadan önce tüm tablo/havuzlar incelenir. Anadal ve ikinci bölümün yarıyılı, ders geçmişi, başarı notu/notları ayrı kaydedilir; tamamlanan seçmelinin gerçek kodu ve tek kullanımı kontrol edilir. Aynı isim/kod otomatik eşdeğer sayılmaz; iki bölümden birer ders kullanıcı tarafından onaylanır. Eşdeğerlik uygulamadaki plan içindir, üniversitenin resmi kararının yerine geçmez. Tercihler: kesin/esnek gün/saat aralığı, haftalık sabit bloklar, hoca sırası/kesin hoca koşulu, bölüm/ders önceliği, ders/kredi/AKTS/günlük süre ve gün/ara/yük/erken bitiş amacı. CSV şube kataloğuyla en fazla üç alternatif aranır; 120.000 düğüm / 5 saniye sınırında daha iyi sonuç olabileceği belirtilir. Eksik gereksinimler ve reddedilen şubelerin nedenleri gösterilir. Alternatif önce incelenir; kullanıcı uygulayana kadar program değişmez. Bilgiler arama sonrasında değişmişse uygulama engellenir. Eski ders/ödev/sınav kimlikleri ve elle girilmiş sabit dersler korunur; seçilmeyen CSV dersleri program dışına alınır. `data/courses/curricula.json` şema 1 atomik/yedekli/eski veri korumalı kaydedilir; profil yedeği içerir ve doğrular.
+
+**1.4.0 son doğrulama:** Tüm **161 test başarılı, 0 başarısızlık, 0 hata, 0 atlanan**; gerçek PDF metin okuma, kalıcı kuyruk/hesap değişimi/çakışmalar, Drive içerik koruma, ÇAP tek kullanımı, çözücü sınırları, yedek geri yükleme ve gerçek JavaFX geçmiş/alternatif uygulama akışları dahil. Boş profille gerçek 1400×900 JavaFX kabuğu da çizildi (`app/build/reports/academic-os-release-1.4.0.png`). Güncel Windows setup `app/build/windows/dist/BerkayAcademicOS-1.4.0-setup.exe`; gerçek Windows kurulum/güncelleme/tepsi kontrolü henüz yapılmadı. Push kullanıcıda. Kullanım ve Google izin kapsamları `packaging/README.md` içinde.
+
+### 0.17 Birleşik takvim ve diğer Google takvimleri — 13 Ekim 2026
+
+Kullanıcının Google web takvimindeki ödev/tatilleri uygulamada görememesi üzerine ana takvimle sınırlı sorgu genişletildi.
+
+- Google `CalendarList` tüm sayfalarıyla okunur; ana/ders/paylaşılan/tatil takvimlerinin ad, renk, erişim ve seçili bilgileri alınır. `Takvim kaynakları` seçimleri hesaba özel saklanır; başka hesabın tercihi/verisi kullanılmaz. İlk seçim Google’daki işaretli takvimleri izler.
+- Her takvimin kendi artımlı işareti vardır. 410 yalnızca o takvimin işaretini sıfırlar; katalog/seçim değişikliği de aylık kopyaları yeniler. Başarısız okumada son tam kopya korunur; işaretler başarılı kopya yazılmadan ilerletilmez.
+- Etkinlik kimliği takvim kimliğiyle birlikte değerlendirilir; farklı takvimlerde aynı etkinlik kimliği birbirini ezmez. Kalıcı kuyruk yalnızca ana takvime yazmaya devam eder. Diğer Google kaynakları ve yerel kayıtlar Google düzenleme/silme işlemlerine kapalıdır.
+- Ajanda bir ayın dosyalarını tek seferde okuyan ortak snapshot ile ders, ödev/sınav, görev, çalışma, Classroom ve burs kayıtlarını üretir. Ay takvimi teslimleri yalnızca gerçek tarihine koyar; Ajanda’nın yaklaşan/gecikmiş teslim mantığı korunur. `Uygulama kayıtları` seçimi kaydedilir.
+- Gün hücrelerinde ilk üç başlık, kaynak renkleri ve kalan sayısı; seçili gün listesinde tam başlık/saat/kaynak görünür. Hücre klavyeyle de seçilebilir. Ay/gün panellerinin boyutu bölücüyle ayarlanabilir.
+- OAuth kapsamına tüm etkinlikleri ve takvim listesini okuma izinleri eklendi; sahip olunan etkinlikleri yazma kapsamı korunur. Kullanıcı mevcut hesapla ek izinleri onayladı. Yeni token namespace `all-calendars-v2`; eski token ve kuyruk korunur. Takvim kopyası şema 2 kaynak bilgilerini saklar, eski şema 1 okunur. Kaynak seçimi profil yedeğinde doğrulanır. Google Tasks ayrı API olduğundan bu düzeltme Google Tasks entegrasyonu eklemez.
+- **Canlı sonuç:** `oltuluoglumehmeteren@gmail.com` hesabında 26 takvim, Ekim ayında 7 Google kaydı: 1 Ekim VTYS ödevi, 11 Ekim iki ödev, 13 Ekim iki ana etkinlik, 28–29 Ekim tatiller. Google ekran görüntüsüyle eşleşti. Tam/artımlı çoklu takvim okuması doğrulandı. Test doğrulaması önce geçici profilde yapıldı.
+- **Doğrulama:** Tüm 170 test başarılı, 0 başarısızlık/hata/atlanan; kaynak seçimi, aynı kimlik ayrımı, hesap geçişi, 410, hata halinde kopya koruma, tüm yerel kaynakların doğru tarihi ve gerçek JavaFX kaynak seçimi dahil. Kullanıcı eski uygulamadan çıktı; 1.4.1 mevcut profille yeniden açıldı. Setup `app/build/windows/dist/BerkayAcademicOS-1.4.1-setup.exe`; gerçek Windows kabul testi hâlâ bekler. Push yapılmadı.
+
+---
+
+### 0.18 Linux günlük kullanım sürümü — 16 Ekim 2026
+
+Kullanıcı mevcut sürümü Linux masaüstü uygulaması olarak kullanmak istedi. Yeni ürün özelliği eklemek yerine Java dahil dağıtım ve mevcut verilerin korunması tamamlandı.
+
+- **Paket:** `app/build/linux/dist/BerkayAcademicOS-1.4.1-linux-x64.tar.gz` (108,1 MiB) ve SHA-256 dosyası. `packaging/build_linux.py` yerel JDK 21 ile `jlink` runtime üretir. Linux JavaFX/PDF/Google kütüphaneleri dahildir. Arşivde kişisel profil, Google istemci dosyası veya token bulunmadığı kontrol edildi.
+- **Kurulum:** `packaging/install_linux.py`, paket içindeki `install.sh` ile kullanıcıya özel kurar. Yönetici yetkisi gerekmez. Program `~/.local/opt/berkay-academic-os/releases/1.4.1` altında; `current` bağlantısı etkin sürümü gösterir. Menü girdisi `~/.local/share/applications/berkay-academic-os.desktop`, masaüstü kısayolu `~/Masaüstü/berkay-academic-os.desktop`. İkisi de oluşturuldu; uygulama menü girdisinden açıldı ve gerçek `WM_CLASS=org.example.App` doğrulandı.
+- **Profil:** Mevcut `data`, `notes`, `config` ve `scripts` kullanıcı profilinin `~/.local/share/berkay-academic-os` altına kopyalandı. Kaynak görev, ders, referans ve not dosyalarının değişmediği ve kopyalarıyla eşleştiği kontrol edildi. Tokenlar yalnızca bu bilgisayardaki yerel aktarımda tutuldu. Profil izni 0700, aktarılan dosyalar 0600. Önbellekler/kilitler ve eski profil konumu işaretçisi kopyalanmaz. Mevcut hedefin üzerine aktarım reddedilir; açık uygulama POSIX kayıt kilidiyle tespit edilir.
+- **Yedek ve kayıtlar:** Yeni profilde `backups/before-linux-install-20261016T191611Z.zip` oluşturuldu; 24 veri/not dosyası hash ile doğrulandı, Google tokenları dahil değil. ZIP biçimi gerçek Java `BackupService` okuyucusuyla ayrıca test edildi. Güncellemeler kullanıcı kayıtlarına dokunmaz; mevcut sürümün tekrar kurulumunda kullanıcı değişikliklerinin korunduğu test edildi. Hata kaydı `~/.local/state/berkay-academic-os/application.log`; açılış sonrası exception yok.
+- **Linux yapılandırması:** Paketli sürümde Windows için kapatılan UART/script modülleri Linux'ta açık tutulur. Bu ayrım yeni testle doğrulandı. Belge Merkezi varsayılanı kişisel Drive mount yolundan bağımsız `data/documents`. Paketli başlatıcı çalışma klasöründen ve sistemde seçili Java sürümünden bağımsızdır; Ayarlar'dan profil konumu değiştirilebilir.
+- **Doğrulama:** Tüm uygulama testleri yeniden çalıştırıldı: **171 başarılı, 0 başarısız/hata/atlanan**. Kurulumun 5 testi, gerçek runtime öz denetimi, yalıtılmış profil aktarımı/yeniden kurulumu ve `.desktop` doğrulaması geçti. `packaging/verify_linux.py` paketli runtime ile boş profilde gerçek pencereyi çizdi; görüntü `app/build/reports/linux-package-1.4.1.png`. Regolith/i3 pencereyi döşediği için yalnızca geçici doğrulama penceresi 1400×900 olarak yüzdürülür; genel pencere yöneticisi ayarları değiştirilmez.
+
+Kullanım ve yeniden üretme: `packaging/LINUX.md`. Oturum açılışında otomatik başlatma eklenmedi; pencere kapanınca çalışma mevcut tepsi desteğine bağlıdır. Gerçek Windows kabul testi beklemeye devam eder. Bu oturumda commit/push yapılmadı.
+
+---
+
+### 0.19 Kullanım denemesinden sonra kaldırma — 16 Ekim 2026
+
+Kullanıcı uygulamanın hâlâ eksik olduğunu, kurulu sürümü kaldırıp ileride yeni sürüm hazırlamak istediğini belirtti. Eksiklerin ayrıntılarını şimdi paylaşmak istemedi; kapsam daha sonra kullanıcıdan gelecek.
+
+Uygulamanın kapalı olduğu profil kilidiyle doğrulandı. Yalnızca `~/.local/opt/berkay-academic-os` program klasörü, uygulama menüsü girdisi ve `~/Masaüstü/berkay-academic-os.desktop` kaldırıldı. Menü indeksi yenilendi. `~/.local/share/berkay-academic-os` profilinin 36 dosyasının kaldırma öncesi ve sonrası SHA-256 değerleri eşleşti; görevler, dersler, notlar, yerel Google bağlantıları ve yedekler korundu. Kaynak proje, derlenmiş dağıtım arşivi ve hata kayıtları duruyor. Yeni özellik veya yeni sürüm üretilmedi; kullanıcı eksikleri paylaştığında devam edilecek.
+
+---
+
+### 0.20 Dinamik haftalık plan, işlevsel odak ve dış ajanlar — 7 Kasım 2026
+
+Kullanıcı `prompts/haftalik-planlayici-odak-ai.md` kapsamını verdi. Sonradan commit komutlarını
+kendisinin çalıştıracağını belirtti; aşama arası commit/push yapılmadı. Başlangıçtaki çok sayıdaki
+kaynak değişikliği ve kişisel `data/tasks.json` farkı korundu.
+
+- **Komut katmanı:** PlannerService / PlannerCommand, tek snapshot aralık okuması, kararlı bağlantılar,
+  çakışma politikaları, 50 adımlık kalıcı geri al/yinele. İşlemler geçici kopyada doğrulanır; dosya kilidi,
+  baseline karşılaştırması, atomik dosya yazımı ve başarısız çok dosyalı yazımı geri alma uygulanır.
+  Snapshot mevcut kayıt kilitlerine salt okuma erişimiyle uyar; profil dosyası oluşturmaz.
+- **Haftalık Plan:** agenda'nın varsayılanı haftalık saat ızgarası; boş alanda seçim/başlık, havuzdan bırakma,
+  günler arası taşıma, süre değiştirme, klavye, çakışma önizlemesi/en yakın aralık/Alt istisnası,
+  otomatik kayıtlı inceleme paneli. Dersler ve Google kayıtları sabittir; Google düzenleme kaynak Takvim ekranında kalır.
+- **Havuz:** bütün tarihlerdeki açık görev, ödev/sınav, Classroom ve başvuru işleri; son tarih grupları,
+  tahmin/kalan/planlı süre, öncelik, arama, ilerleme, hızlı Türkçe ekleme. Classroom ilk planlamada
+  yalnızca seçili ödevi ve ders kabuğunu aktarır. Tarihsiz görevler tarihsiz korunur.
+- **Odak:** session hedefi, blok/havuz/Bugün/kısayoldan başlatma, kalıcı gerçek süre ve tekrar kredisi koruması,
+  sessiz pencere/halkalı sayaç/mini pencere, notlar ve alt görevler, bitiş değerlendirmesi ve devam aralığı.
+  focus.properties v1 okunur/v2 yazılır; odak günlüğü v1/v2 okunur/v2 yazılır. Ders şema 2 ve oturum şema 1 korunur.
+- **Dış ajan:** JavaFX başlatmayan academic-os CLI, JSON çıktılar, ağsız yerel önbellek okuması,
+  snapshot/pool/free-slots/schema/validate/propose/status/suggest. Doğrudan yazım varsayılan kapalı;
+  kullanıcı ayarı ve --apply gerekir. Öneri kutusu, hayalet bloklar, kısmi kabul/ret, not, değiştirilen komutlar,
+  eski snapshot uyarısı, son tarih/günlük limit/kapalı aralık denetimi, 30 günlük arşiv ve profil yedeği vardır.
+  Otomatik yerleştir doğrudan kayıt yerine aynı öneri akışını üretir, sığmayan dakikayı bildirir.
+- **Kılavuz:** kök AGENTS.md / CLAUDE.md, docs/agent-cli.md, test edilen JSON örneği ve hazır istek metinleri.
+  Paketli profile kopyalanır, mevcut kullanıcı kılavuzu ezilmez. Temiz bağlamlı ayrı ajan yalnızca AGENTS.md ve
+  CLI çıktılarıyla iki blokluk öneri gönderdi; valid=true, stale=false, pending. Kısmi kabul ayrıca JavaFX testinde geçti.
+- **Doğrulama:** başlangıç 171; aşama 1 176; haftalık/havuz 179; odak 181; son kaynakta **195 test,
+  0 başarısız/hata/atlanan**. Linux kurulumun 5 testi başarılı. Gerçek profil/Google hesabı testlerde kullanılmadı.
+  Ekranlar `app/build/reports/planner-stage-1.png` … `planner-stage-5.png`, paket kabuğu `linux-package-1.5.0.png`.
+- **Dağıtım:** `app/build/linux/dist/BerkayAcademicOS-1.5.0-linux-x64.tar.gz` ve SHA-256.
+  Paketli Java 21 ile boş/geçici profilde CLI, profil aktarımı, Java yedek doğrulaması, yeniden kurulum ve JavaFX kontrolü geçti.
+  Linux CLI `~/.local/bin/academic-os`; Windows kaynağı academic-os.cmd içerir, PATH otomatik değiştirilmez.
+  Yeni Windows EXE/gerçek Windows kabulü bu oturumda yapılmadı. Kullanıcının kurulumuna dokunulmadı.
+
+**Varsayımlar ve sınırlar:** Pazartesi, 08:00–24:00 görünüm; yerel şema son bitişi 23:59 ile sınırlar,
+gece yarısını geçen blok yoktur. Varsayılan çakışma en yakın boş aralık; odak blok süresi; ajan yalnızca öneri.
+Pomodoro faz geçişleri düğmeyle ilerler; Türkçe ayrıştırıcı sınırlı ve deterministiktir. Fiziksel fareyle
+bütün işletim sistemi sürükleme varyasyonları ve Windows davranışları denenmedi. Çok dosyalı yazımda elektrik
+kesintisi için tam WAL kurtarma garantisi yoktur. Kapsam, dosyalar, testler ve diğer sınırlar
+`docs/planner-delivery.md` içindedir. İsteğe bağlı MCP sunucusu ayrı sonraki kapsamdır; uygulanmadı.
+Kullanıcıdan açık karar beklenmiyor; commit/push komutları teslim edilir.
 
 ---
 
@@ -976,6 +1157,7 @@ Görevleri:
 - Çift tık ile görev planına geçiş
 - Görev CRUD akışları
 - Google Calendar bağlantı ve event yükleme UI akışı
+- Google etkinliği oluşturma/düzenleme/silme ve çok günlük gösterim
 
 ### `app/src/main/java/org/example/TaskItem.java`
 - Görev veri modeli.
@@ -987,17 +1169,22 @@ Görevleri:
 - Google Calendar’dan gelen etkinliklerin UI modeli.
 
 ### `app/src/main/java/org/example/GoogleCalendarService.java`
-- Google Calendar verilerini çeken servis.
+- Google Calendar verilerini okuyan, etkinlik oluşturan/düzenleyen/silen servis.
 - Bağlanma durumu.
 - Hata mesajı.
 - Event yükleme.
-- Ay bazlı event cache yönetimi.
+- ETag ile koşullu güncelleme/silme; ay cache'i `CalendarModuleView` içinde yönetilir.
 - Bağlantı yokken event yükleme denemesini güvenli şekilde boş döndürme.
 
 ### `app/src/main/java/org/example/GoogleCalendarOAuthService.java`
 - OAuth yetkilendirme katmanı.
 - `LocalServerReceiver` tabanlı masaüstü callback akışı.
-- Tokenları `config/google-calendar-tokens/` altında saklama.
+- Düzenleme tokenlarını `config/google-calendar-tokens/events-write-v1/` altında saklama; eski okuma tokenlarını koruma.
+- Dar kapsamlı etkinlik yazma ve takvim metadata okuma izni; PKCE ve eksik izin denetimi.
+
+### `app/src/main/java/org/example/CalendarEventDraft.java` / `GoogleCalendarEventDialog.java`
+- Form doğrulaması, tüm gün bitiş tarihi dönüşümü ve arka planda Google'a kayıt.
+- Hatalı kayıt sırasında kullanıcı formunu koruma.
 
 ---
 
@@ -1163,6 +1350,7 @@ data/reference-library/topics/<kategori>/<dosya>.md
 
 ```text
 config/google-calendar-tokens/
+config/google-calendar-tokens/events-write-v1/
 ```
 
 ## 7.5 Google Calendar credential dosyası
@@ -1364,10 +1552,11 @@ Kalan küçük takip notları:
 
 Durum:
 - **Aşama A kapsamında stabilizasyon tamamlandı.**
+- **11 Ekim 2026:** Etkinlik oluşturma/düzenleme/silme ve yeni OAuth izin akışı uygulandı; 0.13 bölümüne bak.
 
 Kalan geliştirme notları:
 - Disconnect/reconnect butonu ileride eklenebilir.
-- İleride readonly dışı event oluşturma/güncelleme desteği ayrı aşama olarak ele alınabilir.
+- Anlık Google push veya çevrimdışı yazım kuyruğu eklenmedi; dış değişiklikler yenilemeyle okunur.
 
 ---
 
@@ -1527,15 +1716,15 @@ Aşama F sonrası düşünülebilecek işler:
 - Belge Merkezi Drag & Drop import için Aşama C tamamlandı
 - UART ürünleşmesi için Aşama D tamamlandı
 - Preview polish için Aşama E tamamlandı
-- sonraki geliştirme önerisi elle çalışma planı ve ortak ajandadır; kullanıcı şu anda geliştirmeye ara verdi
+- ilk sürümün elle çalışma planı, ortak ajanda, görev ayrıntıları, süre takibi, hatırlatma, ayarlar ve yedekleme özellikleri eklendi; Windows EXE üretildi (güncel doğrulama: 0.14)
 
 Önceki yol haritasından kalan ek geliştirmeler (ilk sürüm öncelikleri için 0.4 bölümüne bakın):
 1. Referans modülü zenginleştirme
 2. UART gelişmiş log/hex özellikleri
 3. PDF için gerçek dahili renderer
 4. Markdown preview
-5. Google Calendar disconnect/reconnect ve ileride yazma desteği
-6. Global ayarlar ve içerik araması (tema tamamlandı; mevcut modül araması içerik araması değildir)
+5. Google Drive gerçek senkronizasyonu ve Google push/çevrimdışı yazım (Calendar yazma ve yerel disconnect/reconnect tamamlandı)
+6. Global içerik araması (tema ve ayarlar tamamlandı; mevcut modül araması içerik araması değildir)
 
 ---
 
@@ -1611,7 +1800,7 @@ Aşama E sonrası kullanılan dosyalar:
 
 Bu doküman, şu ana kadar yapılan ve bundan sonra yapılacak işleri topluca teknik referans olarak tutmak için baştan düzenlendi.
 
-30 Eylül 2026 itibarıyla geliştirmeye ara verildi. Devam edildiğinde önerilen ilk odak **elle çalışma planı ve ortak ajanda**; güncel kapsam ve kullanıcı kararları 0. bölümde tutulur.
+30 Eylül'deki ara verme sonrasında geliştirme yeniden başladı. 12 Ekim'de 1.3.0 ilk sürüm kapsamı, 13 Ekim'de kullanıcının ilk üç önceliği 1.4.0 olarak tamamlandı. 16 Ekim'de Java dahil 1.4.1 Linux masaüstü sürümü kurulup mevcut verilerle açıldı (0.18), ardından kullanıcı eksikleri daha sonra paylaşmak üzere kurulumu kaldırttı; veriler korundu (0.19). Takvim düzeltmesi 0.17'de, ilk üç özellik 0.16'da, öncelik sırası 0.15'tedir. Gerçek Windows kabul testi bekler; push kullanıcıdadır.
 
 Tamamlanan son ana aşamalar:
 - **Aşama A:** Takvim + Google Calendar stabilizasyonu
@@ -1620,6 +1809,6 @@ Tamamlanan son ana aşamalar:
 - **Aşama D:** UART ürünleştirme
 - **Aşama E:** Preview polish
 
-Bundan sonraki ana ürünleştirme önerisi:
+Bundan sonraki özellik geliştirme sırası:
 
-**Elle planlama + ortak ajanda + görev ayrıntıları + hatırlatma + yedekleme/ayarlar + paketleme.** Referans/önizleme geliştirmeleri ve LLM sonraki aşamalardır. Qwen ile deneme şu anda başlatılmayacak.
+**Finans → Google senkronizasyonu → Gelişmiş ders planlayıcı → UART/scriptler → Hata raporu paneli → Belge araçları/arama → Referans kütüphanesi → Ses → Yapay zekâ/Jarvis.** İlk üç grup tamamlandı; sıradaki UART/scriptlerdir. Ayrıntılar 0.15–0.16'da. Windows kabul testi ve Google OAuth dağıtım ayarları bekleyen dağıtım kontrolleridir. Qwen ile deneme son önceliktedir; şu anda başlatılmayacak.

@@ -5,6 +5,10 @@ import java.util.concurrent.*;
 
 final class FxTestSupport {
     private FxTestSupport() {}
+    static boolean isGuiAvailable() {
+        return System.getProperty("os.name").toLowerCase(java.util.Locale.ROOT).contains("win")
+                || System.getenv("DISPLAY") != null || System.getProperty("os.name").toLowerCase(java.util.Locale.ROOT).contains("mac");
+    }
 
     static void initialize() throws Exception {
         CountDownLatch ready = new CountDownLatch(1);

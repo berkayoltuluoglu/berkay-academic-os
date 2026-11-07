@@ -20,6 +20,7 @@ class ScriptModuleRunnerTest {
         module.setTarget("test.py");
         module.setMessage("Tamam");
         module.setScriptOptions(new ScriptOptions());
+        module.getScriptOptions().setInterpreter(System.getProperty("os.name").toLowerCase().contains("win") ? "python" : "python3");
         return module;
     }
 

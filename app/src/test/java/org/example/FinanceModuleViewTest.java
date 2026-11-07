@@ -7,7 +7,7 @@ import javafx.scene.image.WritableImage;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import org.junit.jupiter.api.*;
-import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.junit.jupiter.api.condition.EnabledIf;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Files;
@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit;
 import static org.example.FxTestSupport.fx;
 import static org.junit.jupiter.api.Assertions.*;
 
-@EnabledIfEnvironmentVariable(named = "DISPLAY", matches = ".+")
+@EnabledIf("org.example.FxTestSupport#isGuiAvailable")
 class FinanceModuleViewTest {
     @TempDir Path directory;
     private final ObjectMapper mapper = new ObjectMapper();
@@ -95,7 +95,7 @@ class FinanceModuleViewTest {
         assertEquals(600, summary().path("receivable").asInt());
         assertEquals(1200, summary().path("period").asInt());
         click("[data-tab=panel]");
-        assertEquals("rgb(29, 74, 68)", js("getComputedStyle(document.querySelector('[data-tab=panel]')).color"));
+        assertEquals("rgb(52, 62, 80)", js("getComputedStyle(document.querySelector('[data-tab=panel]')).color"));
         var snapshot = new java.util.concurrent.CompletableFuture<WritableImage>();
         fx(() -> {
             view.webView().snapshot(result -> { snapshot.complete(result.getImage()); return null; }, null, null);

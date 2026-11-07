@@ -35,3 +35,28 @@ data/*.bak
 
 # Yerel ders programı, ödevler, sınavlar ve yedekleri
 /data/courses/
+
+# Kişisel çalışma oturumları ve odak sayacı
+/data/study/
+/data/focus.properties
+
+# Yerel çalışma kilitleri ve bağlantı/süre/bildirim kayıtları
+*.lock
+/data/preferences.json
+/data/calendar/
+/data/classroom/
+/data/time/
+/data/reminders/
+/data/sync/
+/data/documents/
+/data/cache/
+/backups/
+/.restore*/
+__pycache__/
+*.pyc
+
+# Planning preferences/history and external-agent proposals
+/data/planning/
+/data/agent/
+!examples/planner-proposal.json
+!app/src/main/resources/agent-guide/planner-proposal.json

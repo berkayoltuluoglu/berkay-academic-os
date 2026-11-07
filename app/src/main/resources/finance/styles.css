@@ -1,30 +1,31 @@
-html,body{margin:0;padding:0;background:#EDEFEA;}
+html,body{margin:0;padding:0;background:var(--ground);}
 
 
 :root{
-  --ground:#EDEFEA;
+  --ground:#F8FAFD;
   --surface:#FFFFFF;
-  --surface-2:#F6F7F3;
-  --ink:#10141A;
-  --ink-2:#525E68;
-  --ink-3:#7C8790;
-  --line:#D6DBD2;
-  --line-2:#E7EAE3;
-  --pine:#1D4A44;
-  --pine-soft:#E0EAE6;
+  --surface-2:#F0F3F7;
+  --ink:#252A33;
+  --ink-2:#5E687A;
+  --ink-3:#8490A3;
+  --line:#DEE4ED;
+  --line-2:#EDF0F5;
+  --pine:#343E50;
+  --pine-soft:#E8ECF2;
   --red:#95221F;
   --red-soft:#F7E4E2;
   --amber:#8E6205;
   --amber-soft:#F8EEDA;
   --green:#2C6740;
   --green-soft:#E2EFE5;
-  --radius:10px;
+  --radius:16px;
 }
+:root.dark{--ground:#151B25;--surface:#1F2734;--surface-2:#283244;--ink:#EDF1F8;--ink-2:#BAC4D4;--ink-3:#93A1B7;--line:#344052;--line-2:#293547;--pine:#C4CEDD;--pine-soft:#344052;--red:#F1A0A0;--red-soft:#442B32;--amber:#E9C574;--amber-soft:#40392A;--green:#95D5AB;--green-soft:#253B33;}
 
 #bt-app, #bt-app *{box-sizing:border-box;}
 
 #bt-app{
-  font-family:'IBM Plex Sans',ui-sans-serif,system-ui,-apple-system,sans-serif;
+  font-family:'Poppins',ui-sans-serif,system-ui,-apple-system,sans-serif;
   color:var(--ink);
   background:var(--ground);
   font-variant-numeric:tabular-nums;
@@ -104,7 +105,9 @@ html,body{margin:0;padding:0;background:#EDEFEA;}
   padding:8px 14px;border-radius:8px;border:1px solid var(--pine);
   background:var(--pine);color:#fff;
 }
-.bt-btn:hover{background:#173B36;}
+.bt-btn:hover{filter:brightness(.93);}
+.dark .bt-btn{color:var(--ground);}
+.dark .bt-btn.ghost,.dark .bt-btn.quiet{color:var(--ink-2);}
 .bt-btn.ghost{background:transparent;color:var(--pine);}
 .bt-btn.ghost:hover{background:var(--pine-soft);}
 .bt-btn.quiet{background:transparent;color:var(--ink-2);border-color:var(--line);}
@@ -154,7 +157,7 @@ html,body{margin:0;padding:0;background:#EDEFEA;}
 .bt-field label{display:block;font-size:12.5px;color:var(--ink-2);margin-bottom:4px;font-weight:500;}
 .bt-field input,.bt-field select,.bt-field textarea{
   width:100%;padding:8px 10px;font-size:14px;color:var(--ink);
-  background:#fff;border:1px solid var(--line);border-radius:8px;
+  background:var(--surface);border:1px solid var(--line);border-radius:10px;
   font-variant-numeric:tabular-nums;
 }
 .bt-field input:focus,.bt-field select:focus,.bt-field textarea:focus{

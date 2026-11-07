@@ -13,7 +13,7 @@ import javafx.scene.control.TextArea;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import org.junit.jupiter.api.*;
-import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.junit.jupiter.api.condition.EnabledIf;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.lang.reflect.Field;
@@ -22,7 +22,7 @@ import java.nio.file.Path;
 import java.util.concurrent.*;
 import static org.junit.jupiter.api.Assertions.*;
 
-@EnabledIfEnvironmentVariable(named = "DISPLAY", matches = ".+")
+@EnabledIf("org.example.FxTestSupport#isGuiAvailable")
 class AppTest {
     @TempDir Path directory;
     private App app;
@@ -34,7 +34,7 @@ class AppTest {
 
     @BeforeEach void openApp() throws Exception {
         fx(() -> {
-            app = new App();
+            app = new App(directory);
             stage = new Stage();
             app.start(stage);
             stage.hide();

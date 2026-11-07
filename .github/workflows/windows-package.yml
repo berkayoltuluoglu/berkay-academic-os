@@ -1,0 +1,53 @@
+name: Windows package verification
+on:
+  workflow_dispatch:
+  push:
+    branches: ['codex/windows-release-*']
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-2022
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Test application
+        shell: pwsh
+        run: .\gradlew.bat "-Dorg.gradle.java.home=$env:JAVA_HOME" :app:test --no-daemon
+      - name: Install NSIS compiler
+        shell: pwsh
+        run: choco install nsis --no-progress -y
+      - name: Build installer with bundled runtime
+        shell: pwsh
+        env:
+          GOOGLE_OAUTH_CLIENT_JSON: ${{ secrets.GOOGLE_OAUTH_CLIENT_JSON }}
+        run: |
+          $Arguments = @('packaging/build_windows.py', '--makensis', 'C:/Program Files (x86)/NSIS/makensis.exe', '--java-home', $env:JAVA_HOME)
+          if ($env:GOOGLE_OAUTH_CLIENT_JSON) {
+            $Client = Join-Path $env:RUNNER_TEMP 'academic-os-oauth-client.json'
+            Set-Content -Path $Client -Value $env:GOOGLE_OAUTH_CLIENT_JSON -Encoding utf8
+            $Arguments += @('--google-client', $Client)
+          }
+          python @Arguments
+      - name: Install, launch, upgrade and uninstall
+        shell: pwsh
+        run: |
+          $Installer = (Get-ChildItem app/build/windows/dist/*-setup.exe | Select-Object -First 1).FullName
+          ./packaging/verify_windows.ps1 -Installer $Installer
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: academic-os-windows
+          path: |
+            app/build/windows/dist/
+            app/build/test-results/test/
+            app/build/reports/tests/test/
+            ${{ runner.temp }}/AcademicOS-smoke-profile-*/package-smoke.png
+          if-no-files-found: warn
