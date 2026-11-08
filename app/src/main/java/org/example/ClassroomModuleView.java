@@ -28,16 +28,20 @@ public final class ClassroomModuleView {
         cancel.setOnAction(e -> { service.cancelAuthorization(); if (pending != null) pending.cancel(true); });
         root.getChildren().setAll(new FlowPane(10, 8, connect, refresh, cancel, settings), account, status);
         courses.setId("classroom-courses"); work.setId("classroom-work");
+        courses.getStyleClass().add("classroom-list"); work.getStyleClass().add("classroom-list"); courses.setMinWidth(200);
         courses.setCellFactory(v -> new ListCell<>() {
+            { setPrefWidth(0); } // lets long titles wrap instead of forcing horizontal scroll
             @Override protected void updateItem(ClassroomData.Course item, boolean empty) {
-                super.updateItem(item, empty); setText(empty || item == null ? null : item.name() + "\n" + item.section());
+                super.updateItem(item, empty); setText(null);
+                setGraphic(empty || item == null ? null : card(item.name(), item.section().isBlank() ? "Şube bilgisi yok" : item.section()));
             }
         });
         work.setCellFactory(v -> new ListCell<>() {
+            { setPrefWidth(0); } // lets long titles wrap instead of forcing horizontal scroll
             @Override protected void updateItem(ClassroomData.Work item, boolean empty) {
-                super.updateItem(item, empty);
-                setText(empty || item == null ? null : item.title() + "\n" + (item.dueDate().isBlank() ? "Son tarih yok"
-                        : item.dueDate() + " " + item.dueTime()) + " · " + state(item.state()));
+                super.updateItem(item, empty); setText(null);
+                setGraphic(empty || item == null ? null : card(item.title(), (item.dueDate().isBlank() ? "Son tarih yok"
+                        : item.dueDate() + " " + item.dueTime()) + " · " + state(item.state())));
             }
         });
         courses.getSelectionModel().selectedItemProperty().addListener((o, a, b) -> filter());
@@ -95,6 +99,12 @@ public final class ClassroomModuleView {
     private void openWork() {
         var item = work.getSelectionModel().getSelectedItem(); if (item == null) return;
         try { DesktopIntegration.browse(item.url()); } catch (Exception error) { status.setText(error.getMessage()); }
+    }
+    private static VBox card(String title, String detail) {
+        Label name = new Label(title); name.getStyleClass().add("classroom-card-title"); name.setWrapText(true);
+        Label sub = new Label(detail); sub.getStyleClass().add("soluk"); sub.setWrapText(true);
+        VBox box = new VBox(3, name, sub); box.getStyleClass().add("classroom-card"); box.setMinWidth(0); box.setMaxWidth(Double.MAX_VALUE);
+        return box;
     }
     private static String state(String value) { return switch (value) {
         case "TURNED_IN" -> "Teslim edildi"; case "RETURNED" -> "Öğretmen geri gönderdi";

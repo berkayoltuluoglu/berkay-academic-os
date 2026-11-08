@@ -589,3 +589,12 @@
 .planner-ghost { -fx-opacity: 0.62; -fx-border-style: segments(6, 4); -fx-border-color: -color-accent-emphasis; -fx-border-width: 2; }
 
 .planner-conflict-preview { -fx-background-color: -color-danger-subtle; -fx-border-color: -color-danger-fg; -fx-opacity: 0.65; }
+
+/* Classroom: each course/assignment is a rounded card with a small gap between items. */
+.classroom-list { -fx-background-color: transparent; -fx-border-width: 0; -fx-padding: 4; }
+.classroom-list .list-cell { -fx-cell-size: -1; -fx-padding: 0 4 8 0; -fx-background-color: transparent; }
+.classroom-card { -fx-background-color: -yuzey; -fx-background-radius: 10; -fx-border-color: -cizgi;
+    -fx-border-radius: 10; -fx-padding: 9 12; }
+.classroom-card-title { -fx-font-weight: bold; -fx-text-fill: -yazi; }
+.classroom-list .list-cell:hover .classroom-card { -fx-background-color: -yuzey-2; }
+.classroom-list .list-cell:selected .classroom-card { -fx-background-color: -vurgu-acik; -fx-border-color: -vurgu; }
