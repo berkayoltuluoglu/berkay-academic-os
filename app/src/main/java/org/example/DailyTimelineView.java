@@ -17,6 +17,8 @@ final class DailyTimelineView extends VBox {
     private final Consumer<Event> open;
     private final Consumer<Move> move;
     private List<Event> events = List.of();
+    private List<DailyAgendaService.Todo> deadlines = List.of();
+    private Consumer<DailyAgendaService.Todo> openDeadline = t -> {};
     private LocalDate date = LocalDate.now();
     private int first, last;
     private double scale;
@@ -41,7 +43,12 @@ final class DailyTimelineView extends VBox {
         });
     }
 
-    void update(LocalDate date, List<Event> events) { this.date = date; this.events = events; draw(); }
+    void update(LocalDate date, List<Event> events) { update(date, events, List.of()); }
+    /** Deadlines are open coursework/tasks due on {@code date}; timed ones are drawn as red markers. */
+    void update(LocalDate date, List<Event> events, List<DailyAgendaService.Todo> deadlines) {
+        this.date = date; this.events = events; this.deadlines = List.copyOf(deadlines); draw();
+    }
+    void onDeadline(Consumer<DailyAgendaService.Todo> open) { this.openDeadline = open; }
     private Event dragged(Dragboard board) {
         if (!board.hasString()) return null;
         return events.stream().filter(e -> e.study() && !e.done() && ("study:" + e.id()).equals(board.getString())).findFirst().orElse(null);
@@ -51,13 +58,16 @@ final class DailyTimelineView extends VBox {
         grid.getChildren().clear();
         first = Math.min(8 * 60, events.stream().mapToInt(e -> minutes(e.start()) / 60 * 60).min().orElse(8 * 60));
         last = Math.max(18 * 60, events.stream().mapToInt(e -> (minutes(e.end()) + 59) / 60 * 60).max().orElse(18 * 60));
+        for (var d : deadlines) if (d.dueTime() != null) { int m = minutes(d.dueTime()); first = Math.min(first, m / 60 * 60); last = Math.max(last, Math.min(24 * 60, (m + 59) / 60 * 60)); }
         if (date.equals(LocalDate.now())) {
             int hour = LocalTime.now().getHour();
             first = Math.min(first, hour * 60); last = Math.max(last, Math.min(24, hour + 1) * 60);
         }
-        scale = Math.min(1.0, 560.0 / (last - first));
+        // ~0.9 px/min for a full 08–24 day: a one-hour block fits its title and time on two lines.
+        scale = Math.min(1.0, 860.0 / (last - first));
         double width = Math.max(260, grid.getWidth());
-        double height = (last - first) * scale + 12;
+        // Room under the last hour so a deadline label at 23:59 does not cover the evening's blocks.
+        double height = (last - first) * scale + (deadlines.stream().anyMatch(d -> d.dueTime() != null) ? 36 : 12);
         grid.setMinHeight(height); grid.setPrefHeight(height);
         for (int time = first; time <= last; time += 60) {
             double y = (time - first) * scale;
@@ -77,6 +87,7 @@ final class DailyTimelineView extends VBox {
             Label empty = new Label("Bugün için planlanmış etkinlik yok"); empty.getStyleClass().add("soluk"); empty.setWrapText(true);
             place(empty, GUTTER + 14, 75, width - GUTTER - 28, 50);
         }
+        drawDeadlines(width);
         LocalTime now = LocalTime.now();
         int minute = minutes(now);
         if (date.equals(LocalDate.now()) && minute >= first && minute <= last) {
@@ -117,13 +128,27 @@ final class DailyTimelineView extends VBox {
                 var board = block.startDragAndDrop(TransferMode.MOVE); var data = new ClipboardContent();
                 data.putString("study:" + event.id()); board.setContent(data); e.consume();
             });
-            place(block, GUTTER + lanes.get(i) * laneWidth + 12, (minutes(event.start()) - first) * scale + 3,
-                    laneWidth - 14, Math.max(18, (minutes(event.end()) - minutes(event.start())) * scale - 6));
+            double height = Math.max(22, (minutes(event.end()) - minutes(event.start())) * scale - 6);
+            if (height < 44) { text.getChildren().setAll(new Label(name.getText() + "  ·  " + detail.getText()) {{ getStyleClass().add("silver-event-name"); setMinWidth(0); }}); }
+            place(block, GUTTER + lanes.get(i) * laneWidth + 12, (minutes(event.start()) - first) * scale + 3, laneWidth - 14, height);
             var clip = new javafx.scene.shape.Rectangle(); clip.widthProperty().bind(block.widthProperty());
             clip.heightProperty().bind(block.heightProperty()); block.setClip(clip);
         }
     }
 
+    private void drawDeadlines(double width) {
+        var timed = deadlines.stream().filter(d -> d.dueTime() != null).sorted(Comparator.comparing(DailyAgendaService.Todo::dueTime)).toList();
+        for (var d : timed) {
+            double y = Math.min((minutes(d.dueTime()) - first) * scale, (last - first) * scale);
+            Region line = new Region(); line.getStyleClass().add("today-deadline-line"); line.setMouseTransparent(true);
+            place(line, GUTTER, y, width - GUTTER, 2);
+            Button tag = new Button("▲ " + d.dueTime() + " · " + d.title()); tag.getStyleClass().add("today-deadline-tag");
+            tag.setId("today-deadline-" + d.id()); tag.setTooltip(new Tooltip(d.title() + (d.detail().isBlank() ? "" : "\n" + d.detail())));
+            tag.setOnAction(e -> openDeadline.accept(d));
+            tag.setMinWidth(0); tag.setTextOverrun(OverrunStyle.ELLIPSIS); tag.setAlignment(Pos.CENTER_LEFT);
+            place(tag, GUTTER + 12, y + 4, Math.min(width - GUTTER - 16, 420), 22);
+        }
+    }
     private void place(Region region, double x, double y, double w, double h) {
         region.setManaged(false); region.resizeRelocate(x, y, w, h); grid.getChildren().add(region);
     }

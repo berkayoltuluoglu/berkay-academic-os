@@ -139,8 +139,9 @@ public final class TodayModuleView {
 
     private void render(Loaded loaded) {
         dateLabel.setText(displayedDate.format(DateTimeFormatter.ofPattern("d MMMM, EEEE", TR)));
-        timeline.update(displayedDate, day.events());
-        flow.getChildren().setAll(nextEvent(), timeline);
+        var dues = deadlines(); timeline.onDeadline(this::openDeadline);
+        timeline.update(displayedDate, day.events(), dues);
+        flow.getChildren().setAll(nextEvent(), dueBanner(dues), timeline);
         if (!day.events().isEmpty() && day.events().stream().anyMatch(a -> day.events().stream().anyMatch(b -> a != b && DailyAgendaService.overlaps(a, b)))) {
             Label warning = new Label("Programda saat çakışması var"); warning.getStyleClass().add("form-error"); flow.getChildren().add(1, warning);
         }
@@ -256,6 +257,38 @@ public final class TodayModuleView {
             day.sessions().stream().filter(s -> s.id().equals(event.id())).findFirst().ifPresent(this::sessionDialog);
         } else details(event.title(), event.start() + "–" + event.end() + "\n" + event.detail(), event.kind().equals("Google") ? "calendar" : "courses");
     }
+    /** Open coursework, tasks and application deadlines on the displayed day (all-day Google events are not deadlines). */
+    private List<DailyAgendaService.Todo> deadlines() {
+        return day.todos().stream().filter(t -> !t.done() && t.date().equals(displayedDate)
+                        && !t.id().startsWith("google-") && !t.id().startsWith("application-result-"))
+                .sorted(Comparator.comparing((DailyAgendaService.Todo t) -> t.dueTime() == null ? LocalTime.MAX : t.dueTime())).toList();
+    }
+    private Node dueBanner(List<DailyAgendaService.Todo> dues) {
+        VBox box = new VBox(6); box.setId("today-due-banner");
+        if (dues.isEmpty()) { box.setManaged(false); box.setVisible(false); return box; }
+        Label title = new Label("Bugün teslim · " + dues.size()); title.getStyleClass().add("today-due-title"); box.getChildren().add(title);
+        boolean today = displayedDate.equals(LocalDate.now());
+        for (var d : dues) {
+            String when = d.dueTime() == null ? "Gün içinde" : d.dueTime().toString();
+            if (today && d.dueTime() != null) {
+                long left = java.time.Duration.between(LocalTime.now(), d.dueTime()).toMinutes();
+                when += left < 0 ? " · süresi geçti" : " · " + (left >= 60 ? left / 60 + " sa " : "") + left % 60 + " dk kaldı";
+            }
+            Label name = new Label(d.title()); name.getStyleClass().add("silver-event-name"); name.setWrapText(true); name.setMinWidth(0);
+            Label time = new Label(when); time.getStyleClass().add("today-due-time"); time.setWrapText(true); time.setMinWidth(0);
+            VBox row = new VBox(2, name, time); row.setMinWidth(0);
+            Button open = new Button(); open.setGraphic(row); open.setMaxWidth(Double.MAX_VALUE); open.setMinWidth(0); open.setAlignment(Pos.CENTER_LEFT); open.getStyleClass().add("today-due-row");
+            open.setId("today-due-" + d.id()); open.setAccessibleText(d.title() + " " + when); open.setOnAction(e -> openDeadline(d));
+            box.getChildren().add(open);
+        }
+        box.getStyleClass().add("today-due-banner");
+        return box;
+    }
+    private void openDeadline(DailyAgendaService.Todo todo) {
+        String when = (todo.date().equals(displayedDate) ? "Bugün" : todo.date().format(DateTimeFormatter.ofPattern("d MMM", TR)))
+                + (todo.dueTime() == null ? "" : " " + todo.dueTime());
+        details(todo.title(), "Son teslim: " + when + (todo.detail().isBlank() ? "" : "\n\n" + todo.detail()), todo.module());
+    }
     private void details(String title, String detail, String module) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION); alert.setTitle(title); alert.setHeaderText(title); alert.setContentText(detail);
         ButtonType open = new ButtonType("Modülde aç", ButtonBar.ButtonData.OK_DONE);
@@ -357,6 +390,8 @@ public final class TodayModuleView {
         if (LocalTime.now().getMinute() != lastMinute) {
             lastMinute = LocalTime.now().getMinute(); timeline.draw();
             if (day != null && !flow.getChildren().isEmpty()) flow.getChildren().set(0, nextEvent());
+            if (day != null && flow.getChildren().size() > 1 && "today-due-banner".equals(flow.getChildren().get(1).getId()))
+                flow.getChildren().set(1, dueBanner(deadlines()));
         }
     }
     public void dispose() {
