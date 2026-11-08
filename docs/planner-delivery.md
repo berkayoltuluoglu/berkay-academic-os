@@ -129,3 +129,41 @@ Java yedek okuyucusu, boşluklu yoldan CLI, profil kılavuzları ve gerçek Java
 Paket: `app/build/linux/dist/BerkayAcademicOS-1.5.0-linux-x64.tar.gz` ve yanındaki `.sha256`.
 Paket görüntüsü: `app/build/reports/linux-package-1.5.0.png`.
 Kaynak kontrolü: `git diff --check` temiz. Gerçek kullanıcı kurulumu değiştirilmedi.
+
+## Bilinen küçük sorunlar — 8 Kasım 2026 incelemesi
+
+Kopyalanmış gerçek veriyle CLI denemesinde bulundu. Hiçbiri öneri kutusunun kullanıcı onayı korumasını delmiyor;
+düzeltilmeleri acil değil, ertelendi.
+
+1. **Hafta dışı tarih kabul ediliyor.** `week: 2026-11-09` önerisinde 2026-11-20'ye `schedule` → `valid: true`.
+   `ProposalService` komut tarihinin `snapshot.week`–`until` aralığında olduğunu denetlemiyor.
+2. **Geçmiş tarihe plan kabul ediliyor.** Bugünden önceki bir güne (ör. 2026-11-02) blok önerisi geçerli sayılıyor.
+3. **15 dakikalık ızgara uygulanmıyor.** `start: 10:07`, `minutes: 50` geçiyor; AGENTS.md 15 dk aralık istiyor
+   (`ProposalService.checkLimits` yalnızca tercih sınırlarına bakıyor).
+4. **Havuzda süresi geçmiş işler.** `PlanningSnapshot.assemble` teslimi geçmiş işleri ayırmıyor; gerçek veride havuzun
+   18 öğesinin tamamı geçmiş tarihli (çoğu 2025 Classroom ödevi). `suggest` bunları "yeterli boş aralık yok" gerekçesiyle
+   `unscheduled` listesine koyuyor; doğru gerekçe "teslim tarihi geçmiş" olmalı. Sonuçta gerçek veride öneri üretilmiyor.
+5. **Şema hatası ayrıntısız.** `INVALID_PROPOSAL: Öneri şeması veya alanları geçersiz` hangi alanın bozuk olduğunu
+   söylemiyor (`ProposalService.java:28`). Ör. `suggest` boş `commands` döndürünce çıktı `minItems: 1` yüzünden
+   `validate`'ten geçmiyor ama sebep görünmüyor.
+6. **Kilit dosyaları kalıyor.** `data/agent/proposals/` içinde her önerinin yanında `.json.lock` dosyası birikiyor.
+
+7. **Arayüz teslimden sonraya plan yapabiliyor.** Haftalık ızgarada 2025 teslimli Classroom ödevleri 2026-11-02/03'e
+   bırakılabildi; `AFTER_DEADLINE` yalnızca ajan önerisi doğrulamasında uygulanıyor. Gecikmiş işe çalışma koymak
+   bilinçli bir tercih olabilir; karar verilmedi.
+
+### Düzeltilen — 8 Kasım 2026
+
+- **Birkaç işlemden sonra plan kaydedilemiyordu.** Geçmiş (`history.json` v1) her adımda beş alan dosyasının
+  tamamını önce+sonra olarak base64 saklıyordu; `academic.json` içindeki ~160 KB ders kataloğu yüzünden adım başına
+  ~590 KB tutuyor, 8 adımda 5 MB yazma sınırına takılıyordu. Geçmiş artık **alan düzeyinde değişiklik** saklıyor
+  (`PlanEdits`, `history.json` v2): ör. `sessions → [blok-id] → start: "19:00" → "20:00"`. Geri al/yinele her alanın
+  hâlâ beklenen değerde olduğunu denetler; başka yerden değiştiyse reddeder. Kimlikli dizilerde silinen öğe eski
+  sırasına döner. Eski v1 geçmişi bir kez sıfırlanır. Kopya gerçek profilde 15 adım: 4,7 MB → 6,7 KB; 50 adım sığar.
+  `historyBytes` 3 MB bütçesi yalnızca toplu içe aktarma gibi büyük adımlar için güvenlik ağı olarak kaldı.
+- **Haftalık ızgarada sürüklerken kaydırma yoktu.** Havuz kartı, blok taşıma/boyutlandırma ve aralık seçimi sırasında
+  imleç görünüm kenarına (48 px) gelince ızgara dikey/yatay otomatik kayıyor (`WeeklyAgendaView.installAutoScroll`).
+- **Classroom listeleri** yuvarlak kenarlıklı kartlar ve aralarında boşlukla gösteriliyor; uzun başlıklar satır kırıyor.
+
+Doğru çalıştığı doğrulananlar: `AFTER_DEADLINE`, `NOT_FOUND`, `CONFLICT` (Google tatili dahil), `DAILY_LIMIT`,
+`PREFERENCES`, 23:59 sınırı, boş `reason`, `--apply`/Ayarlar yazım koruması, hata çıkış kodu 2.

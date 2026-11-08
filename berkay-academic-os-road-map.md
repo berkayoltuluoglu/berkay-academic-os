@@ -1575,6 +1575,20 @@ Yapılacaklar:
 
 ---
 
+## 10.7 Ajan CLI doğrulama açıkları
+
+Durum:
+- **Ertelendi (küçük).** 8 Kasım 2026 incelemesinde bulundu; ayrıntı `docs/planner-delivery.md` → "Bilinen küçük sorunlar".
+
+Özet:
+- Öneride hafta dışı ve geçmiş tarihler reddedilmiyor
+- 15 dakikalık ızgara denetlenmiyor
+- Havuz ve `suggest` süresi geçmiş işleri ayırmıyor, yanlış gerekçe veriyor
+- `INVALID_PROPOSAL` hatası alan adı vermiyor
+- Öneri klasöründe `.lock` dosyaları birikiyor
+
+---
+
 # 11. Bundan Sonra Yapacağım İşler (Öncelik Sırasıyla)
 
 > Aşağıdaki A–G sırası önceki yol haritasını belgeler. 30 Eylül 2026 itibarıyla güncel geliştirme sırası 0.4 bölümündedir; çalışmaya ara verilmiştir.
