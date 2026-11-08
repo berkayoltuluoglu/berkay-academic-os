@@ -33,6 +33,7 @@ public final class WeeklyAgendaView {
     private String proposalsStamp="";
     private final TextField search=new TextField();
     private final PauseTransition debounce=new PauseTransition(Duration.millis(400));
+    private final Timeline autoScroll=new Timeline();private double scrollDy,scrollDx;
     private final Timeline watch=new Timeline(new KeyFrame(Duration.seconds(3),e->checkChanges()));
     private LocalDate week=LocalDate.now().with(java.time.temporal.TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
     private PlanningSnapshot snapshot;
@@ -71,7 +72,7 @@ public final class WeeklyAgendaView {
         quick.setOnAction(e->{if(!quick.getText().isBlank()){var value=QuickTaskParser.parse(quick.getText(),LocalDate.now());quick.clear();run(()->planner.execute(new CreateTask(value)));}});
         VBox left=new VBox(10,new Label("Plan havuzu"),quick,search,scroll(pool));left.setMinWidth(180);left.setPrefWidth(230);left.setMaxWidth(260);VBox.setVgrow(left.getChildren().getLast(),Priority.ALWAYS);
         grid.setId("planner-week-grid");grid.setMinWidth(900);
-        ScrollPane canvas=scroll(grid);canvas.setFitToHeight(false);canvas.setPannable(false);canvas.setMinWidth(300);
+        ScrollPane canvas=scroll(grid);canvas.setFitToHeight(false);canvas.setPannable(false);canvas.setMinWidth(300);canvas.setId("planner-canvas");installAutoScroll(canvas);
         inspector.setId("planner-inspector");inspector.setMinWidth(200);inspector.setPrefWidth(235);inspector.getChildren().add(new Label("İncelemek için bir blok seç"));
         ScrollPane right=scroll(inspector);right.setMinWidth(210);right.setPrefWidth(235);right.setMaxWidth(280);SplitPane.setResizableWithParent(left,false);SplitPane.setResizableWithParent(right,false);
         SplitPane split=new SplitPane(left,canvas,right);split.setDividerPositions(.18,.81);split.setId("planner-layout");
@@ -308,12 +309,34 @@ public final class WeeklyAgendaView {
     private static ComboBox<String> times(String value){ComboBox<String> box=new ComboBox<>();for(int m=0;m<1440;m+=15)box.getItems().add(PlanningPreferences.time(m));if(!box.getItems().contains(value))box.getItems().add(value);box.setValue(value);box.setMaxWidth(105);return box;}
     private static Button button(String text,String id,Runnable action){Button b=new Button(text);b.setId(id);b.setAccessibleText(text);b.setOnAction(e->action.run());return b;}
     private static MenuItem menu(String title,Runnable action){MenuItem item=new MenuItem(title);item.setOnAction(e->action.run());return item;}
+    /** Scrolls the week grid while a drag (pool card, block move/resize, range selection) nears a viewport edge. */
+    private void installAutoScroll(ScrollPane canvas){
+        double edge=48;
+        java.util.function.BiConsumer<Double,Double> track=(sceneX,sceneY)->{
+            var bounds=canvas.getLayoutBounds();Point2D p=canvas.sceneToLocal(sceneX,sceneY);if(p==null)return;
+            scrollDy=p.getY()<edge?-(edge-p.getY()):p.getY()>bounds.getHeight()-edge?p.getY()-(bounds.getHeight()-edge):0;
+            scrollDx=p.getX()<edge?-(edge-p.getX()):p.getX()>bounds.getWidth()-edge?p.getX()-(bounds.getWidth()-edge):0;
+            if((scrollDy!=0||scrollDx!=0)&&autoScroll.getStatus()!=Animation.Status.RUNNING)autoScroll.play();
+        };
+        autoScroll.getKeyFrames().setAll(new KeyFrame(Duration.millis(30),e->{
+            if(scrollDy==0&&scrollDx==0){autoScroll.stop();return;}
+            var content=canvas.getContent().getLayoutBounds();var view=canvas.getViewportBounds();
+            double h=content.getHeight()-view.getHeight(),w=content.getWidth()-view.getWidth();
+            if(h>0&&scrollDy!=0)canvas.setVvalue(Math.max(0,Math.min(1,canvas.getVvalue()+Math.signum(scrollDy)*Math.min(24,Math.abs(scrollDy)/2+4)/h)));
+            if(w>0&&scrollDx!=0)canvas.setHvalue(Math.max(0,Math.min(1,canvas.getHvalue()+Math.signum(scrollDx)*Math.min(24,Math.abs(scrollDx)/2+4)/w)));
+        }));autoScroll.setCycleCount(Animation.INDEFINITE);
+        canvas.addEventFilter(DragEvent.DRAG_OVER,e->track.accept(e.getSceneX(),e.getSceneY()));
+        canvas.addEventFilter(MouseEvent.MOUSE_DRAGGED,e->track.accept(e.getSceneX(),e.getSceneY()));
+        Runnable stop=()->{scrollDy=0;scrollDx=0;autoScroll.stop();};
+        canvas.addEventFilter(DragEvent.DRAG_EXITED,e->stop.run());canvas.addEventFilter(DragEvent.DRAG_DROPPED,e->stop.run());
+        canvas.addEventFilter(MouseEvent.MOUSE_RELEASED,e->stop.run());canvas.addEventHandler(DragEvent.DRAG_DONE,e->stop.run());
+    }
     private static ScrollPane scroll(Node node){ScrollPane scroll=new ScrollPane(node);scroll.setFitToWidth(true);return scroll;}
     private static void place(Pane pane,Region child,double x,double y,double width,double height){child.setManaged(false);child.resizeRelocate(x,Math.max(0,y),width,height);pane.getChildren().add(child);}
     private static int minute(String time){return PlanningPreferences.minute(time);}
     private static int snap(int value){return (int)(Math.round(value/15d)*15);}
     private static double y(String time){return (minute(time)-FIRST)*SCALE;}
     private static String duration(int minutes){return minutes/60+"s "+minutes%60+"dk";}
-    public void dispose(){flushInspector();if(saving)throw new IllegalStateException("Kayıt sürüyor; tamamlanmasını bekle");disposed=true;debounce.stop();watch.stop();if(pending!=null)pending.cancel();}
+    public void dispose(){flushInspector();if(saving)throw new IllegalStateException("Kayıt sürüyor; tamamlanmasını bekle");disposed=true;debounce.stop();watch.stop();autoScroll.stop();if(pending!=null)pending.cancel();}
     @FunctionalInterface private interface Io{Object run()throws Exception;}
 }
