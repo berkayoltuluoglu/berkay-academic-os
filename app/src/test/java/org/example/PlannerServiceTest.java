@@ -20,6 +20,47 @@ class PlannerServiceTest {
         new PlannerService(root).undo(); assertEquals(1,new StudyStorageService(root.resolve("data/study/sessions.json")).load().size());
         new PlannerService(root).redo(); assertEquals(2,new StudyStorageService(root.resolve("data/study/sessions.json")).load().size());
     }
+    @Test void historyRecordsOnlyChangedFieldsEvenWithLargeCourseFiles() throws Exception {
+        // A real profile's academic.json carries a ~160 KB course catalog the planner never touches.
+        List<CourseData.Course> catalog = new ArrayList<>();
+        for (int i = 0; i < 400; i++) catalog.add(new CourseData.Course("katalog-" + i, "Katalog dersi " + i, "KAT" + i, "Öğretim üyesi " + i, "D-" + i,
+                "2026-09-21", "2027-01-08", List.of(new CourseData.Lesson(1 + i % 5, "09:30", "11:20", "D-" + i)), "", null, null, "", false));
+        var courseStore = new CourseStorageService(root.resolve("data/courses/academic.json")); courseStore.load(); courseStore.save(new CourseData(2, catalog, List.of(), List.of()));
+        assertTrue(Files.size(root.resolve("data/courses/academic.json")) > 100_000);
+        var planner = new PlannerService(root);
+        planner.execute(new SaveBlock(block("a","10:00","11:00"),true,ConflictPolicy.REJECT));
+        for (int i = 0; i < 30; i++) planner.execute(new MoveBlock("a", week.toString(), (i % 2 == 0 ? "12:00" : "10:00"), ConflictPolicy.REJECT));
+        long size = Files.size(root.resolve(PlannerService.HISTORY));
+        assertTrue(size < 60_000, "geçmiş " + size + " bayt");
+        var last = PlannerService.history(root).undo().getLast();
+        assertTrue(last.edits().stream().allMatch(e -> e.file().equals("data/study/sessions.json")), last.edits().toString());
+        assertEquals(List.of(".sessions", "[a]", ".start"), last.edits().getFirst().path());
+        planner.undo(); assertEquals("12:00", new StudyStorageService(root.resolve("data/study/sessions.json")).load().getFirst().start());
+        planner.redo(); assertEquals("10:00", new StudyStorageService(root.resolve("data/study/sessions.json")).load().getFirst().start());
+        assertTrue(Files.readString(root.resolve("data/courses/academic.json")).contains("katalog-399"));
+    }
+    @Test void undoRestoresDeletedBlockAtItsPlaceAndLegacyHistoryIsReset() throws Exception {
+        Files.createDirectories(root.resolve("data/planning"));
+        Files.writeString(root.resolve(PlannerService.HISTORY), "{\"schemaVersion\":1,\"undo\":[],\"redo\":[]}");
+        assertTrue(PlannerService.history(root).undo().isEmpty());
+        var planner = new PlannerService(root);
+        planner.execute(List.of(new SaveBlock(block("a","08:00","09:00"),true,ConflictPolicy.REJECT),new SaveBlock(block("b","10:00","11:00"),true,ConflictPolicy.REJECT),
+                new SaveBlock(block("c","12:00","13:00"),true,ConflictPolicy.REJECT)),"user","üç blok");
+        planner.execute(new DeleteBlock("b"));
+        planner.undo();
+        assertEquals(List.of("a","b","c"), new StudyStorageService(root.resolve("data/study/sessions.json")).load().stream().map(StudySession::id).toList());
+        planner.undo(); assertTrue(new StudyStorageService(root.resolve("data/study/sessions.json")).load().isEmpty());
+        planner.redo(); assertEquals(3, new StudyStorageService(root.resolve("data/study/sessions.json")).load().size());
+    }
+    @Test void undoRefusesWhenTheFieldWasChangedElsewhere() throws Exception {
+        var planner = new PlannerService(root);
+        planner.execute(new SaveBlock(block("a","10:00","11:00"),true,ConflictPolicy.REJECT));
+        planner.execute(new MoveBlock("a", week.toString(), "12:00", ConflictPolicy.REJECT));
+        Path sessions = root.resolve("data/study/sessions.json");
+        Files.writeString(sessions, Files.readString(sessions).replace("\"12:00\"", "\"14:00\"").replace("\"13:00\"", "\"15:00\""));
+        assertTrue(assertThrows(Exception.class, planner::undo).getMessage().contains("geri alınamaz"));
+        assertEquals("14:00", new StudyStorageService(sessions).load().getFirst().start());
+    }
     @Test void overlapPermissionDoesNotBypassLinkValidationAndBatchRollsBack() throws Exception {
         var planner = new PlannerService(root);
         assertThrows(Exception.class,()->planner.execute(List.of(new SaveBlock(block("a","09:00","10:00"),true,ConflictPolicy.ALLOW),
@@ -45,8 +86,9 @@ class PlannerServiceTest {
     }
     @Test void corruptedUndoPayloadIsRejectedBeforeItCanOverwriteThePlan() throws Exception {
         var planner=new PlannerService(root);planner.execute(new SaveBlock(block("a","10:00","11:00"),true,ConflictPolicy.REJECT));
-        var history=PlannerService.history(root);var change=history.undo().getFirst();var invalid=new LinkedHashMap<>(change.before());invalid.put("data/study/sessions.json",Base64.getEncoder().encodeToString("broken".getBytes(java.nio.charset.StandardCharsets.UTF_8)));
-        var bad=new PlannerService.PlanChange(change.id(),change.at(),change.actor(),change.reason(),invalid,change.after());Files.write(root.resolve(PlannerService.HISTORY),PlanningFiles.JSON.writeValueAsBytes(new PlannerService.History(1,List.of(bad),List.of())));
+        var history=PlannerService.history(root);var change=history.undo().getFirst();var current=PlanningFiles.JSON.readTree(root.resolve("data/study/sessions.json").toFile());
+        var invalid=new PlanEdits.Edit("data/study/sessions.json",List.of(),new com.fasterxml.jackson.databind.node.TextNode("broken"),current,null,null);
+        var bad=new PlannerService.PlanChange(change.id(),change.at(),change.actor(),change.reason(),List.of(invalid));Files.write(root.resolve(PlannerService.HISTORY),PlanningFiles.JSON.writeValueAsBytes(new PlannerService.History(PlannerService.HISTORY_VERSION,List.of(bad),List.of())));
         String before=Files.readString(root.resolve("data/study/sessions.json"));assertThrows(Exception.class,planner::undo);assertEquals(before,Files.readString(root.resolve("data/study/sessions.json")));
     }
     @Test void allDayGoogleEventsAreFixedAndCannotBeScheduledOver() throws Exception {

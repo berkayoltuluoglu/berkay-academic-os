@@ -11,7 +11,9 @@ public final class PlannerService {
     static final List<String> DOMAIN = List.of("data/tasks.json", "data/courses/academic.json", "data/study/sessions.json",
             PlanningPreferences.FILE, "data/planning/notes.json");
     static final String HISTORY = "data/planning/history.json";
-    public record PlanChange(String id, String at, String actor, String reason, Map<String,String> before, Map<String,String> after) {}
+    /** One undoable step: only the fields that changed, never whole-file copies (see {@link PlanEdits}). */
+    public record PlanChange(String id, String at, String actor, String reason, List<PlanEdits.Edit> edits) {}
+    static final int HISTORY_VERSION = 2;
     public record History(int schemaVersion, List<PlanChange> undo, List<PlanChange> redo) {}
     public record Notes(int schemaVersion, Map<String,String> notes) {}
     public record Result(PlanChange change, List<StudySession> blocks, List<String> notices) {}
@@ -73,12 +75,14 @@ public final class PlannerService {
             }
             for (var command : commands) apply(stage, command, notices);
             Map<String, byte[]> after = PlanningFiles.capture(stage, DOMAIN);
-            var change = new PlanChange(UUID.randomUUID().toString(), Instant.now().toString(), actor, reason, PlanningFiles.encode(before), PlanningFiles.encode(after));
+            List<PlanEdits.Edit> edits = new ArrayList<>();
+            for (String name : DOMAIN) edits.addAll(PlanEdits.diff(name, before.get(name), after.get(name)));
+            var change = new PlanChange(UUID.randomUUID().toString(), Instant.now().toString(), actor, reason, List.copyOf(edits));
             if (apply) {
                 var history = history(root); List<PlanChange> undo = new ArrayList<>(history.undo()); undo.add(change);
                 while (undo.size() > 50) undo.removeFirst();
                 guards.put(HISTORY, PlanningFiles.bytes(root, HISTORY));
-                after.put(HISTORY, PlanningFiles.JSON.writeValueAsBytes(new History(1, List.copyOf(undo), List.of())));
+                after.put(HISTORY, historyBytes(undo, new ArrayList<>()));
                 for (var entry : extra.entrySet()) {
                     if (!entry.getKey().matches("data/agent/(proposals|archive)/[a-zA-Z0-9_-]{1,80}\\.json")) throw new IOException("Öneri yolu geçersiz");
                     guards.put(entry.getKey(), extraBefore.containsKey(entry.getKey()) ? extraBefore.get(entry.getKey()) : PlanningFiles.bytes(root, entry.getKey())); after.put(entry.getKey(), entry.getValue());
@@ -97,15 +101,18 @@ public final class PlannerService {
         var history = history(root); var from = new ArrayList<>(redo ? history.redo() : history.undo());
         if (from.isEmpty()) throw new IOException(redo ? "Yinelenecek işlem yok" : "Geri alınacak işlem yok");
         var change = from.removeLast();
-        Map<String,byte[]> required = PlanningFiles.decode(redo ? change.before() : change.after());
-        Map<String,byte[]> target = PlanningFiles.decode(redo ? change.after() : change.before());
-        if (!required.keySet().equals(new LinkedHashSet<>(DOMAIN)) || !target.keySet().equals(required.keySet())) throw new IOException("İşlem geçmişi yolları geçersiz");
-        validateDomain(target);
-        // Check the last applied state rather than restoring over external edits.
-        for (var e : required.entrySet()) if (!Arrays.equals(PlanningFiles.bytes(root, e.getKey()), e.getValue())) throw new IOException("STALE_SNAPSHOT: Dosya değişti. Önce yenile; bu işlem geri alınamaz.");
+        // Each edit checks the field still holds the value this step left, so external edits are never overwritten.
+        Map<String,byte[]> required = new LinkedHashMap<>(), target = new LinkedHashMap<>(), domain = PlanningFiles.capture(root, DOMAIN);
+        Map<String,List<PlanEdits.Edit>> byFile = new LinkedHashMap<>();
+        for (var edit : change.edits()) byFile.computeIfAbsent(edit.file(), k -> new ArrayList<>()).add(edit);
+        for (var e : byFile.entrySet()) {
+            byte[] current = domain.get(e.getKey()), next = PlanEdits.apply(current, e.getValue(), !redo);
+            required.put(e.getKey(), current); target.put(e.getKey(), next); domain.put(e.getKey(), next);
+        }
+        validateDomain(domain);
         var to = new ArrayList<>(redo ? history.undo() : history.redo()); to.add(change);
         required.put(HISTORY, PlanningFiles.bytes(root, HISTORY));
-        target.put(HISTORY, PlanningFiles.JSON.writeValueAsBytes(new History(1, redo ? to : from, redo ? from : to)));
+        target.put(HISTORY, historyBytes(redo ? to : from, redo ? from : to));
         PlanningFiles.commit(root, required, target);
         if (expected != null) expected = fingerprint(root, expectedWeek);
         return change;
@@ -126,12 +133,31 @@ public final class PlannerService {
         }catch(RuntimeException error){throw new IOException("İşlem geçmişi verileri geçersiz; dosyalar korunuyor",error);}
         finally{try(var paths=Files.walk(stage)){for(var path:paths.sorted(Comparator.reverseOrder()).toList())Files.deleteIfExists(path);}}
     }
+    /** Safety net for the 5 MB write limit; field-level steps are tiny, but a bulk import could still be large. */
+    static final int HISTORY_BUDGET = 3 * 1024 * 1024;
+    static byte[] historyBytes(List<PlanChange> undo, List<PlanChange> redo) throws IOException {
+        byte[] bytes = PlanningFiles.JSON.writeValueAsBytes(new History(HISTORY_VERSION, List.copyOf(undo), List.copyOf(redo)));
+        while (bytes.length > HISTORY_BUDGET && undo.size() + redo.size() > 1) {
+            if (undo.size() > (redo.isEmpty() ? 1 : 0)) undo.removeFirst(); else redo.removeFirst();
+            bytes = PlanningFiles.JSON.writeValueAsBytes(new History(HISTORY_VERSION, List.copyOf(undo), List.copyOf(redo)));
+        }
+        return bytes;
+    }
     static History history(Path root) throws IOException {
-        var value = PlanningFiles.read(root, HISTORY, History.class, new History(1,List.of(),List.of()));
-        if (value.schemaVersion() != 1 || value.undo() == null || value.redo() == null || value.undo().size() + value.redo().size() > 50) throw new IOException("İşlem geçmişi geçersiz");
+        byte[] bytes = PlanningFiles.bytes(root, HISTORY);
+        if (bytes == null) return new History(HISTORY_VERSION, List.of(), List.of());
+        History value;
+        try {
+            var tree = PlanningFiles.JSON.readTree(bytes);
+            // Version 1 stored whole-file snapshots (~600 KB per step); it is dropped once and replaced on the next write.
+            if (tree.path("schemaVersion").asInt() == 1) return new History(HISTORY_VERSION, List.of(), List.of());
+            value = PlanningFiles.JSON.treeToValue(tree, History.class);
+        } catch (RuntimeException | com.fasterxml.jackson.core.JacksonException error) { throw new IOException("İşlem geçmişi geçersiz", error); }
+        if (value.schemaVersion() != HISTORY_VERSION || value.undo() == null || value.redo() == null || value.undo().size() + value.redo().size() > 50) throw new IOException("İşlem geçmişi geçersiz");
         for (var c : java.util.stream.Stream.concat(value.undo().stream(), value.redo().stream()).toList()) {
-            if (c == null || c.before() == null || c.after() == null || !c.before().keySet().equals(new LinkedHashSet<>(DOMAIN)) || !c.after().keySet().equals(c.before().keySet())) throw new IOException("İşlem geçmişi geçersiz");
-            PlanningFiles.decode(c.before()); PlanningFiles.decode(c.after()); Instant.parse(c.at());
+            if (c == null || c.edits() == null || c.edits().size() > 100_000) throw new IOException("İşlem geçmişi geçersiz");
+            for (var edit : c.edits()) PlanEdits.validate(edit, DOMAIN);
+            try { Instant.parse(c.at()); } catch (RuntimeException error) { throw new IOException("İşlem geçmişi geçersiz", error); }
         }
         return value;
     }

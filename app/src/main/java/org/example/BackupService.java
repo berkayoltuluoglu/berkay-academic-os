@@ -142,8 +142,7 @@ public final class BackupService {
 
     private void validateRecords(Path stage) throws IOException {
         try {
-            PlanningPreferences.load(stage); PlannerService.notes(stage);var history=PlannerService.history(stage);
-            for(var change:java.util.stream.Stream.concat(history.undo().stream(),history.redo().stream()).toList()){PlannerService.validateDomain(PlanningFiles.decode(change.before()));PlannerService.validateDomain(PlanningFiles.decode(change.after()));}
+            PlanningPreferences.load(stage); PlannerService.notes(stage);PlannerService.history(stage); // validates every recorded edit's file and path
             new ProposalService(stage).list(null);
             if (Files.exists(stage.resolve("data/tasks.json"))) new TaskStorageService(stage.resolve("data/tasks.json")).loadTasks();
             if (Files.exists(stage.resolve("data/courses/academic.json"))) new CourseStorageService(stage.resolve("data/courses/academic.json")).load();
