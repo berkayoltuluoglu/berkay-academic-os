@@ -296,7 +296,8 @@ public class App extends Application {
 
     @Override
     public void stop() throws Exception {
-        try { leaveCurrentModule(); }
+        // A second launch exits before the UI is built ("zaten çalışıyor"); there is no module to leave then.
+        try { if (moduleActionHandler != null) leaveCurrentModule(); }
         finally {
             if(focusPulse!=null)focusPulse.stop();
             if (reminders != null) reminders.close(); tray.close();
