@@ -7,7 +7,7 @@ class AgentGuideTest {
     @TempDir Path root;
     @Test void documentedJsonExampleValidatesAndPackagedGuideMatchesSource()throws Exception{
         String guide=Files.readString(Path.of("../AGENTS.md"));Matcher match=Pattern.compile("```json\\n(.*?)\\n```",Pattern.DOTALL).matcher(guide);assertTrue(match.find());
-        Path proposal=root.resolve("example.json");Files.writeString(proposal,match.group(1));var out=new ByteArrayOutputStream();assertEquals(0,AgentCli.run(new String[]{"--profile",root.toString(),"validate",proposal.toString()},new PrintStream(out)),out.toString());
+        Path proposal=root.resolve("example.json");Files.writeString(proposal,match.group(1));var out=new ByteArrayOutputStream();assertEquals(0,AgentCli.run(new String[]{"--profile",root.toString(),"validate",proposal.toString()},new PrintStream(out),java.time.Clock.fixed(java.time.Instant.parse("2026-11-09T00:00:00Z"),java.time.ZoneId.of("Europe/Istanbul"))),out.toString());
         assertTrue(PlanningFiles.JSON.readTree(out.toString()).path("stale").asBoolean());
         try(var stream=AgentGuide.class.getResourceAsStream("/agent-guide/AGENTS.md")){assertNotNull(stream);assertEquals(guide,new String(stream.readAllBytes(),java.nio.charset.StandardCharsets.UTF_8));}
         AgentGuide.install(root);assertEquals(guide,Files.readString(root.resolve("AGENTS.md")));Files.writeString(root.resolve("AGENTS.md"),"Özel kullanıcı kılavuzu");AgentGuide.install(root);assertEquals("Özel kullanıcı kılavuzu",Files.readString(root.resolve("AGENTS.md")));

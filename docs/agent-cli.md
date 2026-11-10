@@ -13,7 +13,7 @@ Bütün komutlarda `--help` JSON örnekler döndürür. CLI ağ isteği veya Jav
 | `propose FILE` | Doğrulanan öneriyi kutuya koyar, `pending` kaydı döner. |
 | `proposals` | İsteğe bağlı `--status pending/accepted/partially_accepted/rejected`. |
 | `proposal-status ID` | Sonuç ve kullanıcı notu; arşivde de arar. |
-| `suggest` | `--week` zorunlu; `proposal` ve `unscheduled`; kaydetmez. |
+| `suggest` | `--week` zorunlu; `proposal`, `unscheduled`, `message`; kaydetmez. Yerleştirme yoksa `proposal: null`. |
 | `task add` | `--title`, isteğe bağlı `--due`, `--minutes`; ayrıca `--apply` ve kullanıcı ayarı gerekli. |
 | `block add` | `--date`, `--start`, `--minutes`, `--title`; isteğe bağlı `--kind task/work/classroom/application`, `--item ID`; `--apply`. |
 | `block move` | `--id`, `--date`, `--start`, `--apply`. |
@@ -33,6 +33,19 @@ Bütün komutlarda `--help` JSON örnekler döndürür. CLI ağ isteği veya Jav
 | `complete-item` | `kind: task/work`, `id` |
 | `estimate` | `kind: task/work`, `id`, `minutes` |
 | `create-task` | `title`; isteğe bağlı kararlı `id`, ISO `date`, tahmini `minutes`, `details.note` |
+
+`schedule.date` önerinin snapshot haftası içinde olmalı (`OUTSIDE_WEEK`). `schedule`, `move` ve
+`resize` geçmiş güne çalışma koyamaz; bugün `snapshot.timezone` ile hesaplanır (`PAST_DATE`).
+Başlangıç ve süre 15 dakika katı olmalı; saniyeli başlangıçlar kabul edilmez (`TIME_GRID`).
+Bu denetimler kullanıcı değiştirilmiş bir komutu kabul ederken de yeniden yapılır.
+Kaçırılmış bloğu başka haftaya taşıyan `move` için önerinin haftası **kaynak bloğun haftasıdır**;
+hedef gün geçmişte olmadığı sürece ileri haftaya taşıma korunur. Görev teslim tarihleri ve
+gerçekleşen çalışma süreleri bu 15 dakikalık planlama ızgarasıyla sınırlandırılmaz.
+
+`suggest` çıktısındaki `proposal` null ise `validate`/`propose` çağırma. `message` sonucu özetler;
+`unscheduled` boşsa yerleştirilecek çalışma kalmamıştır, doluysa her işin nedeni ve eksik dakikası vardır.
+Süresi geçmiş işler havuzda görünmeye devam eder; otomatik öneride "Teslim tarihi geçmiş" olarak ayrılır.
+Öneri nesnesinin `commands` dizisi hâlâ en az bir komut gerektirir; boş bir öneri kutuya kaydedilmez.
 
 `preferences`: saat dilimi, çalışma başlangıç/bitişi, günlük dakika sınırı, min/max blok,
 `closed: [{date: "2026-11-13", day: 0, start: "18:00", end: "23:59"}]`.

@@ -1,0 +1,165 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000" role="img" aria-labelledby="title desc">
+<title id="title">Haftalık Plan — gümüş tasarım önerisi</title>
+<desc id="desc">Academic OS için mevcut gümüş görünümü koruyan tasarım önerisi. Örnek veriler kullanılmıştır; uygulama ekranı değildir.</desc>
+<style>text {font-family: Poppins, "DejaVu Sans", sans-serif; fill:#24262B} .muted {fill:#626C7B} .strong {font-weight:600}</style>
+<rect x="0" y="0" width="1600" height="1000" rx="0" fill="#FAFBFD" stroke="#FAFBFD"/>
+<rect x="0" y="0" width="1600" height="64" rx="0" fill="#F1F3F6" stroke="#E1E5EC"/>
+<text x="24" y="39" font-size="16" class="strong">⌘  Academic OS</text>
+<rect x="1180" y="15" width="310" height="34" rx="12" fill="#FFFFFF" stroke="#E1E5EC"/>
+<text x="1196" y="37" font-size="12" class="muted">Modül ara</text>
+<text x="1428" y="37" font-size="11" class="muted">Ctrl K</text>
+<rect x="1512" y="15" width="34" height="34" rx="17" fill="#E5E9EF" stroke="#E5E9EF"/>
+<text x="1524" y="37" font-size="12" class="strong">B</text>
+<rect x="0" y="64" width="180" height="936" rx="0" fill="#EFF1F5" stroke="#E1E5EC"/>
+<text x="28" y="114" font-size="13" class="">Bugün</text>
+<rect x="12" y="136" width="156" height="44" rx="10" fill="#E1E5EC" stroke="#E1E5EC"/>
+<text x="28" y="166" font-size="13" class="strong">Haftalık Plan</text>
+<text x="28" y="218" font-size="13" class="">Dersler</text>
+<text x="28" y="270" font-size="13" class="">Görevler</text>
+<text x="28" y="322" font-size="13" class="">Finans</text>
+<text x="28" y="386" font-size="11" class="muted">ARAÇLAR  ›</text>
+<text x="28" y="430" font-size="11" class="muted">WEB  ›</text>
+<path d="M20 883 H160" fill="none" stroke="#E1E5EC"/>
+<text x="28" y="917" font-size="12" class="muted">Koyu tema</text>
+<text x="28" y="955" font-size="12" class="muted">Hareketi azalt</text>
+<text x="210" y="115" font-size="30" class="strong">Haftalık Plan</text>
+<text x="211" y="143" font-size="13" class="muted">Çalışmalarını haftaya yay, teslimleri takip et.</text>
+<rect x="1166" y="96" width="152" height="36" rx="10" fill="#FFFFFF" stroke="#E1E5EC"/>
+<text x="1179" y="119" font-size="12" class="">Öneriler · 2</text>
+<rect x="1330" y="96" width="240" height="36" rx="10" fill="#353D48" stroke="#353D48"/>
+<text x="1343" y="119" font-size="12" class="strong" style="fill:#FFFFFF">Otomatik yerleştir</text>
+<rect x="210" y="167" width="1360" height="55" rx="12" fill="#F1F3F6" stroke="#E1E5EC"/>
+<text x="230" y="200" font-size="10" class="muted">PLANLANAN</text>
+<text x="330" y="201" font-size="16" class="strong">6 sa 30 dk</text>
+<path d="M470 180 L470 208" stroke="#E1E5EC"/>
+<text x="490" y="200" font-size="10" class="muted">TAMAMLANAN</text>
+<text x="601" y="201" font-size="16" class="strong">2 sa</text>
+<path d="M710 180 L710 208" stroke="#E1E5EC"/>
+<text x="730" y="200" font-size="10" class="muted">BU HAFTA TESLİM</text>
+<text x="872" y="201" font-size="16" class="strong">3 iş</text>
+<text x="1394" y="200" font-size="12" class="muted">✓ Kaydedildi</text>
+<rect x="210" y="240" width="248" height="704" rx="12" fill="#FFFFFF" stroke="#E1E5EC"/>
+<text x="228" y="270" font-size="16" class="strong">Plan havuzu</text>
+<text x="404" y="270" font-size="12" class="muted">4 iş</text>
+<rect x="226" y="286" width="216" height="36" rx="12" fill="#FAFBFD" stroke="#E1E5EC"/>
+<text x="238" y="309" font-size="12" class="muted">İş veya ders ara…</text>
+<rect x="226" y="332" width="216" height="36" rx="10" fill="#FFFFFF" stroke="#E1E5EC"/>
+<text x="239" y="355" font-size="12" class="">+ Hızlı görev ekle</text>
+<text x="228" y="398" font-size="11" class="strong">BU HAFTA</text>
+<text x="416" y="398" font-size="12" class="muted">3</text>
+<rect x="226" y="414" width="216" height="132" rx="10" fill="#F1F3F6" stroke="#7D8797"/>
+<text x="240" y="439" font-size="13" class="strong">Fizik deney raporu</text>
+<text x="240" y="463" font-size="11" class="muted">Classroom · Yüksek</text>
+<text x="240" y="489" font-size="12" class="">Cuma 13 Kas · 17:00</text>
+<text x="240" y="514" font-size="11" class="muted">2 sa kaldı · 1 sa planlı</text>
+<rect x="240" y="527" width="185" height="4" rx="2" fill="#E5E9EF" stroke="#E5E9EF"/>
+<rect x="240" y="527" width="67" height="4" rx="2" fill="#7D8797" stroke="#7D8797"/>
+<rect x="226" y="558" width="216" height="132" rx="10" fill="#FFFFFF" stroke="#E1E5EC"/>
+<text x="240" y="583" font-size="13" class="strong">Matematik tekrarı</text>
+<text x="240" y="607" font-size="11" class="muted">Sınav · Normal</text>
+<text x="240" y="633" font-size="12" class="">Pazar 15 Kas · Gün içinde</text>
+<text x="240" y="658" font-size="11" class="muted">90 dk kaldı · 60 dk planlı</text>
+<rect x="240" y="671" width="185" height="4" rx="2" fill="#E5E9EF" stroke="#E5E9EF"/>
+<rect x="240" y="671" width="67" height="4" rx="2" fill="#7D8797" stroke="#7D8797"/>
+<text x="228" y="728" font-size="11" class="strong">TARİHSİZ</text>
+<rect x="226" y="745" width="216" height="91" rx="12" fill="#FFFFFF" stroke="#E1E5EC"/>
+<text x="240" y="772" font-size="13" class="strong">Portfolyoyu güncelle</text>
+<text x="240" y="798" font-size="11" class="muted">Görev · Tahmin yok</text>
+<text x="228" y="914" font-size="12" class="muted">İşi takvime sürükle.</text>
+<rect x="474" y="240" width="808" height="704" rx="12" fill="#FFFFFF" stroke="#E1E5EC"/>
+<rect x="490" y="254" width="36" height="36" rx="10" fill="#FFFFFF" stroke="#E1E5EC"/>
+<text x="503" y="277" font-size="12" class="">‹</text>
+<rect x="532" y="254" width="78" height="36" rx="10" fill="#FFFFFF" stroke="#E1E5EC"/>
+<text x="545" y="277" font-size="12" class="">Bu hafta</text>
+<rect x="616" y="254" width="36" height="36" rx="10" fill="#FFFFFF" stroke="#E1E5EC"/>
+<text x="629" y="277" font-size="12" class="">›</text>
+<text x="670" y="278" font-size="15" class="strong">9–15 Kasım 2026</text>
+<text x="1060" y="278" font-size="18" class="muted">↶    ↷    ⟳</text>
+<rect x="1160" y="254" width="104" height="36" rx="10" fill="#FFFFFF" stroke="#E1E5EC"/>
+<text x="1173" y="277" font-size="12" class="">Ayrıntı ›</text>
+<path d="M474 306 H1282" fill="none" stroke="#E1E5EC"/>
+<text x="543" y="340" font-size="11" class="muted">PZT 9</text>
+<path d="M526 363 L526 918" stroke="#EFF1F5"/>
+<rect x="635" y="318" width="97" height="33" rx="8" fill="#E5E9EF" stroke="#E5E9EF"/>
+<text x="648" y="340" font-size="11" class="strong">SALI 10</text>
+<path d="M631 363 L631 918" stroke="#EFF1F5"/>
+<text x="753" y="340" font-size="11" class="muted">ÇAR 11</text>
+<path d="M736 363 L736 918" stroke="#EFF1F5"/>
+<text x="858" y="340" font-size="11" class="muted">PER 12</text>
+<path d="M841 363 L841 918" stroke="#EFF1F5"/>
+<text x="963" y="340" font-size="11" class="muted">CUM 13</text>
+<path d="M946 363 L946 918" stroke="#EFF1F5"/>
+<text x="1068" y="340" font-size="11" class="muted">CMT 14</text>
+<path d="M1051 363 L1051 918" stroke="#EFF1F5"/>
+<text x="1173" y="340" font-size="11" class="muted">PAZ 15</text>
+<path d="M1156 363 L1156 918" stroke="#EFF1F5"/>
+<text x="486" y="380" font-size="10" class="muted">Teslim</text>
+<rect x="950" y="363" width="97" height="36" rx="6" fill="#FBF3F3" stroke="#EDD6D6"/>
+<text x="956" y="377" font-size="10" class="" style="fill:#A24E4E">Rapor · 17:00</text>
+<text x="956" y="391" font-size="10" class="" style="fill:#A24E4E">Son teslim</text>
+<text x="486" y="428" font-size="11" class="muted">09:00</text>
+<path d="M526 424 H1264" fill="none" stroke="#E1E5EC" stroke-dasharray="3 5"/>
+<text x="486" y="485" font-size="11" class="muted">10:00</text>
+<path d="M526 481 H1264" fill="none" stroke="#E1E5EC" stroke-dasharray="3 5"/>
+<text x="486" y="542" font-size="11" class="muted">11:00</text>
+<path d="M526 538 H1264" fill="none" stroke="#E1E5EC" stroke-dasharray="3 5"/>
+<text x="486" y="599" font-size="11" class="muted">12:00</text>
+<path d="M526 595 H1264" fill="none" stroke="#E1E5EC" stroke-dasharray="3 5"/>
+<text x="486" y="656" font-size="11" class="muted">13:00</text>
+<path d="M526 652 H1264" fill="none" stroke="#E1E5EC" stroke-dasharray="3 5"/>
+<text x="486" y="713" font-size="11" class="muted">14:00</text>
+<path d="M526 709 H1264" fill="none" stroke="#E1E5EC" stroke-dasharray="3 5"/>
+<text x="486" y="770" font-size="11" class="muted">15:00</text>
+<path d="M526 766 H1264" fill="none" stroke="#E1E5EC" stroke-dasharray="3 5"/>
+<text x="486" y="827" font-size="11" class="muted">16:00</text>
+<path d="M526 823 H1264" fill="none" stroke="#E1E5EC" stroke-dasharray="3 5"/>
+<text x="486" y="884" font-size="11" class="muted">17:00</text>
+<path d="M526 880 H1264" fill="none" stroke="#E1E5EC" stroke-dasharray="3 5"/>
+<rect x="531" y="424" width="95" height="80.5" rx="8" fill="#F1F3F6" stroke="#CCD3DE"/>
+<text x="539" y="444" font-size="11" class="strong">Devre Analizi</text>
+<text x="539" y="462" font-size="10" class="muted">09:00–10:30</text>
+<rect x="636" y="538" width="95" height="80.5" rx="8" fill="#F1F3F6" stroke="#7D8797"/>
+<text x="644" y="558" font-size="11" class="strong">Fizik raporu</text>
+<text x="644" y="576" font-size="10" class="muted">11:00–12:30</text>
+<rect x="741" y="652" width="95" height="80.5" rx="8" fill="#FFFFFF" stroke="#CCD3DE" stroke-dasharray="5 4"/>
+<text x="749" y="672" font-size="11" class="strong">Matematik</text>
+<text x="749" y="690" font-size="10" class="muted">13:00–14:30</text>
+<text x="749" y="721.5" font-size="10" class="muted">◇ Öneri</text>
+<rect x="846" y="481" width="95" height="80.5" rx="8" fill="#F1F3F6" stroke="#CCD3DE"/>
+<text x="854" y="501" font-size="11" class="strong">Elektronik</text>
+<text x="854" y="519" font-size="10" class="muted">10:00–11:30</text>
+<rect x="951" y="709" width="95" height="80.5" rx="8" fill="#FFFFFF" stroke="#CCD3DE" stroke-dasharray="5 4"/>
+<text x="959" y="729" font-size="11" class="strong">Rapor kontrol</text>
+<text x="959" y="747" font-size="10" class="muted">14:00–15:00</text>
+<text x="959" y="778.5" font-size="10" class="muted">◇ Öneri</text>
+<path d="M631 730 H736" fill="none" stroke="#397DF6"/>
+<text x="640" y="724" font-size="10" class="" style="fill:#397DF6">Şimdi 14:22</text>
+<text x="492" y="933" font-size="11" class="muted">□ Ders    ▣ Çalışma    ◇ Öneri</text>
+<rect x="1298" y="240" width="272" height="704" rx="12" fill="#FFFFFF" stroke="#E1E5EC"/>
+<text x="1318" y="270" font-size="15" class="strong">Çalışma ayrıntıları</text>
+<text x="1540" y="270" font-size="20" class="muted">×</text>
+<text x="1318" y="314" font-size="16" class="strong">Fizik deney raporu</text>
+<text x="1318" y="339" font-size="12" class="muted">Classroom · Fizik</text>
+<rect x="1318" y="359" width="232" height="36" rx="10" fill="#353D48" stroke="#353D48"/>
+<text x="1331" y="382" font-size="12" class="strong" style="fill:#FFFFFF">▶  Bu bloğa odaklan</text>
+<text x="1318" y="428" font-size="11" class="muted">ZAMAN</text>
+<rect x="1318" y="442" width="232" height="40" rx="12" fill="#FAFBFD" stroke="#E1E5EC"/>
+<text x="1330" y="467" font-size="13" class="">Salı, 10 Kasım 2026</text>
+<rect x="1318" y="492" width="109" height="40" rx="12" fill="#FAFBFD" stroke="#E1E5EC"/>
+<rect x="1439" y="492" width="111" height="40" rx="12" fill="#FAFBFD" stroke="#E1E5EC"/>
+<text x="1330" y="517" font-size="14" class="">11:00</text>
+<text x="1451" y="517" font-size="14" class="">12:30</text>
+<text x="1318" y="559" font-size="12" class="muted">90 dk · Uygun aralık</text>
+<path d="M1318 580 H1550" fill="none" stroke="#E1E5EC"/>
+<text x="1318" y="608" font-size="11" class="muted">SON TESLİM</text>
+<text x="1318" y="633" font-size="13" class="">Cuma 13 Kasım · 17:00</text>
+<text x="1318" y="679" font-size="11" class="muted">ALT GÖREVLER</text>
+<text x="1318" y="707" font-size="12" class="muted">✓  Ölçümleri derle</text>
+<text x="1318" y="735" font-size="12" class="">□  Sonuçları yorumla</text>
+<text x="1318" y="763" font-size="12" class="">□  Raporu tamamla</text>
+<text x="1318" y="805" font-size="11" class="muted">NOT</text>
+<rect x="1318" y="819" width="232" height="64" rx="12" fill="#FAFBFD" stroke="#E1E5EC"/>
+<text x="1330" y="844" font-size="12" class="muted">Sonuç grafiğini ekle…</text>
+<text x="1318" y="921" font-size="10" class="muted">Değişiklikler otomatik kaydedilir.</text>
+<text x="210" y="979" font-size="11" class="muted">TASARIM ÖNERİSİ  /  Örnek içerik  /  10 Kasım 2026</text>
+</svg>

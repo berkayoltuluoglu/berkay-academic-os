@@ -19,7 +19,7 @@ import java.util.function.Consumer;
 /** The silver home screen displays and edits native application records. */
 public final class TodayModuleView {
     private static final Locale TR = Locale.forLanguageTag("tr");
-    private record Loaded(DailyAgendaService.Day day, TodayService.Snapshot summary, String focusWarning, List<PlanningTarget> targets) {}
+    private record Loaded(DailyAgendaService.Day day, TodayService.Snapshot summary, String focusWarning, List<PlanningTarget> targets, LocalDate today) {}
     private final Path projectRoot;
     private final Consumer<String> navigate;
     private final FocusTimerService focus;
@@ -36,6 +36,7 @@ public final class TodayModuleView {
     private Task<Loaded> pending;
     private DailyAgendaService.Day day;
     private LocalDate displayedDate = LocalDate.now();
+    private LocalDate today = LocalDate.now(ZoneId.of("Europe/Istanbul"));
     private boolean disposed, saving, stacked;
     private int lastMinute = -1;
     private ComboBox<PlanningTarget> focusTarget;
@@ -98,10 +99,13 @@ public final class TodayModuleView {
 
     private Loaded load(LocalDate date) {
         String warning = null;
+        LocalDate currentDate=LocalDate.now(ZoneId.of("Europe/Istanbul"));
+        try { currentDate=LocalDate.now(ZoneId.of(PlanningPreferences.load(projectRoot).timezone())); }
+        catch(Exception failure) { warning="Planlama tercihleri: "+failure.getMessage(); }
         try { focus.creditCompleted(); } catch (Exception failure) { warning = "Odak kaydı: " + failure.getMessage(); }
         List<PlanningTarget> loadedTargets=List.of();
         try{loadedTargets=PlanningTarget.load(projectRoot);}catch(Exception error){warning=error.getMessage();}
-        return new Loaded(service.load(projectRoot, date), new TodayService().load(projectRoot, date), warning,loadedTargets);
+        return new Loaded(service.load(projectRoot, date), new TodayService().load(projectRoot, date), warning,loadedTargets,currentDate);
     }
     private void refresh() {
         if (disposed || saving) return;
@@ -138,6 +142,7 @@ public final class TodayModuleView {
     }
 
     private void render(Loaded loaded) {
+        today=loaded.today();
         dateLabel.setText(displayedDate.format(DateTimeFormatter.ofPattern("d MMMM, EEEE", TR)));
         var dues = deadlines(); timeline.onDeadline(this::openDeadline);
         timeline.update(displayedDate, day.events(), dues);
@@ -209,8 +214,9 @@ public final class TodayModuleView {
         if (rail.getChildren().size() > 1) rail.getChildren().remove(1, rail.getChildren().size());
         Label title = new Label("Yapılacaklar"); title.getStyleClass().add("silver-section-title");
         VBox box = new VBox(4, title); box.getStyleClass().addAll("panel", "silver-todo-card");
-        if (day.todos().isEmpty()) { Label empty = new Label("Bugün yapılacak bir şey yok"); empty.getStyleClass().add("soluk"); box.getChildren().add(empty); }
-        for (var todo : day.todos().stream().limit(8).toList()) {
+        var visible=day.todos().stream().filter(todo->!todo.date().isBefore(today.minusDays(7))).toList();
+        if (visible.isEmpty()) { Label empty = new Label("Bugün yapılacak bir şey yok"); empty.getStyleClass().add("soluk"); box.getChildren().add(empty); }
+        for (var todo : visible.stream().limit(8).toList()) {
             CheckBox check = new CheckBox(); check.setSelected(todo.done());
             check.setDisable(todo.external());
             check.setId("todo-" + (todo.coursework() ? "work-" : "task-") + todo.id());
@@ -227,11 +233,11 @@ public final class TodayModuleView {
             name.setOnMouseClicked(e -> details(todo.title(), due + (todo.detail().isBlank() ? "" : "\n\n" + todo.detail()), todo.module()));
             box.getChildren().add(row);
         }
-        long done = day.todos().stream().filter(DailyAgendaService.Todo::done).count();
-        ProgressBar progress = new ProgressBar(day.todos().isEmpty() ? 0 : (double) done / day.todos().size()); progress.setMaxWidth(Double.MAX_VALUE); HBox.setHgrow(progress, Priority.ALWAYS);
-        Label count = new Label(done + "/" + day.todos().size()); count.getStyleClass().add("silver-todo-date");
+        long done = visible.stream().filter(DailyAgendaService.Todo::done).count();
+        ProgressBar progress = new ProgressBar(visible.isEmpty() ? 0 : (double) done / visible.size()); progress.setMaxWidth(Double.MAX_VALUE); HBox.setHgrow(progress, Priority.ALWAYS);
+        Label count = new Label(done + "/" + visible.size()); count.getStyleClass().add("silver-todo-date");
         HBox footer = new HBox(10, progress, count); footer.setAlignment(Pos.CENTER_LEFT); box.getChildren().add(footer);
-        if (day.todos().size() > 8) { Button more = new Button("Tüm görevler"); more.setOnAction(e -> navigate.accept("tasks")); box.getChildren().add(more); }
+        if (visible.size() > 8) { Button more = new Button("Tüm görevler"); more.setOnAction(e -> navigate.accept("tasks")); box.getChildren().add(more); }
         rail.getChildren().add(box);
     }
 

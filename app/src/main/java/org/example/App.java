@@ -485,6 +485,8 @@ public class App extends Application {
             selectedModule = module;
             sidebarBuilder.select(module);
             boolean daily = "today".equals(module.getId()) || "agenda".equals(module.getId());
+            centerArea.getStyleClass().remove("planning-workspace");
+            if(daily)centerArea.getStyleClass().add("planning-workspace");
             pageHeading.setVisible(!daily); pageHeading.setManaged(!daily);
             pageTitle.setText(module.getName());
             pageDescription.setText(moduleDescription(module));

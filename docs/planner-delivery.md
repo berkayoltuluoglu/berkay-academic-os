@@ -132,6 +132,11 @@ Kaynak kontrolü: `git diff --check` temiz. Gerçek kullanıcı kurulumu değiş
 
 ## Bilinen küçük sorunlar — 8 Kasım 2026 incelemesi
 
+**10 Kasım güncellemesi:** Aşağıdaki liste tarihsel bulguları korur. 1–3 düzeltildi; 4'te otomatik
+planlayıcının geçmiş teslim gerekçesi düzeltildi, havuz görünürlüğü korundu. 5'teki boş `suggest`
+uyumsuzluğu giderildi; genel şema hata ayrıntıları, kalıcı kilit dosyaları ve elle planlama politikası açık.
+Güncel kapsam aşağıdaki "10 Kasım doğrulama düzeltmeleri" bölümündedir.
+
 Kopyalanmış gerçek veriyle CLI denemesinde bulundu. Hiçbiri öneri kutusunun kullanıcı onayı korumasını delmiyor;
 düzeltilmeleri acil değil, ertelendi.
 
@@ -167,3 +172,41 @@ düzeltilmeleri acil değil, ertelendi.
 
 Doğru çalıştığı doğrulananlar: `AFTER_DEADLINE`, `NOT_FOUND`, `CONFLICT` (Google tatili dahil), `DAILY_LIMIT`,
 `PREFERENCES`, 23:59 sınırı, boş `reason`, `--apply`/Ayarlar yazım koruması, hata çıkış kodu 2.
+
+## 10 Kasım doğrulama düzeltmeleri
+
+- `ProposalService`: yeni blok için snapshot hafta sınırı, profil saat diliminde geçmiş gün ve
+  15 dakikalık ızgara denetimi. Hatalar indeksli `OUTSIDE_WEEK`, `PAST_DATE`, `TIME_GRID` döner.
+  `move` kaynak bloğun haftasına ait öneriyle ileri haftaya taşınabilir; `resize` mevcut blok tarihini kullanır.
+  Beklerken tarihi geçen öneri ve kabul sırasında değiştirilen komutlar yeniden denetlenir.
+- `AutomaticPlanner`: yerleştirme yoksa `proposal: null`, özet `message` ve sığmayan işlerin nedenleri.
+  Süresi geçmiş teslimin nedeni artık "Teslim tarihi geçmiş". Boş `commands` kaydedilmez.
+- `WeeklyAgendaView`: null öneriyi göndermez; yerleşmeyen işler kullanıcıya başlık/neden olarak gösterilir.
+- CLI ve kılavuzlar yeni sonucu ve hata kodlarını açıklar; paketli kılavuzlar kaynakla aynı tutulur.
+- Testler sabit saat ve geçici profiller kullanır. Geçmiş gün, hafta sınırı, saniyeli/ızgara dışı başlangıç,
+  süre, ileri haftaya taşıma, kabulde yeniden denetim ve boş/yerleşemeyen/karışık havuz kapsanır.
+- Tasarım incelemesi: `docs/design-review.md`, `docs/design/planner-silver.svg`,
+  `docs/design/today-compact-silver.svg`. Kullanıcının seçtiği gümüş görünüm korunur;
+  bu görseller öneridir, üretim ekranlarının düzeni değiştirilmedi.
+
+Son doğrulama: `./gradlew :app:test :app:installDist --offline --no-daemon` başarılı;
+**206 test, 0 başarısızlık, 0 hata, 0 atlanan**. Linux kurulumun **5 testi başarılı**.
+Gerçek CLI'da `OUTSIDE_WEEK`, `PAST_DATE`, `TIME_GRID`, geçerli öneri ve boş öneri sonucu denendi;
+kuru komutlar geçici profilde dosya oluşturmadı. `git diff --check` temiz.
+Yeni kurulum paketi üretilmedi; gerçek kullanıcı verisi ve Google hesabına yazılmadı.
+
+## 10 Kasım arayüz geri bildirimi
+
+- Bugün/Ajanda yapılacaklarında ve haftalık havuzda yalnızca son 7 günlük geçmiş gösterilir.
+  Bugün profil saat diliminden hesaplanır; hafta gezinmesi sınırı değiştirmez. Eski kayıtlar silinmez;
+  CLI havuzunun kapsamı değişmez.
+- Son teslimler gün başlıklarının altında sabit şeride alındı. İlk iki kart gerçek saatini gösterir;
+  “+N teslim daha” bütün listeyi ayrıntıda açar. Birden çok 23:59 teslimi üst üste binmez.
+- Ayrıntı paneli başlangıçta kapalıdır, seçimle açılır ve kapatılabilir; kalan alanı yedi sütun kullanır.
+  Pencereye göre panel genişliği, daha az dış boşluk, gruplanmış araçlar ve dar ekranda ikinci araç satırı vardır.
+- `PlannerLayoutInterfaceTest`: son 7/8 gün sınırı, depolama/CLI korunması, sabit teslim şeridi,
+  23:59 saati, çoklu teslim, genişliğin geri kazanılması, açık/koyu ve 1920×1040 / 1200×800 düzen kontrolü.
+  Güncel uygulama görüntüleri `app/build/reports/planner-layout-*.png`.
+
+Arayüz sonrası son doğrulama: `./gradlew :app:test :app:installDist --offline --no-daemon` başarılı;
+**208 test, 0 başarısızlık, 0 hata, 0 atlanan**. `git diff --check` temiz.

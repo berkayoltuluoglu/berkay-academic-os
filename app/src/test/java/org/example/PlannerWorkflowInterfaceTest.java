@@ -25,7 +25,7 @@ class PlannerWorkflowInterfaceTest {
             waitFor(()->{try{return new StudyStorageService(root.resolve("data/study/sessions.json")).load().getFirst().actualMinutes()==60;}catch(Exception e){return false;}});
             waitFor(()->{try{return fx(()->((Label)focus.getScene().lookup("#focus-status")).getText().equals("Kaydedildi"));}catch(Exception e){return false;}});
             fx(()->{focus.close();return null;});
-            var snap=planner.snapshot(week);List<PlanProposal.Action> actions=List.of(new PlanProposal.Action("schedule",null,"","","Sınav tekrarı",week.plusDays(2).toString(),"13:00",60,"Sınavdan önce tekrar",null),new PlanProposal.Action("schedule",null,"","","Okuma",week.plusDays(3).toString(),"15:00",60,"Haftaya yayılan çalışma",null));
+            var snap=planner.snapshot(week);List<PlanProposal.Action> actions=List.of(new PlanProposal.Action("schedule",null,"","","Sınav tekrarı",LocalDate.now(ZoneId.of("Europe/Istanbul")).toString(),"13:00",60,"Sınavdan önce tekrar",null),new PlanProposal.Action("schedule",null,"","","Okuma",week.plusDays(6).toString(),"15:00",60,"Haftaya yayılan çalışma",null));
             var p=new PlanProposal(1,"ui-proposal","CLI test ajanı","İki çalışma önerisi",null,week.toString(),snap.fingerprint(),actions,"pending","",List.of(),null);Path file=root.resolve("proposal.json");Files.write(file,PlanningFiles.JSON.writeValueAsBytes(p));
             var output=new java.io.ByteArrayOutputStream();assertEquals(0,AgentCli.run(new String[]{"--profile",root.toString(),"propose",file.toString()},new java.io.PrintStream(output)),output.toString());
             waitFor(()->exists(stage[0],"#proposal-ghost-ui-proposal-0"));

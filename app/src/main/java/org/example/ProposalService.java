@@ -11,12 +11,16 @@ public final class ProposalService {
     public record Issue(int index,String code,String message) {}
     public record Validation(boolean valid,boolean stale,List<Issue> issues) {}
     private final Path root;
-    public ProposalService(Path root){this.root=root;}
+    private final Clock clock;
+    public ProposalService(Path root){this(root, Clock.systemUTC());}
+    ProposalService(Path root, Clock clock){this.root=root;this.clock=clock;}
     public PlanProposal read(Path file)throws IOException{
         if(Files.size(file)>FinanceStorageService.MAX_BYTES)throw new IOException("Öneri dosyası 5 MB sınırını aşıyor");
         var value=PlanningFiles.JSON.readValue(FinanceStorageService.readLimited(file),PlanProposal.class);check(value);return value;
     }
     static void check(PlanProposal p)throws IOException{
+        if(p != null && p.commands().isEmpty())
+            throw new IOException("INVALID_PROPOSAL: commands en az bir komut içermeli");
         try{
             if(p.schemaVersion()!=1||!p.id().matches("[a-zA-Z0-9_-]{1,80}")||p.agent()==null||p.agent().isBlank()||p.agent().length()>200
                     ||p.note()==null||p.note().length()>4000||p.commands().isEmpty()||p.commands().size()>500||p.fingerprint()==null||!p.fingerprint().matches("[a-f0-9]{64}")
@@ -34,9 +38,9 @@ public final class ProposalService {
         if(!snapshot.errors().isEmpty())return new Validation(false,!snapshot.fingerprint().equals(proposal.fingerprint()),List.of(new Issue(-1,"SOURCE_ERROR",String.join("; ",snapshot.errors()))));
         PlanningSnapshot context=snapshot;
         for(int i=0;i<proposal.commands().size();i++)try{
-            var action=proposal.commands().get(i);var command=command(action);checkDeadline(action,context);
+            var action=proposal.commands().get(i);var command=command(action);checkPlacement(action,context);checkDeadline(action,context);
             List<PlannerCommand> attempt=new ArrayList<>(prefix);attempt.add(command);
-            var dry=planner.transact(attempt,proposal.agent(),proposal.note(),false,Map.of());checkLimits(dry.blocks(),snapshot,beforeBlocks);prefix.add(command);context=withCreatedTask(context,action);
+            var dry=planner.transact(attempt,proposal.agent(),proposal.note(),false,Map.of());checkLimits(dry.blocks(),snapshot,beforeBlocks);prefix.add(command);context=withBlocks(withCreatedTask(context,action),dry.blocks());
         }catch(Exception error){issues.add(new Issue(i,AgentCli.errorCode(Objects.toString(error.getMessage(),"")),error.getMessage()));}
         return new Validation(issues.isEmpty(),!snapshot.fingerprint().equals(proposal.fingerprint()),List.copyOf(issues));
     }
@@ -77,7 +81,12 @@ public final class ProposalService {
         for(int i=0;i<p.commands().size();i++){
             var action=accepted.get(i);
             if(action==null)decisions.add(new PlanProposal.Decision(i,"rejected",null));
-            else{checkDeadline(action,context);commands.add(command(action));context=withCreatedTask(context,action);decisions.add(new PlanProposal.Decision(i,action.equals(p.commands().get(i))?"accepted":"modified",action));}
+            else{
+                commands.add(command(action));checkPlacement(action,context);checkDeadline(action,context);
+                var dry=planner.transact(commands,p.agent(),p.note(),false,Map.of());checkLimits(dry.blocks(),snapshot,beforeBlocks);
+                context=withBlocks(withCreatedTask(context,action),dry.blocks());
+                decisions.add(new PlanProposal.Decision(i,action.equals(p.commands().get(i))?"accepted":"modified",action));
+            }
         }
         String state=commands.isEmpty()?"rejected":commands.size()==p.commands().size()?"accepted":"partially_accepted";
         var result=new PlanProposal(1,p.id(),p.agent(),p.note(),p.createdAt(),p.week(),p.fingerprint(),p.commands(),state,note,List.copyOf(decisions),Instant.now().toString());
@@ -86,7 +95,6 @@ public final class ProposalService {
         Map<String,byte[]> before=pendingBefore;
         if(commands.isEmpty())PlanningFiles.commit(root,before,Map.of(name,bytes));
         else {
-            var dry=planner.transact(commands,"proposal:"+p.agent(),"Öneri "+p.id(),false,Map.of());checkLimits(dry.blocks(),snapshot,beforeBlocks);
             planner.transact(commands,"proposal:"+p.agent(),"Öneri "+p.id()+" · "+note,true,Map.of(name,bytes),before);
         }
         return result;
@@ -116,6 +124,39 @@ public final class ProposalService {
         if(!action.type().equals("create-task")||action.id()==null)return snapshot;
         var pool=new ArrayList<>(snapshot.pool());pool.add(new PlanningSnapshot.PoolItem("task",action.id(),action.title(),Objects.toString(action.date(),""),"","","Normal",action.minutes()==null?0:action.minutes(),0,action.minutes()==null?0:action.minutes(),0,"",""));
         return new PlanningSnapshot(snapshot.schemaVersion(),snapshot.week(),snapshot.until(),snapshot.timezone(),snapshot.fingerprint(),snapshot.fixedBlocks(),snapshot.blocks(),List.copyOf(pool),snapshot.freeSlots(),snapshot.preferences(),snapshot.errors());
+    }
+    private static PlanningSnapshot withBlocks(PlanningSnapshot snapshot, List<StudySession> blocks) {
+        // Follow earlier commands without exposing unrelated blocks from outside the source week.
+        Set<String> ids = new HashSet<>();
+        snapshot.blocks().forEach(block -> ids.add(block.id()));
+        return new PlanningSnapshot(snapshot.schemaVersion(), snapshot.week(), snapshot.until(), snapshot.timezone(),
+                snapshot.fingerprint(), snapshot.fixedBlocks(), blocks.stream().filter(block -> ids.contains(block.id())).toList(),
+                snapshot.pool(), snapshot.freeSlots(), snapshot.preferences(), snapshot.errors());
+    }
+    private void checkPlacement(PlanProposal.Action action, PlanningSnapshot snapshot) throws IOException {
+        if (!Set.of("schedule", "move", "resize").contains(action.type())) return;
+        String date = action.date(), start = action.start();
+        int minutes = action.minutes() == null ? 0 : action.minutes();
+        if (!action.type().equals("schedule")) {
+            var block = snapshot.blocks().stream().filter(b -> b.id().equals(action.id())).findFirst()
+                    .orElseThrow(() -> new IOException("NOT_FOUND: Bu haftada blok bulunamadı"));
+            if (action.type().equals("resize")) {
+                date = block.date();
+                start = block.start();
+            } else {
+                minutes = PlanningPreferences.minute(block.end()) - PlanningPreferences.minute(block.start());
+            }
+        }
+        LocalDate target = LocalDate.parse(date);
+        // A missed block belongs to its source week's proposal, even when moved to a later week.
+        if (action.type().equals("schedule") && (target.isBefore(LocalDate.parse(snapshot.week()))
+                || target.isAfter(LocalDate.parse(snapshot.until()))))
+            throw new IOException("OUTSIDE_WEEK: date önerinin haftası içinde olmalı (" + snapshot.week() + "–" + snapshot.until() + ")");
+        if (target.isBefore(LocalDate.now(clock.withZone(ZoneId.of(snapshot.timezone())))))
+            throw new IOException("PAST_DATE: date profilin saat diliminde geçmiş bir gün olamaz");
+        LocalTime time = LocalTime.parse(start);
+        if (!start.matches("[0-9]{2}:[0-9]{2}") || time.getMinute() % 15 != 0 || minutes % 15 != 0)
+            throw new IOException("TIME_GRID: start ve minutes 15 dakikalık ızgaraya uymalı");
     }
     private static void checkLimits(List<StudySession> blocks,PlanningSnapshot snapshot,List<StudySession> before)throws IOException{
         var prefs=snapshot.preferences();Set<String> affected=new HashSet<>();

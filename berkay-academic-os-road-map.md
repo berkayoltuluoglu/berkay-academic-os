@@ -15,7 +15,7 @@
 # Berkay Academic OS — Tam Durum Dokümanı
 _Güncel teknik özet, yapılanlar, mevcut mimari, dosya düzeni, entegrasyonlar, hatalar, bekleyen işler ve sonraki adımlar_
 
-**Son durum: 7 Kasım 2026 — 1.5.0 haftalık planlayıcı, oturuma bağlı odak ve dış ajan CLI/öneri akışı eklendi.** Başlangıçtaki kaynak değişiklikleri ve kullanıcı verisi korundu. Son doğrulama **195 uygulama testi + 5 Linux kurulum testi başarılı**; Linux 1.5.0 paketi geçici profilde CLI, yedek/yeniden kurulum ve gerçek JavaFX pencere kontrolünden geçti. Kılavuzla temiz bağlamlı ajan denemesi başarılı. Ayrıntılar **0.20**, `docs/planner-delivery.md`, `AGENTS.md` ve `packaging/LINUX.md` içinde. Windows kabulü ve rapordaki sınırlar açık; commit/push kullanıcıdadır.
+**Son durum: 10 Kasım 2026 — 1.5.0 planlama doğrulamaları ve haftalık ekran düzeni güncellendi.** Hafta/geçmiş gün/15 dakikalık ızgara denetimleri ile boş öneri sonucu düzeltildi. Son kullanıcı geri bildirimiyle eski yapılacaklar son 7 günle sınırlandı; 23:59 teslimleri sabit üst şeride taşındı; tam ekran takvim alanı ve kapatılabilir ayrıntı paneli uygulandı. Gümüş görünüm korunur. Ayrıntılar **0.21–0.22** ve `docs/design-review.md`; önceki Linux paket kabulü **0.20** içindedir. Windows kabulü bekler; commit/push kullanıcıdadır.
 
 **1 Ekim 2026 inceleme güncellemesi:** Kullanıcı ders planlayıcı projesini `/home/berkay/projects/ders-planlayici` konumunda paylaştı. İlk inceleme bulguları 0.8 bölümünde, ardından yapılan ilk aktarım 0.9 bölümünde. LLM entegrasyonu yapılmadı.
 
@@ -34,7 +34,7 @@ _Güncel teknik özet, yapılanlar, mevcut mimari, dosya düzeni, entegrasyonlar
 - Finans, ders takibi, kişisel görevler ve iş planlarını aynı masaüstü uygulamasında birleştirmek; günlük kullanıma mümkün olduğunca erken geçmek.
 - Java ve JavaFX ile devam etmek. C++ veya başka bir dile geçiş yapılmayacak.
 - Önce kullanıcının her şeyi kendisinin planlayabildiği, LLM gerektirmeyen ilk sürümü tamamlamak. Daha sonra bu planlama işlemlerini bir asistana devretmek.
-- Uzun vadeli hedef, ders programını ve son tarihleri okuyabilen, çalışma planı önerebilen, değişikliklere göre yeniden planlayabilen bir “Jarvis” asistanı. Bu yetenekler henüz mevcut değil.
+- Uzun vadeli hedef, ders programını ve son tarihleri okuyabilen, çalışma planı önerebilen, değişikliklere göre yeniden planlayabilen bir “Jarvis” asistanı. 1.5.0'da dış ajanlara yerel veriyi okuma ve kullanıcı onaylı öneri gönderme açıldı; uygulama içi sohbet/sesli asistan bulunmuyor.
 - **LLM için son karar (7 Kasım 2026):** Uygulamanın içinde model, LLM istemcisi, model indirme veya AI API anahtarı olmayacak. Planlama dışarıdaki Codex/Claude Code benzeri ajanlara CLI ve kullanıcı onaylı öneri kutusuyla açılır. Önceki Qwen/yerel model kararı geçersizdir.
 - Kullanıcının bilgisayarı: RTX 4050 Laptop, 16 GB RAM. Yerel model seçimi konuşuldu; gerçek cihazda hız, bellek ve Türkçe görev başarımı testi yapılmadı.
 - **Güncel arayüz (9 Ekim):** 5 Ekim’de kabul edilen Apple esintili gümüş tasarım JavaFX’e aktarıldı. Font Poppins; bugünün akışı, sınırlı renk, sade gezinme ve hareketi azaltma tercihi esas alındı. Kabul geçmişi 0.11, uygulama ayrıntıları 0.12’de.
@@ -57,10 +57,10 @@ _Güncel teknik özet, yapılanlar, mevcut mimari, dosya düzeni, entegrasyonlar
 | Hatırlatma ve odak | Süresi ayarlanabilen, göreve/ödeve bağlanabilen odak sayacı; teslim/oturum/odak bitiş bildirimleri. Desteklenen sistem tepsisinde pencere kapansa da işlem sürer. |
 | Ayarlar ve yedek | Veri konumu, çalışma/bildirim/arka plan tercihleri, Google istemci seçimi ve bağlantı kaldırma; doğrulanan toplu ZIP dışa aktarma/geri yükleme. |
 | Google entegrasyonları | Ana takvim hesabı görünür; etkinlik okuma/oluşturma/düzenleme/silme var. Classroom öğrenci dersleri, kendi ödevleri ve teslim durumu okunur; seçilen ders yerel Dersler modülüne aktarılır. |
-| Borç Defteri | Burs bölümü hariç seçilen finans ekranları, Java üzerinden kalıcı kayıt ve içe/dışa aktarma. Arayüz paketlenmiş HTML/CSS/JS olarak WebView içinde; tamamı Java arayüzüne çevrilmedi. |
+| Borç Defteri | Finans ekranları, Java üzerinden kalıcı kayıt ve içe/dışa aktarma; 1.4.0'da ayrı native burs/staj başvuruları sekmesi eklendi. Defter arayüzü paketlenmiş HTML/CSS/JS olarak WebView içinde. |
 | Diğer modüller | Belge Merkezi, Referans, UART, scriptler ve web/not ekranları mevcut. Google Calendar okuma/yazma entegrasyonu 0.13 bölümünde. |
 
-Bugün ekranı günlük akış ve elle planlama ekranıdır; otomatik çalışma planı oluşturmaz. Ekrandaki finans ödeme özeti mevcut davranışını korur; yeni işletim sistemi bildirimleri çalışma/teslim/odak kapsamındadır. Aboneliklerde ödeme durumu ayrıca takip edilmiyor. Google etkinlikleri son başarılı yerel kopyadan ortak ajandaya alınır; dış değişiklikler bağlı takvimde yenilemeyle güncellenir.
+Bugün ekranı günlük akış ve elle planlama ekranıdır; otomatik yerleştirme 1.5.0'da Haftalık Plan'a eklendi ve öneri üretir. Ekrandaki finans ödeme özeti mevcut davranışını korur; yeni işletim sistemi bildirimleri çalışma/teslim/odak kapsamındadır. Aboneliklerde ödeme durumu ayrıca takip edilmiyor. Google etkinlikleri son başarılı yerel kopyadan ortak ajandaya alınır; dış değişiklikler yenilemeyle veya açık otomatik senkronizasyonla güncellenir.
 
 ### 0.3 Temel dosyalar ve veri modeli
 
@@ -278,7 +278,7 @@ Kullanıcı kalan dokuz özellik grubunu önce **3, 6, 7, 8, 9, 5, 4, 2, 1** ola
 | 6 | 5 | Belge araçları ve içerik araması | Uygulama içinde PDF görüntüleme, Markdown önizleme, dosya içe aktarma geçmişi ve tüm içeriklerde arama. |
 | 7 | 4 | Referans kütüphanesi | Konu/içerik araması, etiket filtreleri, kategori yönetimi, Markdown önizleme ve kaynak bağlantıları. |
 | 8 | 2 | Sesli kullanım | Konuşarak komut verme ve sesli cevap alma. |
-| 9 | 1 | Yapay zekâ/Jarvis asistanı | Doğal dille görev işlemleri, son tarihlere göre çalışma planı önerme ve değişikliklerde yeniden planlama. İlk deneme adayı Qwen; kesin model/sağlayıcı seçilmedi. |
+| 9 | 1 | Yapay zekâ/Jarvis asistanı | Doğal dille görev işlemleri ve yeniden planlama. 7 Kasım kararıyla Qwen/uygulama içi model yerine dış ajan CLI ve kullanıcı onaylı öneriler uygulanır. |
 
 **İlk üç öncelik 1.4.0’da tamamlandı:** Finans/burs, Google senkronizasyonu ve gelişmiş ders planlayıcı. Sıradaki özellik UART/scriptlerdir. Ders planlayıcı kaynağı ve önceki aktarım notları 0.8–0.10 bölümlerinde; uygulanan kapsam ve sınırlar 0.16 bölümündedir.
 
@@ -376,6 +376,57 @@ bütün işletim sistemi sürükleme varyasyonları ve Windows davranışları d
 kesintisi için tam WAL kurtarma garantisi yoktur. Kapsam, dosyalar, testler ve diğer sınırlar
 `docs/planner-delivery.md` içindedir. İsteğe bağlı MCP sunucusu ayrı sonraki kapsamdır; uygulanmadı.
 Kullanıcıdan açık karar beklenmiyor; commit/push komutları teslim edilir.
+
+---
+
+### 0.21 Doğrulama düzeltmeleri ve tasarım incelemesi — 10 Kasım 2026
+
+Kullanıcı incelemede belirtilen dört açığın kapatılmasını, yol haritasının güncellenmesini ve
+tasarım seçeneklerinin değerlendirilmesini istedi. Tasarım tercihi: **mevcut gümüş görünümü korumak;
+okunabilirliği ve kullanım düzenini iyileştirmek.**
+
+- `schedule` hedefi önerinin snapshot haftası içinde olmalı (`OUTSIDE_WEEK`).
+- `schedule` / `move` / `resize`, profil saat diliminde geçmiş bir güne çalışma koyamaz (`PAST_DATE`).
+  Kaçırılan bloğu ileri haftaya taşıyan önerinin kaynak haftayı kullanması korunur.
+- Başlangıç `HH:mm`, başlangıç ve süre 15 dakika katı olmalı (`TIME_GRID`).
+  Kullanıcının değiştirdiği komutlar ve beklerken tarihi geçen öneriler kabulde yeniden denetlenir.
+- Otomatik yerleştirme yoksa `proposal: null`, `message` ve `unscheduled` döner; boş komutlu,
+  doğrulanamayan öneri üretilmez. Süresi geçmiş işler havuzdan silinmez; nedenleri doğru gösterilir.
+- CLI testlerine sabit saat verilir; gün değişmesi testi bozmaz. Tarih/ızgara, ileri haftaya taşıma,
+  kabulde yeniden kontrol ve boş/yerleşemeyen/karışık havuz senaryoları geçici profille sınanır.
+- Tasarım incelemesi `docs/design-review.md`; geniş haftalık plan ve dar Bugün taslakları
+  `docs/design/` altındadır. Bu oturumda üretim ekranlarının düzeni değiştirilmedi.
+- Sıradaki ürün tasarımı önerisi: haftalık araç çubuğu/havuz/öneri incelemesi, ardından küçük pencerede
+  üstte odak ve kapatılabilir paneller. Tarihsel özellik önceliğinde UART/scriptler bekler.
+- Doğrulama: **206 uygulama testi + 5 Linux kurulum testi başarılı**, başarısız/hata/atlanan yok;
+  `./gradlew :app:test :app:installDist --offline --no-daemon` başarılı. CLI'da hafta dışı, geçmiş ve
+  ızgara dışı örnekler hata koduyla reddedildi; geçerli öneri geçti ve boş `suggest` null döndü.
+  Kuru komutlar geçici profilde dosya oluşturmadı. Bu değişikliklerle yeni Linux/Windows kurulum paketi
+  üretilmedi. Kullanıcı profili, Google hesabı ve mevcut `data/tasks.json` değişikliği korunur.
+
+---
+
+### 0.22 Yakın geçmiş, gece teslimleri ve tam ekran plan — 10 Kasım 2026
+
+Kullanıcı eski yapılacaklarda yalnızca bugünden geriye bir haftanın görünmesini, 23:59 teslimlerinin
+haftalık planda düzeltilmesini ve tam ekranın daha rahat kullanılmasını istedi.
+
+- Bugün/Ajanda yapılacakları ve Haftalık Plan havuzu `bugün - 7 gün` öncesini gizler. Profil saat dilimi
+  kullanılır; haftayı değiştirmek geçmiş penceresini kaydırmaz. Bu bir görünüm filtresidir; eski işler silinmez,
+  CLI snapshot/pool ve kayıtlı son tarihler korunur.
+- Teslimler saat ızgarasının içinde etiket olarak çizilmez. Gün başlığının altındaki sabit şeritte ilk iki
+  teslim, gerçek saatleriyle kart olur; fazlası “+N teslim daha” ile inceleme panelinde açılır.
+  Böylece birden çok 23:59 teslimi üst üste binmez ve gece yarısında kesilmez.
+- Ayrıntı paneli başlangıçta kapalı, seçimle açılır ve düğmeyle kapanır. Kapanan panelin alanı takvime katılır.
+  Havuz/ayrıntı genişlikleri pencereye uyar; yedi sütun takvimin kullanılabilir genişliğini doldurur.
+- Planlama ekranlarında dış boşluk azaltıldı; hafta gezinmesi ile işlem araçları ayrıldı. Dar pencerede
+  araçlar ikinci satıra geçer. Gümüş/açık/koyu tema ve saatlere göre sürükleme korunur.
+- Geçici profilli JavaFX testleri 7/8 gün sınırını, kayıt ve CLI verisinin korunmasını, birden fazla
+  23:59 teslimini, sabit şeridi, ayrıntı panelini kapatınca genişlemeyi ve dar/koyu görünümü denetler.
+  Ekranlar `app/build/reports/planner-layout-*.png`; tasarım belgesi güncel uygulanan kapsamı ayırır.
+- Commit/push kullanıcıya bırakıldı; yeni kurulum paketi üretilmedi.
+- Son kontrol: **208 uygulama testi başarılı**, başarısız/hata/atlanan yok; offline `test` ve `installDist`
+  başarılı, `git diff --check` temiz.
 
 ---
 
@@ -1578,14 +1629,15 @@ Yapılacaklar:
 ## 10.7 Ajan CLI doğrulama açıkları
 
 Durum:
-- **Ertelendi (küçük).** 8 Kasım 2026 incelemesinde bulundu; ayrıntı `docs/planner-delivery.md` → "Bilinen küçük sorunlar".
+- **Kısmen düzeltildi — 10 Kasım 2026.** Güncel durum `docs/planner-delivery.md` ve 0.21'de.
 
 Özet:
-- Öneride hafta dışı ve geçmiş tarihler reddedilmiyor
-- 15 dakikalık ızgara denetlenmiyor
-- Havuz ve `suggest` süresi geçmiş işleri ayırmıyor, yanlış gerekçe veriyor
-- `INVALID_PROPOSAL` hatası alan adı vermiyor
-- Öneri klasöründe `.lock` dosyaları birikiyor
+- Düzeltildi: yeni blokta hafta sınırı; planlamada geçmiş gün ve 15 dakikalık ızgara denetimi.
+- Düzeltildi: `suggest` süresi geçmiş işi doğru gerekçeyle ayırıyor; yerleştirme yoksa öneri null.
+- Kalan: genel şema hatalarında daha ayrıntılı alan mesajları (boş `commands` artık alan adı verir).
+- Kalan: öneri klasöründe kalıcı `.lock` dosyaları; eşzamanlı yazım korunmadan silinmemeli.
+- Karar bekleyen: elle haftalık planlama gecikmiş işe teslimden sonra çalışma koyabiliyor;
+  ajan önerilerindeki `AFTER_DEADLINE` denetimi korunuyor.
 
 ---
 
@@ -1825,4 +1877,4 @@ Tamamlanan son ana aşamalar:
 
 Bundan sonraki özellik geliştirme sırası:
 
-**Finans → Google senkronizasyonu → Gelişmiş ders planlayıcı → UART/scriptler → Hata raporu paneli → Belge araçları/arama → Referans kütüphanesi → Ses → Yapay zekâ/Jarvis.** İlk üç grup tamamlandı; sıradaki UART/scriptlerdir. Ayrıntılar 0.15–0.16'da. Windows kabul testi ve Google OAuth dağıtım ayarları bekleyen dağıtım kontrolleridir. Qwen ile deneme son önceliktedir; şu anda başlatılmayacak.
+**Finans → Google senkronizasyonu → Gelişmiş ders planlayıcı → UART/scriptler → Hata raporu paneli → Belge araçları/arama → Referans kütüphanesi → Ses → Yapay zekâ/Jarvis.** Bu tarihsel özellik sırasının ilk üç grubu tamamlandı. 1.5.0 ve sonrasındaki güncel çalışma 0.20–0.21'de: dış ajan CLI/öneri akışı mevcut; uygulama içi model/Qwen entegrasyonu yapılmayacak. Kullanıcı son olarak planlama doğrulamalarını ve gümüş tasarım incelemesini istedi. Windows kabul testi ve Google OAuth dağıtım ayarları bekleyen dağıtım kontrolleridir.

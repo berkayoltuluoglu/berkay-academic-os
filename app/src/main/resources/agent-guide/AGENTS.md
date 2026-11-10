@@ -72,6 +72,7 @@ kimlik uydurma. Boşlukları 15 dakikalık aralıklara böl; günlük sınırı 
    Önce en yakın son tarih ve yüksek öncelik; günlük yükü dengele. İstersen
    `academic-os suggest --week 2026-11-09` çıktısındaki `proposal` nesnesini başlangıç olarak kullan.
    `unscheduled` içindeki sığmayan işleri kullanıcıya açıkça bildir. `suggest` kendiliğinden kaydetmez.
+   `proposal: null` ise öneri üretilmemiştir; `message` ve `unscheduled` nedenlerini bildir, validate/propose çağırma.
 2. **Yeni Classroom ödevlerini yerleştir:** aynı sırayla oku; pool'da `kind: classroom` öğelerini seç.
    `schedule.kind` değerini `classroom`, `itemId` değerini pool kimliği yap. İlk kabulde tek ödev aktarılır;
    tekrar aktarım aynı `gw-…` kimliğini korur. Classroom'a teslim yapılmaz.
@@ -88,8 +89,9 @@ Taşıma: `{"type":"move","id":"snapshot blok kimliği","date":"2026-11-11","sta
 
 ## Tam öneri örneği
 
-Aşağıdaki örnek boş bir geçici profilde doğrulanabilir. Sıfırlardan oluşan hash bilinçli olarak eskidir;
-`validate` sonucu `valid: true, stale: true` olur. Gerçek profilde **snapshot hash'ini kullan**.
+Aşağıdaki örnek boş bir geçici profilde, örnek tarihte doğrulanabilir. Çalışma günü geçmişse `week` ve
+`date` alanlarını güncel/gelecek bir haftaya uyarlamalısın. Sıfırlardan oluşan hash bilinçli olarak eskidir;
+tarihler geçerliyken `validate` sonucu `valid: true, stale: true` olur. Gerçek profilde **snapshot hash'ini kullan**.
 Bu örnek bağlantısız bir tekrar bloğudur; gerçek iş planında havuzdan `kind` / `itemId` ekle.
 Aynı içerik `examples/planner-proposal.json` dosyasındadır.
 
@@ -131,6 +133,9 @@ Değiştirilerek kabul edilen komut `modified` olarak döner. Bir öneri tekrar 
 | `BUSY` | Başka kayıt işlemi bitince komutu tekrar çalıştır. Kilit dosyasını silme. |
 | `CONFLICT` | `free-slots` ile sabit ders/Google/çalışma dışındaki bir aralık seç. |
 | `AFTER_DEADLINE` | Bloğun bitişini teslimden önceye al. |
+| `OUTSIDE_WEEK` | Yeni bloğu önerinin snapshot haftasına al. Kaçırılan bloğun ileri haftaya taşınmasında kaynak hafta korunur. |
+| `PAST_DATE` | Hedef çalışma gününü snapshot saat dilimindeki bugün veya sonraya al. |
+| `TIME_GRID` | Başlangıcı ve süreyi 15 dakikanın katına getir; başlangıç saniye içermemeli. |
 | `INVALID_REQUEST`, `INVALID_PROPOSAL`, `INVALID_COMMAND` | `schema` ve komutun `--help` çıktısını kontrol et. |
 | `DIRECT_WRITES_DISABLED`, `APPLY_REQUIRED` | Öneri akışını kullan; ayarı kendin açmaya çalışma. |
 | `NOT_FOUND`, `DUPLICATE_ID` | Güncel snapshot/durumu oku; yeni öneriye yeni kimlik ver. |

@@ -10,12 +10,15 @@ public final class AgentCli {
     private AgentCli(){}
     public static void main(String[] args){System.exit(run(args,System.out));}
     public static int run(String[] arguments,PrintStream out){
+        return run(arguments, out, Clock.systemUTC());
+    }
+    static int run(String[] arguments, PrintStream out, Clock clock){
         try{
             Args args=new Args(arguments);Path root=args.option("profile")==null?AppPaths.root():Path.of(args.option("profile")).toAbsolutePath().normalize();
             String command=args.command();
             args.validateUsage();
             if(args.flag("help")||command.equals("help")){print(out,help(command));return 0;}
-            var planner=new PlannerService(root);var proposals=new ProposalService(root);Object result;
+            var planner=new PlannerService(root);var proposals=new ProposalService(root,clock);Object result;
             switch(command){
                 case "snapshot"->result=planner.snapshot(args.week());
                 case "pool"->{var snap=planner.snapshot(args.weekOrNow());String until=args.option("until");if(until!=null)LocalDate.parse(until);result=Map.of("timezone",snap.timezone(),"fingerprint",snap.fingerprint(),"items",snap.pool().stream().filter(p->until==null||p.date().isBlank()||!LocalDate.parse(p.date()).isAfter(LocalDate.parse(until))).toList());}
@@ -25,7 +28,7 @@ public final class AgentCli {
                 case "propose"->result=proposals.propose(proposals.read(Path.of(args.positional(1))));
                 case "proposals"->result=Map.of("proposals",proposals.list(args.option("status")));
                 case "proposal-status"->result=proposals.status(args.positional(1));
-                case "suggest"->result=new AutomaticPlanner().suggest(planner.snapshot(args.week()));
+                case "suggest"->{var snapshot=planner.snapshot(args.week());result=new AutomaticPlanner().suggest(snapshot,clock.withZone(ZoneId.of(snapshot.timezone())));}
                 case "task","block","undo","redo"->{
                     if(!args.flag("apply"))throw new CliError("APPLY_REQUIRED","Doğrudan yazım için --apply gerekli; varsayılan akış propose");
                     if(!PlanningPreferences.load(root).agentWrites())throw new CliError("DIRECT_WRITES_DISABLED","Ayarlar → Ajanların doğrudan değişiklik yapmasına izin ver kapalı");
@@ -51,7 +54,7 @@ public final class AgentCli {
             try{print(out,Map.of("ok",false,"error",Map.of("code",code,"message",message)));}catch(Exception ignored){out.println("{\"ok\":false,\"error\":{\"code\":\"INTERNAL\"}}");}return 2;
         }
     }
-    static String errorCode(String message){for(String code:List.of("STALE_SNAPSHOT","BUSY","AFTER_DEADLINE","CONFLICT","NOT_FOUND","INVALID_PROPOSAL","INVALID_COMMAND","DUPLICATE_ID","DAILY_LIMIT","PREFERENCES"))if(message.startsWith(code+":"))return code;return "INVALID_REQUEST";}
+    static String errorCode(String message){for(String code:List.of("STALE_SNAPSHOT","BUSY","AFTER_DEADLINE","CONFLICT","NOT_FOUND","INVALID_PROPOSAL","INVALID_COMMAND","DUPLICATE_ID","DAILY_LIMIT","PREFERENCES","OUTSIDE_WEEK","PAST_DATE","TIME_GRID"))if(message.startsWith(code+":"))return code;return "INVALID_REQUEST";}
     private static void print(PrintStream out,Object value)throws IOException{out.println(PlanningFiles.JSON.writeValueAsString(value));}
     private static Map<String,Object> help(String command){return Map.of("command",command,"usage","academic-os [--profile DIR] <command> [options]","examples",List.of(
             "academic-os snapshot --week 2026-11-09","academic-os pool --until 2026-12-31","academic-os free-slots --week 2026-11-09 --min 30",

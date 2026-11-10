@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="936" height="760" viewBox="0 0 936 760" role="img" aria-labelledby="title desc">
+<title id="title">Bugün — dar pencerede odak ve günlük akış önerisi</title>
+<desc id="desc">Academic OS için mevcut gümüş görünümü koruyan tasarım önerisi. Örnek veriler kullanılmıştır; uygulama ekranı değildir.</desc>
+<style>text {font-family: Poppins, "DejaVu Sans", sans-serif; fill:#24262B} .muted {fill:#626C7B} .strong {font-weight:600}</style>
+<rect x="0" y="0" width="936" height="760" rx="0" fill="#FAFBFD" stroke="#FAFBFD"/>
+<rect x="0" y="0" width="936" height="60" rx="0" fill="#F1F3F6" stroke="#E1E5EC"/>
+<text x="24" y="37" font-size="15" class="strong">⌘  Academic OS</text>
+<rect x="617" y="14" width="238" height="33" rx="12" fill="#FFFFFF" stroke="#E1E5EC"/>
+<text x="631" y="36" font-size="12" class="muted">Modül ara…</text>
+<rect x="0" y="60" width="178" height="700" rx="0" fill="#EFF1F5" stroke="#E1E5EC"/>
+<rect x="12" y="84" width="154" height="42" rx="10" fill="#E1E5EC" stroke="#E1E5EC"/>
+<text x="27" y="112" font-size="13" class="strong">Bugün</text>
+<text x="27" y="164" font-size="13" class="">Haftalık Plan</text>
+<text x="27" y="216" font-size="13" class="">Dersler</text>
+<text x="27" y="268" font-size="13" class="">Görevler</text>
+<text x="27" y="320" font-size="13" class="">Finans</text>
+<text x="27" y="380" font-size="12" class="muted">Araçlar  ›</text>
+<text x="27" y="422" font-size="12" class="muted">Web  ›</text>
+<text x="27" y="703" font-size="12" class="muted">Koyu tema</text>
+<text x="208" y="111" font-size="30" class="strong">Bugün</text>
+<text x="209" y="139" font-size="12" class="muted">10 Kasım Salı</text>
+<rect x="794" y="89" width="110" height="36" rx="10" fill="#FFFFFF" stroke="#E1E5EC"/>
+<text x="807" y="112" font-size="12" class="">+ Ekle</text>
+<rect x="208" y="161" width="696" height="96" rx="12" fill="#FFFFFF" stroke="#E1E5EC"/>
+<text x="226" y="186" font-size="10" class="muted">ODAK</text>
+<text x="226" y="226" font-size="30" class="strong">25:00</text>
+<text x="352" y="194" font-size="14" class="strong">Fizik deney raporu</text>
+<text x="352" y="220" font-size="12" class="muted">11:00–12:30 · Çalışma bloğu</text>
+<rect x="758" y="186" width="126" height="36" rx="10" fill="#353D48" stroke="#353D48"/>
+<text x="771" y="209" font-size="12" class="strong" style="fill:#FFFFFF">▶ Başlat</text>
+<rect x="208" y="273" width="696" height="72" rx="12" fill="#FFFFFF" stroke="#EDD6D6"/>
+<rect x="208" y="283" width="3" height="52" rx="1" fill="#B95C5C" stroke="#B95C5C"/>
+<text x="228" y="297" font-size="11" class="strong" style="fill:#A24E4E">BUGÜN TESLİM · 1</text>
+<text x="228" y="324" font-size="14" class="strong">Elektronik kısa ödevi</text>
+<text x="741" y="324" font-size="12" class="muted">17:00 · Ayrıntı ›</text>
+<rect x="208" y="361" width="696" height="61" rx="12" fill="#F1F3F6" stroke="#E1E5EC"/>
+<text x="228" y="387" font-size="10" class="muted">SIRADAKİ</text>
+<text x="326" y="387" font-size="13" class="strong">Devre Analizi · D204</text>
+<text x="326" y="408" font-size="12" class="muted">13:00–14:30</text>
+<text x="208" y="460" font-size="16" class="strong">Günün akışı</text>
+<text x="759" y="460" font-size="12" class="muted">Şimdiye git ↓</text>
+<text x="209" y="495" font-size="11" class="muted">11:00</text>
+<path d="M268 491 H903" fill="none" stroke="#E1E5EC" stroke-dasharray="3 5"/>
+<text x="209" y="550" font-size="11" class="muted">12:00</text>
+<path d="M268 546 H903" fill="none" stroke="#E1E5EC" stroke-dasharray="3 5"/>
+<text x="209" y="605" font-size="11" class="muted">13:00</text>
+<path d="M268 601 H903" fill="none" stroke="#E1E5EC" stroke-dasharray="3 5"/>
+<text x="209" y="660" font-size="11" class="muted">14:00</text>
+<path d="M268 656 H903" fill="none" stroke="#E1E5EC" stroke-dasharray="3 5"/>
+<rect x="275" y="494" width="608" height="79" rx="12" fill="#F1F3F6" stroke="#E1E5EC"/>
+<text x="291" y="516" font-size="13" class="strong">Fizik deney raporu</text>
+<text x="291" y="533" font-size="11" class="muted">11:00–12:30 · Çalışma</text>
+<rect x="275" y="604" width="608" height="79" rx="12" fill="#E5E9EF" stroke="#E1E5EC"/>
+<text x="291" y="629" font-size="13" class="strong">Devre Analizi</text>
+<text x="291" y="651" font-size="11" class="muted">13:00–14:30 · D204 · Ders</text>
+<rect x="898" y="489" width="5" height="194" rx="2" fill="#E1E5EC" stroke="#E1E5EC"/>
+<rect x="898" y="515" width="5" height="65" rx="2" fill="#AAB2BE" stroke="#AAB2BE"/>
+<text x="208" y="719" font-size="11" class="muted">✓ Kaydedildi</text>
+<text x="550" y="719" font-size="12" class="muted">Yapılacaklar · 3  ›</text>
+<text x="208" y="749" font-size="10" class="muted">TASARIM ÖNERİSİ · Örnek içerik</text>
+</svg>

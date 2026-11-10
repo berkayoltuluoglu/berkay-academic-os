@@ -27,6 +27,11 @@ public final class WeeklyAgendaView {
     private final FocusTimerService focus;
     private final VBox root=new VBox(10), pool=new VBox(8), inspector=new VBox(10);
     private final HBox grid=new HBox();
+    private final HBox dayHeaders=new HBox();
+    private final SplitPane layout=new SplitPane();
+    private final ToggleButton detailsToggle=new ToggleButton("Ayrıntılar");
+    private ScrollPane inspectorScroll;
+    private ScrollPane deadlineHeaderScroll;
     private final Label title=new Label(), status=new Label(), statistics=new Label();
     private final Button proposalsButton=new Button("Öneriler");
     private List<PlanProposal> proposals=List.of();
@@ -61,25 +66,59 @@ public final class WeeklyAgendaView {
         proposalsButton.setId("planner-proposals");proposalsButton.setOnAction(e->showProposals());
         Button automatic=button("Otomatik yerleştir","planner-suggest",()->run(()->{
             var suggestion=new AutomaticPlanner().suggest(planner.snapshot(week));
-            if(suggestion.proposal().commands().isEmpty()){notice="Yerleştirilecek iş yok · "+suggestion.unscheduled();return null;}
+            if(suggestion.proposal()==null){notice=suggestion.unscheduled().isEmpty()?suggestion.message():"Çalışma yerleştirilemedi · "+String.join("; ",suggestion.unscheduled().stream().map(item->item.title()+": "+item.reason()).toList());return null;}
             new ProposalService(rootPath).propose(suggestion.proposal());notice="Öneri hazır · "+suggestion.unscheduled().size()+" iş için yeterli yer bulunamadı";return null;
         }));
-        FlowPane toolbar=new FlowPane(8,8,previous,current,next,title,refresh,undo,redo,proposalsButton,automatic);
+        UiTheme.iconOnly(previous,"chevron-left");UiTheme.iconOnly(next,"chevron-right");
+        UiTheme.iconOnly(refresh,"refresh-cw");UiTheme.iconOnly(undo,"corner-up-left");UiTheme.iconOnly(redo,"corner-up-right");
+        automatic.getStyleClass().add("planner-primary");title.getStyleClass().add("planner-week-title");
+        HBox navigation=new HBox(6,previous,current,next,title);navigation.setAlignment(Pos.CENTER_LEFT);
+        detailsToggle.setId("planner-details-toggle");detailsToggle.setAccessibleText("Ayrıntı panelini aç veya kapat");
+        detailsToggle.selectedProperty().addListener((o,a,b)->setInspectorVisible(b));
+        HBox tools=new HBox(6,refresh,undo,redo,detailsToggle,proposalsButton,automatic);tools.setAlignment(Pos.CENTER_RIGHT);
+        BorderPane toolbar=new BorderPane();toolbar.setLeft(navigation);toolbar.setRight(tools);toolbar.getStyleClass().add("planner-toolbar");
+        toolbar.widthProperty().addListener((o,a,b)->{
+            if(b.doubleValue()<1000&&toolbar.getBottom()==null){toolbar.setRight(null);toolbar.setBottom(tools);tools.setAlignment(Pos.CENTER_LEFT);BorderPane.setMargin(tools,new Insets(8,0,0,0));}
+            else if(b.doubleValue()>=1000&&toolbar.getRight()==null){toolbar.setBottom(null);toolbar.setRight(tools);tools.setAlignment(Pos.CENTER_RIGHT);BorderPane.setMargin(tools,Insets.EMPTY);}
+        });
+        statistics.getStyleClass().add("planner-week-summary");statistics.setWrapText(true);statistics.setMaxWidth(Double.MAX_VALUE);
         root.getChildren().addAll(toolbar,statistics);
-        pool.setId("planner-pool");pool.setPrefWidth(220);pool.setMinWidth(180);
+        pool.setId("planner-pool");pool.setMinWidth(0);pool.setMaxWidth(Double.MAX_VALUE);
         search.setPromptText("İş, ders, kaynak, öncelik ara");search.setId("planner-search");search.textProperty().addListener((o,a,b)->renderPool());
         TextField quick=new TextField();quick.setId("planner-quick-add");quick.setPromptText("Fizik raporu cuma 17:00 2s");
         quick.setOnAction(e->{if(!quick.getText().isBlank()){var value=QuickTaskParser.parse(quick.getText(),LocalDate.now());quick.clear();run(()->planner.execute(new CreateTask(value)));}});
-        VBox left=new VBox(10,new Label("Plan havuzu"),quick,search,scroll(pool));left.setMinWidth(180);left.setPrefWidth(230);left.setMaxWidth(260);VBox.setVgrow(left.getChildren().getLast(),Priority.ALWAYS);
-        grid.setId("planner-week-grid");grid.setMinWidth(900);
+        Label poolTitle=new Label("Plan havuzu");poolTitle.getStyleClass().add("silver-section-title");
+        Label historyHint=new Label("Gecikmiş işler: yalnızca son 7 gün");historyHint.getStyleClass().add("soluk");historyHint.setWrapText(true);
+        VBox left=new VBox(10,poolTitle,quick,search,historyHint,scroll(pool));left.setMinWidth(228);left.setPrefWidth(280);left.setMaxWidth(340);left.getStyleClass().add("planner-pool-panel");VBox.setVgrow(left.getChildren().getLast(),Priority.ALWAYS);
+        grid.setId("planner-week-grid");grid.setMinWidth(48+7*112);
         ScrollPane canvas=scroll(grid);canvas.setFitToHeight(false);canvas.setPannable(false);canvas.setMinWidth(300);canvas.setId("planner-canvas");installAutoScroll(canvas);
-        inspector.setId("planner-inspector");inspector.setMinWidth(200);inspector.setPrefWidth(235);inspector.getChildren().add(new Label("İncelemek için bir blok seç"));
-        ScrollPane right=scroll(inspector);right.setMinWidth(210);right.setPrefWidth(235);right.setMaxWidth(280);SplitPane.setResizableWithParent(left,false);SplitPane.setResizableWithParent(right,false);
-        SplitPane split=new SplitPane(left,canvas,right);split.setDividerPositions(.18,.81);split.setId("planner-layout");
-        VBox.setVgrow(split,Priority.ALWAYS);root.getChildren().addAll(split,status);
+        ScrollPane header=scroll(dayHeaders);header.setId("planner-deadline-header");header.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);header.setVbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        deadlineHeaderScroll=header;
+        dayHeaders.minWidthProperty().bind(grid.widthProperty());dayHeaders.prefWidthProperty().bind(grid.widthProperty());dayHeaders.maxWidthProperty().bind(grid.widthProperty());
+        header.hvalueProperty().bindBidirectional(canvas.hvalueProperty());
+        VBox calendar=new VBox(header,canvas);calendar.setMinWidth(300);calendar.getStyleClass().add("planner-calendar-panel");VBox.setVgrow(canvas,Priority.ALWAYS);
+        inspector.setId("planner-inspector");inspector.setMinWidth(0);inspector.getChildren().add(new Label("İncelemek için bir blok seç"));
+        inspectorScroll=scroll(inspector);inspectorScroll.setMinWidth(248);inspectorScroll.setPrefWidth(290);inspectorScroll.setMaxWidth(360);
+        SplitPane.setResizableWithParent(left,false);SplitPane.setResizableWithParent(inspectorScroll,false);
+        layout.getItems().setAll(left,calendar);layout.setId("planner-layout");layout.widthProperty().addListener((o,a,b)->sizePanels());
+        VBox.setVgrow(layout,Priority.ALWAYS);root.getChildren().addAll(layout,status);
         root.addEventFilter(KeyEvent.KEY_PRESSED,e->{alt=e.isAltDown();if(e.isControlDown() && e.getCode()==KeyCode.Z && !(e.getTarget() instanceof TextInputControl)) {if(e.isShiftDown())run(()->planner.redo());else run(()->planner.undo());e.consume();}});
         root.addEventFilter(KeyEvent.KEY_RELEASED,e->alt=e.isAltDown());
         watch.setCycleCount(Animation.INDEFINITE);watch.play();load();return root;
+    }
+    private void setInspectorVisible(boolean visible) {
+        if(inspectorScroll==null)return;
+        if(visible&&!layout.getItems().contains(inspectorScroll))layout.getItems().add(inspectorScroll);
+        else if(!visible&&layout.getItems().contains(inspectorScroll)){flushInspector();layout.getItems().remove(inspectorScroll);}
+        if(detailsToggle.isSelected()!=visible)detailsToggle.setSelected(visible);
+        sizePanels();
+        layout.applyCss();layout.layout();
+    }
+    private void sizePanels() {
+        double width=layout.getWidth();if(width<=0)return;
+        double left=Math.max(228,Math.min(320,width*.20)),right=Math.max(248,Math.min(340,width*.22));
+        if(layout.getItems().size()==3)layout.setDividerPositions(left/width,1-right/width);
+        else layout.setDividerPositions(left/width);
     }
     private void changeWeek(LocalDate date) {
         var monday=date.with(java.time.temporal.TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
@@ -127,8 +166,8 @@ public final class WeeklyAgendaView {
         String[] groups={"Gecikmiş","Bu hafta","Gelecek hafta","Daha sonra","Tarihsiz"};
         for(int group=0;group<groups.length;group++) {
             VBox cards=new VBox(6);
-            for(var item:snapshot.pool()) if(group(item)==group && (item.title()+" "+item.kind()+" "+item.priority()+" "+item.courseId()).toLowerCase(TR).contains(query)) {
-                Label name=new Label(item.title());name.setWrapText(true);
+            for(var item:snapshot.pool()) if(recent(item) && group(item)==group && (item.title()+" "+item.kind()+" "+item.priority()+" "+item.courseId()).toLowerCase(TR).contains(query)) {
+                Label name=new Label(item.title());name.setWrapText(true);name.setMinWidth(0);name.setMaxWidth(Double.MAX_VALUE);HBox.setHgrow(name,Priority.ALWAYS);
                 Label detail=new Label((item.date().isBlank()?"Tarihsiz":item.date()+" "+item.dueTime())+"\n"+(item.estimatedMinutes()==0?"Tahmin yok":duration(item.remainingMinutes())+" kaldı")+" · "+duration(item.plannedMinutes())+" planlı");detail.setWrapText(true);detail.getStyleClass().add("soluk");
                 CheckBox done=new CheckBox();done.setAccessibleText(item.title()+" tamamlandı");done.setDisable(!Set.of("task","work","classroom").contains(item.kind()));
                 done.setOnAction(e->run(()->{
@@ -142,13 +181,15 @@ public final class WeeklyAgendaView {
                 card.setAccessibleText(item.title()+" · "+detail.getText());
                 if(item.unplannedMinutes()==0)card.setOpacity(.55);
                 card.setOnDragDetected(e->{var board=card.startDragAndDrop(TransferMode.COPY);var content=new ClipboardContent();content.putString("pool:"+item.kind()+":"+item.id());board.setContent(content);e.consume();});
-                card.setOnMouseClicked(e->inspectPool(item));cards.getChildren().add(card);
+                card.setOnMouseClicked(e->{setInspectorVisible(true);inspectPool(item);});cards.getChildren().add(card);
             }
             if(!cards.getChildren().isEmpty()){Label groupName=new Label(groups[group]);groupName.getStyleClass().add("silver-section-title");pool.getChildren().addAll(groupName,cards);}
         }
         if(pool.getChildren().isEmpty())pool.getChildren().add(new Label("Planlanacak iş yok"));
     }
-    private int group(PlanningSnapshot.PoolItem item) {if(item.date().isBlank())return 4;LocalDate d=LocalDate.parse(item.date());return d.isBefore(week)?0:!d.isAfter(week.plusDays(6))?1:!d.isAfter(week.plusDays(13))?2:3;}
+    private LocalDate today(){return LocalDate.now(ZoneId.of(snapshot.timezone()));}
+    private boolean recent(PlanningSnapshot.PoolItem item){return item.date().isBlank()||!LocalDate.parse(item.date()).isBefore(today().minusDays(7));}
+    private int group(PlanningSnapshot.PoolItem item) {if(item.date().isBlank())return 4;LocalDate d=LocalDate.parse(item.date());return d.isBefore(today())?0:!d.isAfter(week.plusDays(6))?1:!d.isAfter(week.plusDays(13))?2:3;}
     private void inspectPool(PlanningSnapshot.PoolItem item) {
         flushInspector();inspectedProposal="";selected="";selectedPool=item.kind()+":"+item.id();
         inspector.getChildren().setAll(new Label("İş ayrıntıları"),new Label(item.title()));
@@ -178,36 +219,61 @@ public final class WeeklyAgendaView {
         Button plan=button("İlk boş aralığa yerleştir","pool-schedule",()->{var slot=snapshot.freeSlots().stream().filter(v->v.minutes()>=15).findFirst().orElse(null);if(slot!=null)schedule(item,slot.date(),slot.start(),false);else status.setText("Uygun boş aralık yok");});inspector.getChildren().addAll(focusNow,plan);
     }
     private void renderGrid() {
-        grid.getChildren().clear();
-        VBox gutter=new VBox();gutter.setMinWidth(48);gutter.setPrefWidth(48);
-        Pane hours=new Pane();hours.setMinHeight((LAST-FIRST)*SCALE+42);
-        for(int h=8;h<=24;h++){Label label=new Label(String.format(Locale.ROOT,"%02d:00",h));label.getStyleClass().add("silver-hour");place(hours,label,0,30+(h*60-FIRST)*SCALE-8,45,20);}gutter.getChildren().add(hours);grid.getChildren().add(gutter);
+        grid.getChildren().clear();dayHeaders.getChildren().clear();
+        int maxDeadlines=0;
+        for(int offset=0;offset<7;offset++){String iso=week.plusDays(offset).toString();maxDeadlines=Math.max(maxDeadlines,(int)snapshot.pool().stream().filter(item->item.date().equals(iso)).count());}
+        double deadlineHeight=Math.max(32,Math.min(2,maxDeadlines)*52+(maxDeadlines>2?32:4));
+        double headerHeight=34+5+deadlineHeight+4;
+        deadlineHeaderScroll.setMinHeight(headerHeight);deadlineHeaderScroll.setPrefHeight(headerHeight);deadlineHeaderScroll.setMaxHeight(headerHeight);
+        VBox corner=new VBox(5,new Label(""),new Label("Son\nteslimler"));corner.getStyleClass().add("planner-deadline-corner");corner.setMinWidth(48);corner.setPrefWidth(48);corner.setMaxWidth(48);dayHeaders.getChildren().add(corner);
+        Pane hours=new Pane();hours.setMinWidth(48);hours.setPrefWidth(48);hours.setMaxWidth(48);hours.setMinHeight((LAST-FIRST)*SCALE+20);
+        for(int h=8;h<=24;h++){Label label=new Label(String.format(Locale.ROOT,"%02d:00",h));label.getStyleClass().add("silver-hour");place(hours,label,0,(h*60-FIRST)*SCALE,45,20);}grid.getChildren().add(hours);
         for(int offset=0;offset<7;offset++){
             LocalDate date=week.plusDays(offset);String iso=date.toString();
             Button day=button(date.format(DateTimeFormatter.ofPattern("EEE d MMM",TR)),"planner-date-"+iso,()->openDay.accept(date));day.setMaxWidth(Double.MAX_VALUE);
-            Pane pane=new Pane(){@Override protected void layoutChildren(){for(Node node:getChildren())if(node instanceof Region region)region.resize(Math.max(40,getWidth()-region.getLayoutX()-4),region.getHeight());}};pane.setId("planner-day-"+iso);pane.setPrefSize(145,(LAST-FIRST)*SCALE+10);pane.setMinSize(120,(LAST-FIRST)*SCALE+10);
-            VBox column=new VBox(5,day,pane);column.setMinWidth(120);column.setPrefWidth(145);HBox.setHgrow(column,Priority.ALWAYS);
-            if(date.equals(LocalDate.now()))column.getStyleClass().add("planner-today");
+            day.getStyleClass().add("planner-day-heading");
+            Pane pane=new Pane(){@Override protected void layoutChildren(){for(Node node:getChildren())if(node instanceof Region region)region.resize(Math.max(40,getWidth()-region.getLayoutX()-4),region.getHeight());}};pane.setId("planner-day-"+iso);pane.setPrefSize(145,(LAST-FIRST)*SCALE+20);pane.setMinSize(112,(LAST-FIRST)*SCALE+20);HBox.setHgrow(pane,Priority.ALWAYS);
+            VBox deadlines=deadlineLane(iso,deadlineHeight);
+            VBox columnHeader=new VBox(5,day,deadlines);columnHeader.setMinWidth(0);columnHeader.prefWidthProperty().bind(pane.widthProperty());columnHeader.maxWidthProperty().bind(pane.widthProperty());dayHeaders.getChildren().add(columnHeader);
+            if(date.equals(today()))day.getStyleClass().add("planner-today");
             for(int h=8;h<24;h++){Region line=new Region();line.getStyleClass().add("silver-time-line");line.setMouseTransparent(true);line.prefWidthProperty().bind(pane.widthProperty());place(pane,line,0,(h*60-FIRST)*SCALE,145,1);}
             for(var fixed:snapshot.fixedBlocks())if(fixed.date().equals(iso))drawFixed(pane,fixed);
             for(var block:snapshot.blocks())if(block.date().equals(iso))drawBlock(pane,block);
-            for(var item:snapshot.pool())if(item.date().equals(iso)){
-                Label due=new Label("▲ "+(item.dueTime().isBlank()?"Gün içinde ":item.dueTime()+" ")+item.title());due.setTooltip(new Tooltip("Son teslim · "+item.title()));due.getStyleClass().add("planner-deadline");
-                due.setOnMouseClicked(e->inspectPool(item));place(pane,due,2,item.dueTime().isBlank()?0:y(item.dueTime()),141,20);
-            }
-            if(date.equals(LocalDate.now())&&LocalTime.now().isAfter(LocalTime.of(8,0))){Region now=new Region();now.getStyleClass().add("silver-now-line");now.setMouseTransparent(true);place(pane,now,0,y(LocalTime.now().withSecond(0).withNano(0).toString()),145,2);}
+            LocalTime nowTime=LocalTime.now(ZoneId.of(snapshot.timezone()));
+            if(date.equals(today())&&nowTime.isAfter(LocalTime.of(8,0))){Region now=new Region();now.getStyleClass().add("silver-now-line");now.setMouseTransparent(true);place(pane,now,0,y(nowTime.withSecond(0).withNano(0).toString()),145,2);}
             for(var proposal:proposals)for(int i=0;i<proposal.commands().size();i++){
                 var action=proposal.commands().get(i);var preview=action;
                 if(action.type().equals("move")||action.type().equals("resize")){var original=snapshot.blocks().stream().filter(b->b.id().equals(action.id())).findFirst().orElse(null);if(original!=null)preview=new PlanProposal.Action("schedule",action.id(),"","",original.title(),action.type().equals("move")?action.date():original.date(),action.type().equals("move")?action.start():original.start(),action.type().equals("resize")?action.minutes():minute(original.end())-minute(original.start()),action.reason(),null);}
                 if(preview.type().equals("schedule")&&iso.equals(preview.date()))drawGhost(pane,proposal,i,preview);
             }
-            installDayGestures(pane,date);grid.getChildren().add(column);
+            installDayGestures(pane,date);grid.getChildren().add(pane);
         }
+    }
+    private VBox deadlineLane(String date,double height) {
+        var items=snapshot.pool().stream().filter(item->item.date().equals(date))
+                .sorted(Comparator.comparing((PlanningSnapshot.PoolItem item)->item.dueTime().isBlank()?"23:59":item.dueTime()).thenComparing(PlanningSnapshot.PoolItem::title)).toList();
+        VBox lane=new VBox(4);lane.setId("planner-deadlines-"+date);lane.getStyleClass().add("planner-deadline-lane");lane.setMinHeight(height);lane.setPrefHeight(height);lane.setMaxHeight(height);
+        for(var item:items.stream().limit(2).toList())lane.getChildren().add(deadlineButton(item));
+        if(items.size()>2){Button more=button("+"+(items.size()-2)+" teslim daha","planner-more-deadlines-"+date,()->{
+            flushInspector();setInspectorVisible(true);selected="";selectedPool="";inspectedProposal="";
+            Label heading=new Label(LocalDate.parse(date).format(DateTimeFormatter.ofPattern("d MMMM · 'Son teslimler'",TR)));heading.setWrapText(true);
+            inspector.getChildren().setAll(heading);items.forEach(item->{Button entry=deadlineButton(item);entry.setId("planner-inspector-deadline-"+item.id());inspector.getChildren().add(entry);});
+        });more.setMinHeight(24);more.setPrefHeight(24);more.setMaxHeight(24);more.getStyleClass().add("planner-deadline-more");lane.getChildren().add(more);}
+        if(items.isEmpty()){Label empty=new Label("Teslim yok");empty.getStyleClass().add("planner-no-deadline");lane.getChildren().add(empty);}
+        return lane;
+    }
+    private Button deadlineButton(PlanningSnapshot.PoolItem item) {
+        Label name=new Label(item.title());name.setMinWidth(0);name.setMaxWidth(Double.MAX_VALUE);name.getStyleClass().add("planner-deadline-name");
+        String time=item.dueTime().isBlank()?"Gün içinde":item.dueTime();
+        Label due=new Label(time+" · Son teslim");due.getStyleClass().add("planner-deadline-time");
+        VBox content=new VBox(2,name,due);content.setMinWidth(0);content.setMaxWidth(Double.MAX_VALUE);
+        Button result=button("","planner-deadline-"+item.id(),()->{setInspectorVisible(true);inspectPool(item);});result.setGraphic(content);result.setMaxWidth(Double.MAX_VALUE);result.setMinWidth(0);result.setPrefHeight(48);result.setMinHeight(48);result.setMaxHeight(48);result.getStyleClass().add("planner-deadline-card");
+        result.setAccessibleText(item.title()+" · "+item.date()+" · Son teslim "+time);result.setTooltip(new Tooltip(item.title()+"\nSon teslim: "+item.date()+" "+time));return result;
     }
     private void drawFixed(Pane pane,PlanningSnapshot.Block fixed){
         Button b=new Button(fixed.title()+"\n"+fixed.start()+"–"+fixed.end());b.setWrapText(true);b.getStyleClass().addAll("silver-event","lesson-event","planner-fixed");
         b.setAccessibleText("Sabit "+fixed.kind()+" · "+fixed.title());b.setId("fixed-"+fixed.id());
-        b.setOnAction(e->{selected="";inspector.getChildren().setAll(new Label(fixed.title()),new Label(fixed.kind()+" · Sabit blok"),button("Kaynakta aç","planner-open-source",()->navigate.accept(fixed.kind().equals("Google")?"calendar":"courses")));});
+        b.setOnAction(e->{setInspectorVisible(true);selected="";selectedPool="";inspectedProposal="";inspector.getChildren().setAll(new Label(fixed.title()),new Label(fixed.kind()+" · Sabit blok"),button("Kaynakta aç","planner-open-source",()->navigate.accept(fixed.kind().equals("Google")?"calendar":"courses")));});
         place(pane,b,2,y(fixed.start()),141,Math.max(22,(Math.min(LAST,minute(fixed.end()))-Math.max(FIRST,minute(fixed.start())))*SCALE-3));
     }
     private void drawBlock(Pane pane,StudySession b){
@@ -219,13 +285,13 @@ public final class WeeklyAgendaView {
         boolean conflict=snapshot.fixedBlocks().stream().anyMatch(f->f.date().equals(b.date())&&minute(f.start())<minute(b.end())&&minute(f.end())>minute(b.start())) || snapshot.blocks().stream().anyMatch(o->!o.id().equals(b.id())&&o.date().equals(b.date())&&!o.done()&&minute(o.start())<minute(b.end())&&minute(o.end())>minute(b.start()));
         if(conflict)box.getStyleClass().add("conflicting-event");
         Tooltip.install(box,new Tooltip(b.title()+"\nSürükle: taşı · Alt: çakışmaya izin ver\nAlt+ok: taşı · Shift+Alt+ok: süre"));
-        box.setOnMouseClicked(e->{flushInspector();inspectedProposal="";selectedPool="";selected=b.id();showSelected();box.requestFocus();if(e.getClickCount()==2)inlineTitle(pane,b);e.consume();});
+        box.setOnMouseClicked(e->{flushInspector();setInspectorVisible(true);inspectedProposal="";selectedPool="";selected=b.id();showSelected();box.requestFocus();if(e.getClickCount()==2)inlineTitle(pane,b);e.consume();});
         box.setOnDragDetected(e->{if(e.getY()>box.getHeight()-10)return;var board=box.startDragAndDrop(TransferMode.MOVE);var content=new ClipboardContent();content.putString("study:"+b.id());board.setContent(content);e.consume();});
         double[] resize={-1};handle.setOnMousePressed(e->{resize[0]=e.getSceneY();e.consume();});
         handle.setOnMouseDragged(e->{if(resize[0]>=0){double delta=e.getSceneY()-resize[0];box.setPrefHeight(Math.max(15*SCALE,(minute(b.end())-minute(b.start()))*SCALE+delta));box.resize(box.getWidth(),box.getPrefHeight());}e.consume();});
         handle.setOnMouseReleased(e->{if(resize[0]>=0){int length=Math.max(15,snap(minute(b.end())-minute(b.start())+(int)((e.getSceneY()-resize[0])/SCALE)));resize[0]=-1;resize(b.id(),length,e.isAltDown());}e.consume();});
         box.setOnKeyPressed(e->{if(e.getTarget() instanceof TextInputControl)return;if(e.getCode()==KeyCode.DELETE){run(()->planner.execute(new DeleteBlock(b.id())));e.consume();}
-            else if(e.getCode()==KeyCode.ENTER){selected=b.id();showSelected();e.consume();}
+            else if(e.getCode()==KeyCode.ENTER){setInspectorVisible(true);selected=b.id();showSelected();e.consume();}
             else if(e.isAltDown()&&Set.of(KeyCode.UP,KeyCode.DOWN,KeyCode.LEFT,KeyCode.RIGHT).contains(e.getCode())){
                 if(e.isShiftDown()&&(e.getCode()==KeyCode.UP||e.getCode()==KeyCode.DOWN))resize(b.id(),minute(b.end())-minute(b.start())+(e.getCode()==KeyCode.UP?-15:15),false);
                 else{LocalDate date=LocalDate.parse(b.date());int time=minute(b.start());if(e.getCode()==KeyCode.LEFT)date=date.minusDays(1);if(e.getCode()==KeyCode.RIGHT)date=date.plusDays(1);if(e.getCode()==KeyCode.UP)time-=15;if(e.getCode()==KeyCode.DOWN)time+=15;if(time>=0&&time<1440)move(b.id(),date.toString(),PlanningPreferences.time(time),false);}e.consume();
@@ -257,8 +323,8 @@ public final class WeeklyAgendaView {
     private void inlineCreate(Pane pane,LocalDate date,int start,int end){TextField name=new TextField();name.setId("planner-inline-title");name.setPromptText("Başlık → Enter");place(pane,name,3,(start-FIRST)*SCALE,139,32);name.requestFocus();name.setOnKeyPressed(e->{if(e.getCode()==KeyCode.ESCAPE)pane.getChildren().remove(name);});name.setOnAction(e->{if(!name.getText().isBlank())createRange(date,start,Math.min(1439,end),name.getText().trim());});}
     private void inlineTitle(Pane pane,StudySession b){TextField name=new TextField(b.title());name.setId("planner-inline-edit");place(pane,name,4,y(b.start()),137,32);name.requestFocus();name.selectAll();name.setOnKeyPressed(e->{if(e.getCode()==KeyCode.ESCAPE)pane.getChildren().remove(name);});name.setOnAction(e->{if(!name.getText().isBlank()){var updated=new StudySession(b.id(),name.getText().trim(),b.date(),b.start(),b.end(),b.courseId(),b.done(),b.taskId(),b.workId(),b.actualMinutes());run(()->planner.execute(new SaveBlock(updated,false,ConflictPolicy.NEAREST)));}});}
     void createRange(LocalDate date,int start,int end,String title){run(()->record(planner.execute(new ScheduleBlock("","",date.toString(),PlanningPreferences.time(start),end-start,title,ConflictPolicy.NEAREST))));}
-    void move(String id,String date,String start,boolean allow){selected=id;run(()->record(planner.execute(new MoveBlock(id,date,start,allow?ConflictPolicy.ALLOW:ConflictPolicy.NEAREST))));}
-    void resize(String id,int minutes,boolean allow){selected=id;run(()->record(planner.execute(new ResizeBlock(id,minutes,allow?ConflictPolicy.ALLOW:ConflictPolicy.NEAREST))));}
+    void move(String id,String date,String start,boolean allow){setInspectorVisible(true);selected=id;run(()->record(planner.execute(new MoveBlock(id,date,start,allow?ConflictPolicy.ALLOW:ConflictPolicy.NEAREST))));}
+    void resize(String id,int minutes,boolean allow){setInspectorVisible(true);selected=id;run(()->record(planner.execute(new ResizeBlock(id,minutes,allow?ConflictPolicy.ALLOW:ConflictPolicy.NEAREST))));}
     private void schedule(PlanningSnapshot.PoolItem item,String date,String start,boolean allow){int duration=Math.min(120,item.unplannedMinutes()>0?item.unplannedMinutes():item.remainingMinutes()>0?item.remainingMinutes():60);duration=Math.max(15,duration);int minutes=duration;run(()->record(planner.execute(new ScheduleBlock(item.kind(),item.id(),date,start,minutes,item.title(),allow?ConflictPolicy.ALLOW:ConflictPolicy.NEAREST))));}
     private PlannerService.Result record(PlannerService.Result result){notice=result.notices().isEmpty()?"Plan kaydedildi · Geri al":String.join(" · ",result.notices());return result;}
     private void showSelected(){if(snapshot==null)return;snapshot.blocks().stream().filter(b->b.id().equals(selected)).findFirst().ifPresent(this::inspectBlock);}
@@ -293,9 +359,9 @@ public final class WeeklyAgendaView {
         if(!proposal.commands().get(index).type().equals("resize"))ghost.setOnDragDetected(e->{var board=ghost.startDragAndDrop(TransferMode.MOVE);var data=new ClipboardContent();data.putString("proposal:"+proposal.id()+":"+index);board.setContent(data);e.consume();});
         place(pane,ghost,8,y(action.start()),132,Math.max(24,action.minutes()*SCALE-4));
     }
-    private void showProposals(){flushInspector();inspectedProposal="";selected="";selectedPool="";inspector.getChildren().setAll(new Label("Öneri kutusu"));for(var p:proposals)inspector.getChildren().add(button(p.agent()+" · "+p.commands().size()+" işlem","proposal-open-"+p.id(),()->inspectProposal(p)));if(proposals.isEmpty())inspector.getChildren().add(new Label("Bekleyen öneri yok"));}
+    private void showProposals(){flushInspector();setInspectorVisible(true);inspectedProposal="";selected="";selectedPool="";inspector.getChildren().setAll(new Label("Öneri kutusu"));for(var p:proposals)inspector.getChildren().add(button(p.agent()+" · "+p.commands().size()+" işlem","proposal-open-"+p.id(),()->inspectProposal(p)));if(proposals.isEmpty())inspector.getChildren().add(new Label("Bekleyen öneri yok"));}
     private void inspectProposal(PlanProposal proposal){
-        flushInspector();inspectedProposal=proposal.id();selected="";selectedPool="";inspector.getChildren().setAll(new Label(proposal.agent()),new Label(proposal.note()));
+        flushInspector();setInspectorVisible(true);inspectedProposal=proposal.id();selected="";selectedPool="";inspector.getChildren().setAll(new Label(proposal.agent()),new Label(proposal.note()));
         Label warning=new Label(proposal.fingerprint().equals(snapshot.fingerprint())?"":"Snapshot değişti; komutlar yeniden doğrulanacak");warning.setWrapText(true);inspector.getChildren().add(warning);
         TextArea feedback=new TextArea();feedback.setId("proposal-feedback");feedback.setPrefRowCount(2);feedback.setPromptText("Ajana not (isteğe bağlı)");
         Map<Integer,CheckBox> choices=new LinkedHashMap<>();

@@ -590,6 +590,32 @@
 
 .planner-conflict-preview { -fx-background-color: -color-danger-subtle; -fx-border-color: -color-danger-fg; -fx-opacity: 0.65; }
 
+/* Planning fills the available desktop area; deadline rows remain above the scrolling hours. */
+.module-content.planning-workspace { -fx-padding: 10 16 10 16; -fx-spacing: 10; }
+.planner-toolbar { -fx-padding: 2 0 2 0; }
+.planner-week-title { -fx-font-family: "Poppins SemiBold"; -fx-font-size: 17px; -fx-padding: 0 8; }
+.planner-primary { -fx-background-color: -parlak; -fx-text-fill: -yuzey; -fx-border-color: -parlak; }
+.planner-primary:hover { -fx-background-color: -vurgu-koyu; }
+.planner-week-summary { -fx-background-color: -yuzey-2; -fx-background-radius: 10; -fx-padding: 10 14; -fx-text-fill: -kenar-yazi; }
+.planner-pool-panel { -fx-padding: 10 12 0 0; }
+.planner-pool-card .label { -fx-font-size: 12px; }
+.planner-calendar-panel { -fx-background-color: -yuzey; -fx-border-color: -cizgi; -fx-border-radius: 10; -fx-padding: 4; }
+#planner-inspector { -fx-padding: 10 12; -fx-background-color: -yuzey; }
+#planner-deadline-header, #planner-deadline-header > .viewport { -fx-background-color: -yuzey; -fx-padding: 0; -fx-border-width: 0; }
+.planner-day-heading { -fx-background-color: transparent; -fx-border-color: transparent; -fx-font-size: 12px; -fx-padding: 8 2; -fx-min-height: 34; }
+.planner-day-heading.planner-today { -fx-background-color: -vurgu-acik; }
+.planner-deadline-corner { -fx-padding: 14 0 0 2; -fx-font-size: 10px; }
+.planner-deadline-corner .label { -fx-text-fill: -kenar-yazi; }
+.planner-deadline-lane { -fx-padding: 0 3 5 3; -fx-border-color: transparent transparent -cizgi transparent; }
+.planner-deadline-card { -fx-background-color: -yuzey-2; -fx-border-color: -cizgi; -fx-border-width: 0 0 0 2; -fx-border-radius: 6; -fx-background-radius: 6; -fx-padding: 5 7; -fx-alignment: CENTER_LEFT; }
+.planner-deadline-card:hover { -fx-background-color: -vurgu-acik; -fx-border-color: -tehlike; }
+.planner-deadline-name { -fx-font-family: "Poppins SemiBold"; -fx-font-size: 12px; -fx-text-fill: -yazi; }
+.planner-deadline-time { -fx-font-size: 11px; -fx-text-fill: -tehlike; }
+.planner-deadline-more { -fx-font-size: 11px; -fx-padding: 2 6; }
+.planner-no-deadline { -fx-padding: 6 3; -fx-font-size: 11px; -fx-text-fill: -kenar-yazi; }
+#planner-week-grid .silver-hour { -fx-font-size: 11px; }
+#planner-week-grid .silver-event-name { -fx-font-size: 12px; }
+
 /* Classroom: each course/assignment is a rounded card with a small gap between items. */
 .classroom-list { -fx-background-color: transparent; -fx-border-width: 0; -fx-padding: 4; }
 .classroom-list .list-cell { -fx-cell-size: -1; -fx-padding: 0 4 8 0; -fx-background-color: transparent; }
