@@ -15,4 +15,17 @@ class AgentGuideTest {
     @Test void generatedLauncherRunsWithoutDisplayAndUsesAnIsolatedProfile()throws Exception{
         var javaCommand=Path.of(System.getProperty("java.home"),"bin","java").toString();var builder=new ProcessBuilder(javaCommand,"-cp",Path.of("build/install/app/lib/*").toAbsolutePath().toString(),"org.example.AgentCli","--profile",root.toString(),"snapshot","--week","2026-11-09");builder.environment().remove("DISPLAY");var process=builder.start();String result=new String(process.getInputStream().readAllBytes(),java.nio.charset.StandardCharsets.UTF_8);assertTrue(process.waitFor(10,java.util.concurrent.TimeUnit.SECONDS));assertEquals(0,process.exitValue(),new String(process.getErrorStream().readAllBytes()));assertEquals("Europe/Istanbul",PlanningFiles.JSON.readTree(result).path("timezone").asText());
     }
+    @Test void cliJsonStaysUtf8EvenWhenWindowsStyleConsoleEncodingIsRequested()throws Exception{
+        var javaCommand=Path.of(System.getProperty("java.home"),"bin","java").toString();
+        var builder=new ProcessBuilder(javaCommand,"-Dfile.encoding=windows-1254","-Dstdout.encoding=windows-1254",
+                "-cp",Path.of("build/install/app/lib/*").toAbsolutePath().toString(),"org.example.AgentCli",
+                "--profile",root.toString(),"task","add","--title","Türkçe görev");
+        builder.environment().remove("DISPLAY");builder.environment().remove("WAYLAND_DISPLAY");
+        var process=builder.start();byte[] result=process.getInputStream().readAllBytes();
+        assertTrue(process.waitFor(10,java.util.concurrent.TimeUnit.SECONDS));assertEquals(2,process.exitValue());
+        String text=new String(result,java.nio.charset.StandardCharsets.UTF_8);
+        assertFalse(text.contains("\uFFFD"),text);
+        assertTrue(PlanningFiles.JSON.readTree(text).path("error").path("message").asText().contains("Doğrudan"),text);
+        assertFalse(Files.exists(root.resolve("data")));
+    }
 }

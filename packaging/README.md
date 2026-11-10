@@ -1,13 +1,19 @@
-# Academic OS 1.5.0 — Haftalık plan ve ajan arayüzü
+# Academic OS 1.5.1 — Windows ve dış ajanla planlama
 
 Yeni sürüm haftalık saat ızgarası, plan havuzu, oturuma bağlı odak, JSON CLI, öneri kutusu ve otomatik yerleştirme içerir.
 Ajan kullanımı: [AGENTS.md](../AGENTS.md), [komut başvurusu](../docs/agent-cli.md).
 Doğrulama ve sınırlar: [teslim raporu](../docs/planner-delivery.md).
 
 Kaynak dağıtımı: `./gradlew :app:test :app:installDist --offline --no-daemon`.
+Bu komut varsayılan olarak pencere açmaz; JavaFX testleri için ayrı test ekranı ve `-PguiTests=true`
+gerekir. Linux sanal ekran komutu ve ayrıntılar: [docs/testing.md](../docs/testing.md).
 CLI: `app/build/install/app/bin/academic-os --help`.
 Linux 1.5.0 paketi için [LINUX.md](LINUX.md) kullanılır.
-Windows paketleyici `academic-os.cmd` ve ajan kılavuzlarını içerir; yeni Windows EXE ve gerçek Windows kabulü bu oturumda yapılmadı.
+Windows 1.5.1 kullanım ve diğer AI'ya aktarım kılavuzu: [WINDOWS.md](WINDOWS.md).
+Güncel paket incelemesi: [1.5.1 teslim raporu](../docs/release-1.5.1.md).
+Kurulum çıktısı `app/build/windows/dist/BerkayAcademicOS-1.5.1-setup.exe`; Java 21,
+Windows JavaFX, `academic-os.cmd` ve ajan kılavuzlarını içerir. Bu yeni pakete Google istemcisi veya kişisel veri eklenmez.
+Linux'taki kaynak/arayüz/paket denetimleri gerçek Windows kurulum kabulünün yerine geçmez.
 Aşağıdaki bölüm önceki **1.4.1 Windows dağıtımının** tarihli kurulum ve entegrasyon kayıtlarıdır.
 
 ---

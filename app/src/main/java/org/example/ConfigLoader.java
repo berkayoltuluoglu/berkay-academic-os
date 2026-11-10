@@ -36,6 +36,13 @@ public class ConfigLoader {
                 var modules=new java.util.ArrayList<>(config.getModules());
                 load().getModules().stream().filter(m -> "sync".equals(m.getId())).findFirst().ifPresent(modules::add);config.setModules(modules);
             }
+            // A restored Linux profile must not enable tools that have no Windows implementation.
+            // Adapt the loaded view only; preserve the user's stored configuration.
+            if(Boolean.getBoolean("academic.os.packaged") && operatingSystem.toLowerCase(java.util.Locale.ROOT).contains("win")
+                    && config.getModules()!=null) {
+                config.getModules().stream().filter(module -> "scripts".equals(module.getId()) || "uart".equals(module.getId()))
+                        .forEach(module -> module.setEnabled(false));
+            }
             return config;
         }
         if (!Boolean.getBoolean("academic.os.packaged")) return load();

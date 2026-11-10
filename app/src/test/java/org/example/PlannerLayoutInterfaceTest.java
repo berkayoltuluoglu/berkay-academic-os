@@ -114,7 +114,8 @@ class PlannerLayoutInterfaceTest {
     }
 
     private Node find(String selector){return stage.getScene().getRoot().lookup(selector);}
-    private boolean ready(String selector){try{return fx(()->find(selector)!=null&&!find(selector).isDisabled()&&find(".module-content").getOpacity()>.99);}catch(Exception e){throw new RuntimeException(e);}}
+    private boolean ready(String selector){try{return fx(()->find(selector)!=null&&!find(selector).isDisabled()&&find(".module-content").getOpacity()>.99
+            &&(!selector.equals("#week-refresh")||find("#weekly-agenda-status") instanceof Label label&&label.getText().contains("birlikte gösteriliyor")));}catch(Exception e){throw new RuntimeException(e);}}
     private void layout(){stage.getScene().getRoot().applyCss();stage.getScene().getRoot().layout();stage.getScene().getRoot().applyCss();stage.getScene().getRoot().layout();}
     private void resizeSurface(int width,int height){stage.setWidth(width);stage.setHeight(height);((Region)stage.getScene().getRoot()).resize(width,height);layout();}
     private void screenshot(String name)throws Exception{

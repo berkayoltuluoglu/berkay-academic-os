@@ -39,4 +39,18 @@ class AppPathsTest {
             assertFalse(Files.readString(directory.resolve("config/app-config.json")).contains("/home/berkay/"));
         } finally { if (previous == null) System.clearProperty("academic.os.packaged"); else System.setProperty("academic.os.packaged", previous); }
     }
+
+    @Test void restoredLinuxConfigDoesNotEnableUnsupportedWindowsToolsOrRewriteUserSettings() throws Exception {
+        String previous=System.getProperty("academic.os.packaged");
+        try {
+            System.setProperty("academic.os.packaged","true");
+            new ConfigLoader().load(directory,"Linux");
+            Path file=directory.resolve("config/app-config.json");byte[] before=Files.readAllBytes(file);
+            var windows=new ConfigLoader().load(directory,"Windows 11");
+            assertTrue(windows.getModules().stream().filter(module->Set.of("scripts","uart").contains(module.getId())).noneMatch(ModuleItem::isEnabled));
+            assertArrayEquals(before,Files.readAllBytes(file));
+            assertTrue(new ConfigLoader().load(directory,"Linux").getModules().stream()
+                    .filter(module->Set.of("scripts","uart").contains(module.getId())).allMatch(ModuleItem::isEnabled));
+        } finally {if(previous==null)System.clearProperty("academic.os.packaged");else System.setProperty("academic.os.packaged",previous);}
+    }
 }

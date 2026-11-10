@@ -9,7 +9,7 @@ Section
   SetOutPath "$EXEDIR"
   ClearErrors
   ${GetParameters} $0
-  Exec '"$EXEDIR\runtime\bin\javaw.exe" -Dacademic.os.packaged=true -cp "$EXEDIR\app\lib\*" org.example.AppLauncher $0'
+  ExecWait '"$EXEDIR\runtime\bin\javaw.exe" -Dacademic.os.packaged=true -cp "$EXEDIR\app\lib\*" org.example.AppLauncher $0' $1
   IfErrors 0 +2
     MessageBox MB_OK|MB_ICONSTOP "Academic OS başlatılamadı. Uygulamayı yeniden kurmayı deneyebilirsin."
 SectionEnd

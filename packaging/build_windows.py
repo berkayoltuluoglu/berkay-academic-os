@@ -25,14 +25,14 @@ def sha256(path: Path) -> str:
 
 
 def download(address: str, target: Path) -> None:
-    request = urllib.request.Request(address, headers={'User-Agent': 'AcademicOS-Packager/1.4'})
+    request = urllib.request.Request(address, headers={'User-Agent': 'AcademicOS-Packager/1.5.1'})
     with urllib.request.urlopen(request, timeout=120) as source, target.open('wb') as output:
         shutil.copyfileobj(source, output)
 
 
 def runtime(cache: Path) -> tuple[Path, dict]:
     address = 'https://api.adoptium.net/v3/assets/latest/21/hotspot?architecture=x64&image_type=jre&os=windows&vendor=eclipse'
-    request = urllib.request.Request(address, headers={'User-Agent': 'AcademicOS-Packager/1.4'})
+    request = urllib.request.Request(address, headers={'User-Agent': 'AcademicOS-Packager/1.5.1'})
     with urllib.request.urlopen(request, timeout=60) as response:
         choices = json.load(response)
     choice = choices[0]
@@ -64,8 +64,8 @@ def extract_runtime(archive: Path, destination: Path) -> None:
                 target.parent.mkdir(parents=True, exist_ok=True)
                 with source.open(item) as stream, target.open('wb') as output:
                     shutil.copyfileobj(stream, output)
-    if not (destination / 'bin/javaw.exe').is_file():
-        raise RuntimeError('The downloaded runtime does not contain Windows javaw.exe.')
+    if not all((destination / name).is_file() for name in ('bin/javaw.exe', 'bin/java.exe')):
+        raise RuntimeError('The downloaded runtime must contain Windows javaw.exe and java.exe for the desktop and CLI.')
 
 
 def main() -> None:
@@ -92,11 +92,16 @@ def main() -> None:
         raise RuntimeError('Windows JavaFX dependencies are missing; run :app:stageWindows -PjavafxPlatform=win.')
     if any('-linux' in path.name or '-mac' in path.name for path in jars):
         raise RuntimeError('The Windows payload contains a non-Windows JavaFX dependency.')
-    payload = BUILD / 'payload'
+    if [path.name for path in jars if path.name.startswith('app-')] != [f'app-{version}.jar']:
+        raise RuntimeError('The staged application JAR does not match the release version; rebuild :app:stageWindows.')
+    # Keep older release artifacts (including any previously authorized publisher client) intact.
+    payload = BUILD / f'payload-{version}'
     if payload.exists():
         shutil.rmtree(payload)
+    payload.mkdir(parents=True)
     shutil.copy2(REPOSITORY / 'packaging/academic-os.cmd', payload / 'academic-os.cmd')
     shutil.copytree(REPOSITORY / 'app/src/main/resources/agent-guide', payload / 'agent-guide')
+    shutil.copy2(REPOSITORY / 'packaging/WINDOWS.md', payload / 'WINDOWS.md')
     (payload / 'app/lib').mkdir(parents=True)
     for jar in jars:
         shutil.copy2(jar, payload / 'app/lib' / jar.name)
@@ -113,7 +118,6 @@ def main() -> None:
     manifest = {'application': 'Berkay Academic OS', 'version': version, 'platform': 'windows-x64', 'runtime': runtime_info,
                 'googleClientBundled': bool(args.google_client),
                 'libraries': [{'name': path.name, 'sha256': sha256(path)} for path in jars]}
-    (payload / 'package-manifest.json').write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding='utf-8')
     environment = os.environ.copy()
     if args.nsis_dir:
         environment['NSISDIR'] = str(args.nsis_dir.resolve())
@@ -121,6 +125,9 @@ def main() -> None:
     verbosity = '/V2' if os.name == 'nt' else '-V2'
     launcher = payload / 'BerkayAcademicOS.exe'
     subprocess.run([args.makensis, verbosity, prefix + 'OUTPUT=' + str(launcher), str(REPOSITORY / 'packaging/windows-launcher.nsi')], env=environment, check=True)
+    manifest['files'] = {path.relative_to(payload).as_posix(): sha256(path)
+                         for path in sorted(payload.rglob('*')) if path.is_file()}
+    (payload / 'package-manifest.json').write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding='utf-8')
     output = BUILD / 'dist'
     output.mkdir(parents=True, exist_ok=True)
     installer = output / f'BerkayAcademicOS-{version}-setup.exe'
@@ -128,6 +135,7 @@ def main() -> None:
                     prefix + 'PAYLOAD=' + str(payload), str(REPOSITORY / 'packaging/windows-setup.nsi')], env=environment, check=True)
     digest = sha256(installer)
     (output / (installer.name + '.sha256')).write_text(digest + '  ' + installer.name + '\n', encoding='ascii')
+    shutil.copy2(REPOSITORY / 'packaging/WINDOWS.md', output / f'BerkayAcademicOS-{version}-Windows-Kullanim.md')
     print(f'Installer: {installer}\nSHA-256: {digest}\nSize: {installer.stat().st_size / 1024 / 1024:.1f} MB')
 
 

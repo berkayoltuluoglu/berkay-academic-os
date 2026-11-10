@@ -15,7 +15,7 @@
 # Berkay Academic OS — Tam Durum Dokümanı
 _Güncel teknik özet, yapılanlar, mevcut mimari, dosya düzeni, entegrasyonlar, hatalar, bekleyen işler ve sonraki adımlar_
 
-**Son durum: 10 Kasım 2026 — 1.5.0 planlama doğrulamaları ve haftalık ekran düzeni güncellendi.** Hafta/geçmiş gün/15 dakikalık ızgara denetimleri ile boş öneri sonucu düzeltildi. Son kullanıcı geri bildirimiyle eski yapılacaklar son 7 günle sınırlandı; 23:59 teslimleri sabit üst şeride taşındı; tam ekran takvim alanı ve kapatılabilir ayrıntı paneli uygulandı. Gümüş görünüm korunur. Ayrıntılar **0.21–0.22** ve `docs/design-review.md`; önceki Linux paket kabulü **0.20** içindedir. Windows kabulü bekler; commit/push kullanıcıdadır.
+**Son durum: 10 Kasım 2026 — 1.5.1 Windows setup üretildi.** Planlama doğrulamaları, son 7 gün geçmiş filtresi, sabit teslim şeridi, tam ekran düzeni ve sıcak renk vurguları mevcut. İzole ekranda 210 uygulama testi ve 11 paketleme testi başarılı; son EXE arşivi ve 366 dosya hash'i doğrulandı. Dış ajan CLI'ı ve kılavuzları kurulumda; gerçek Windows kabulü bekler. Ayrıntılar **0.21–0.24**, `docs/release-1.5.1.md` ve `packaging/WINDOWS.md`; commit/push kullanıcıdadır.
 
 **1 Ekim 2026 inceleme güncellemesi:** Kullanıcı ders planlayıcı projesini `/home/berkay/projects/ders-planlayici` konumunda paylaştı. İlk inceleme bulguları 0.8 bölümünde, ardından yapılan ilk aktarım 0.9 bölümünde. LLM entegrasyonu yapılmadı.
 
@@ -427,6 +427,39 @@ haftalık planda düzeltilmesini ve tam ekranın daha rahat kullanılmasını is
 - Commit/push kullanıcıya bırakıldı; yeni kurulum paketi üretilmedi.
 - Son kontrol: **208 uygulama testi başarılı**, başarısız/hata/atlanan yok; offline `test` ve `installDist`
   başarılı, `git diff --check` temiz.
+
+---
+
+### 0.23 Test pencereleri ve sıcak renk paleti — 10 Kasım 2026
+
+- Kullanıcı masaüstünde ek uygulama pencereleri açılmasına itiraz etti. JavaFX testleri artık
+  varsayılan kapalı; açık seçim `-PguiTests=true`, Linux'ta ayrı sanal ekran gerektirir.
+  Windows CI kendi makinesinde açıkça seçer. Normal test komutu pencere açmaz; `docs/testing.md`.
+- Kullanıcı gümüş düzeni biraz renklendirmek için `#432523`, `#633a30`, `#8a5a44`, `#bb895a`,
+  `#d4bc6a` paletini verdi. Native açık/koyu temaya sıcak seçim, buton, blok, odak ve özet vurguları eklendi.
+  Renklerin rolü ve örnek kontrast ölçümleri `docs/design-review.md` içindedir.
+- Güncel eksikler `docs/remaining-work.md`: uygulama içi bildirim alanı, dar ekran odak/havuz erişimi,
+  elle planlamada son tarih politikası, Türkçe işlem/alan bazında hata metinleri ve Windows kabulü.
+- Finans HTML stili ve kapsam dışındaki modüllerin çalışma yapısı değiştirilmedi; commit/push kullanıcıdadır.
+
+---
+
+### 0.24 Windows 1.5.1 hazırlığı ve ajan devri — 10 Kasım 2026
+
+- Kullanıcı ürünü Windows'a kurup başka bir AI ile haftasını planlamak istedi. Java dahil setup hedeflendi;
+  kişisel veri, Google tokenı ve yayıncı istemcisi yeni pakete alınmaz.
+- Temiz Windows paketlemesindeki eksik payload dizini düzeltildi. Sürüm kontrolü, sürüm bazlı çıktı,
+  payload hash manifesti ve kurulum yanı kullanım belgesi eklendi.
+- CLI çıktısı Windows'ta da UTF-8 JSON üretir. Linux'tan taşınan ayarlarda UART/script araçları
+  yalnızca yüklü görünümde kapatılır; kullanıcının ayar dosyası değiştirilmez.
+- **210 uygulama testi** izole sanal ekranda, **11 paketleme testi** geçici dizinlerde başarılı.
+  Geçmiş filtresi arayüz testindeki yükleme yarışı düzeltildi. Kullanıcının masaüstünde uygulama başlatılmadı.
+- Windows kabul scripti hash/CLI öneri kontrolleriyle genişletildi; bu Linux makinede Windows scripti çalıştırılmadı.
+  Ürün durumu, son paket doğrulaması ve sınırlar `docs/release-1.5.1.md` içinde tutulur.
+- `packaging/WINDOWS.md` ZIP ile veri taşıma, Google'a yeniden giriş ve diğer AI'ya hazır planlama isteğini içerir.
+  Setup `app/build/windows/dist/BerkayAcademicOS-1.5.1-setup.exe` (80,8 MiB) üretildi;
+  son EXE açılıp 366 dosyanın hash'i doğrulandı. Geniş dağıtım öncesinde gerçek Windows kabulü gerekir;
+  kod imzası ve otomatik güncelleme henüz yoktur.
 
 ---
 

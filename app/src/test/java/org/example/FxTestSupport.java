@@ -6,11 +6,14 @@ import java.util.concurrent.*;
 final class FxTestSupport {
     private FxTestSupport() {}
     static boolean isGuiAvailable() {
+        if (!Boolean.getBoolean("academic.os.test.gui")) return false;
         return System.getProperty("os.name").toLowerCase(java.util.Locale.ROOT).contains("win")
-                || System.getenv("DISPLAY") != null || System.getProperty("os.name").toLowerCase(java.util.Locale.ROOT).contains("mac");
+                || (System.getenv("DISPLAY") != null && !System.getenv("DISPLAY").isBlank())
+                || System.getProperty("os.name").toLowerCase(java.util.Locale.ROOT).contains("mac");
     }
 
     static void initialize() throws Exception {
+        if (!isGuiAvailable()) throw new IllegalStateException("Arayüz testleri için açıkça -PguiTests=true ve uygun test ekranı gerekli");
         CountDownLatch ready = new CountDownLatch(1);
         Runnable started = () -> { Platform.setImplicitExit(false); ready.countDown(); };
         try { Platform.startup(started); }

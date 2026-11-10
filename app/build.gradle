@@ -7,7 +7,7 @@ repositories {
     mavenCentral()
 }
 
-version = '1.5.0'
+version = '1.5.1'
 
 dependencies {
     implementation 'io.github.mkpaz:atlantafx-base:2.0.1'
@@ -41,6 +41,8 @@ application {
 tasks.named('test') {
     dependsOn tasks.named('installDist')
     useJUnitPlatform()
+    // A desktop DISPLAY alone is not permission to open application windows during tests.
+    systemProperty 'academic.os.test.gui', providers.gradleProperty('guiTests').orElse('false').get()
 }
 
 tasks.register('stageWindows', Sync) {

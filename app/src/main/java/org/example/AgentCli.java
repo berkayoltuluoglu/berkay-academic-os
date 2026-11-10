@@ -8,7 +8,11 @@ import java.util.*;
 /** A second entry point: no JavaFX toolkit, OAuth initialization or network calls. */
 public final class AgentCli {
     private AgentCli(){}
-    public static void main(String[] args){System.exit(run(args,System.out));}
+    public static void main(String[] args){
+        // JSON is consumed by external agents; Windows console encodings must not corrupt Turkish text.
+        var output=new PrintStream(System.out,true,java.nio.charset.StandardCharsets.UTF_8);
+        System.exit(run(args,output));
+    }
     public static int run(String[] arguments,PrintStream out){
         return run(arguments, out, Clock.systemUTC());
     }

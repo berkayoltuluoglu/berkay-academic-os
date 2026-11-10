@@ -460,24 +460,33 @@
 .planner-block:hover { -fx-opacity: .88; }
 .planner-block-conflict { -fx-border-color: -tehlike; -fx-border-width: 2; -fx-border-radius: 6; }
 
-/* Accepted silver design: shared by the shell and all native modules. */
+/* Silver surfaces with the user's five warm accent colors. Shared by all native modules. */
 .root { -fx-font-family: "Poppins"; -fx-font-size: 13px; }
 .uygulama {
+    -palette-1: #432523; -palette-2: #633a30; -palette-3: #8a5a44;
+    -palette-4: #bb895a; -palette-5: #d4bc6a;
     -zemin: #FAFBFD; -yuzey: #FFFFFF; -yuzey-2: #F1F3F6;
-    -cizgi: #E1E5EC; -yazi: #24262B; -yazi-soluk: #7D8595;
+    -cizgi: #E1E5EC; -yazi: #24262B; -yazi-soluk: #626C7B;
     -kenar: #EFF1F5; -kenar-yazi: #545C68;
-    -vurgu: #7D8797; -vurgu-koyu: #616C7D; -vurgu-acik: #E5E9EF;
-    -parlak: #353D48; -basari: #66826E; -tehlike: #B95C5C; -uyari: #A67A42; -klasor: #8795A7;
-    -color-accent-muted: rgba(125,135,151,0.24);
-    -silver-blue: #397DF6;
+    -vurgu: -palette-3; -vurgu-koyu: -palette-1; -vurgu-acik: #F3E9DC;
+    -parlak: -palette-2; -basari: #66826E; -tehlike: #B95C5C; -uyari: -palette-3; -klasor: -palette-4;
+    -color-accent-muted: rgba(138,90,68,0.24);
+    -nav-selected-bg: -palette-2; -nav-selected-fg: #FFFFFF;
+    -study-surface: #F4E8DD; -lesson-surface: #F8F3E4;
+    -gold-surface: #FBF5DF; -accent-ink: -palette-1;
+    -now-accent: -palette-3;
 }
 .uygulama.dark {
     -zemin: #191C22; -yuzey: #22262E; -yuzey-2: #2B3039;
     -cizgi: #383E49; -yazi: #ECEEF3; -yazi-soluk: #9CA6B8;
     -kenar: #20242B; -kenar-yazi: #B5BECF;
-    -vurgu: #A3AFC2; -vurgu-koyu: #B8C2D0; -vurgu-acik: #333C4B;
-    -parlak: #E0E6EF; -basari: #96B7A0; -tehlike: #E68B8B; -uyari: #D5B485; -klasor: #AFBCD0;
-    -color-accent-muted: rgba(163,175,194,0.24);
+    -vurgu: -palette-5; -vurgu-koyu: -palette-4; -vurgu-acik: -palette-1;
+    -parlak: -palette-5; -basari: #96B7A0; -tehlike: #E68B8B; -uyari: -palette-5; -klasor: -palette-4;
+    -color-accent-muted: rgba(212,188,106,0.24);
+    -nav-selected-bg: -palette-1; -nav-selected-fg: -palette-5;
+    -study-surface: #382C2A; -lesson-surface: #343127;
+    -gold-surface: #343127; -accent-ink: #F3E6D5;
+    -now-accent: -palette-5;
 }
 .button, .toggle-button, .menu-button, .text-field, .combo-box-base {
     -fx-background-radius: 10; -fx-border-radius: 10; -fx-cursor: hand;
@@ -489,8 +498,8 @@
     -fx-padding: 16 26; -fx-border-color: transparent transparent -cizgi transparent;
 }
 .silver-brand { -fx-font-family: "Poppins SemiBold"; -fx-text-fill: -yazi; -fx-graphic-text-gap: 12; -fx-font-size: 14px; }
-.silver-brand .ikonli-font-icon { -fx-icon-color: -yazi; -fx-icon-size: 20; }
-.silver-profile { -fx-background-color: -cizgi; -fx-background-radius: 30; -fx-text-fill: -kenar-yazi;
+.silver-brand .ikonli-font-icon { -fx-icon-color: -vurgu; -fx-icon-size: 20; }
+.silver-profile { -fx-background-color: -palette-5; -fx-background-radius: 30; -fx-text-fill: -palette-1;
     -fx-font-family: "Poppins SemiBold"; -fx-min-width: 32; -fx-min-height: 32; -fx-alignment: CENTER; }
 #module-search { -fx-background-color: -yuzey; -fx-border-color: -cizgi; -fx-background-radius: 18; -fx-border-radius: 18; -fx-padding: 7 14; }
 .kenar-cubugu { -fx-background-color: -kenar; -fx-padding: 28 12 16 12;
@@ -499,8 +508,8 @@
 .nav .ikonli-font-icon { -fx-icon-color: -kenar-yazi; -fx-icon-size: 19; }
 .nav:hover, .nav:hover .ikonli-font-icon { -fx-text-fill: -yazi; -fx-icon-color: -yazi; }
 .nav:hover { -fx-background-color: -yuzey-2; }
-.nav:selected, .nav:selected:hover { -fx-background-color: -cizgi; -fx-text-fill: -yazi; -fx-font-family: "Poppins SemiBold"; }
-.nav:selected .ikonli-font-icon { -fx-icon-color: -kenar-yazi; }
+.nav:selected, .nav:selected:hover { -fx-background-color: -nav-selected-bg; -fx-text-fill: -nav-selected-fg; -fx-font-family: "Poppins SemiBold"; }
+.nav:selected .ikonli-font-icon { -fx-icon-color: -nav-selected-fg; }
 .nav:focus-visible { -fx-border-color: -vurgu; }
 .grup-basligi { -fx-text-fill: -yazi-soluk; -fx-font-size: 10px; -fx-padding: 20 14 7 14; }
 .tema-satiri { -fx-padding: 12 8 0 8; -fx-border-color: -cizgi transparent transparent transparent; }
@@ -531,26 +540,28 @@
 .silver-add .arrow { -fx-shape: ""; -fx-padding: 0; }
 .silver-add .ikonli-font-icon { -fx-icon-size: 21; -fx-icon-color: -yazi; }
 .silver-section-title { -fx-font-family: "Poppins SemiBold"; -fx-text-fill: -yazi; -fx-font-size: 16px; }
-.silver-next { -fx-background-color: linear-gradient(to right, -yuzey-2, -kenar); -fx-border-color: -cizgi;
+.silver-next { -fx-background-color: linear-gradient(to right, -vurgu-acik, -yuzey-2); -fx-border-color: -palette-4;
     -fx-background-radius: 14; -fx-border-radius: 14; -fx-padding: 18 20; -fx-alignment: CENTER_LEFT; }
 .silver-next:hover { -fx-background-color: -vurgu-acik; }
 .silver-next .separator { -fx-min-height: 30; -fx-max-height: 30; }
-.silver-blue-dot { -fx-fill: -silver-blue; }
+.silver-blue-dot { -fx-fill: -now-accent; }
 .silver-event-name { -fx-font-family: "Poppins SemiBold"; -fx-text-fill: -yazi; -fx-font-size: 12px; }
 .silver-event-detail { -fx-text-fill: -yazi-soluk; -fx-font-size: 10px; }
 .silver-hour { -fx-text-fill: -yazi-soluk; -fx-font-size: 10px; -fx-alignment: TOP_LEFT; }
 .silver-time-line { -fx-border-color: -cizgi; -fx-border-width: 1 0 0 0; -fx-border-style: segments(3, 4); }
 .silver-event { -fx-background-color: -yuzey-2; -fx-border-color: -cizgi;
     -fx-background-radius: 12; -fx-border-radius: 12; -fx-padding: 8 14; -fx-alignment: CENTER_LEFT; }
-.lesson-event { -fx-background-color: -vurgu-acik; }
+.lesson-event { -fx-background-color: -lesson-surface; -fx-border-color: -palette-4; -fx-border-width: 0 0 0 3; }
+.study-event { -fx-background-color: -study-surface; -fx-border-color: -palette-3; -fx-border-width: 0 0 0 3; }
+.silver-event.conflicting-event { -fx-border-color: -tehlike; -fx-border-width: 2; }
 .silver-event:hover { -fx-border-color: -vurgu; }
 .study-event .ikonli-font-icon { -fx-icon-size: 15; }
 .completed-event { -fx-opacity: .55; }
 .completed-event .silver-event-name { -fx-text-fill: -yazi-soluk; }
 .conflicting-event { -fx-border-color: -uyari; }
-.silver-now-line { -fx-background-color: -silver-blue; }
-.silver-now-time { -fx-background-color: -silver-blue; -fx-background-radius: 6; -fx-text-fill: white; -fx-font-size: 10px; -fx-alignment: CENTER; }
-.silver-focus-card { -fx-padding: 22; }
+.silver-now-line { -fx-background-color: -now-accent; }
+.silver-now-time { -fx-background-color: -now-accent; -fx-background-radius: 6; -fx-text-fill: -yuzey; -fx-font-size: 10px; -fx-alignment: CENTER; }
+.silver-focus-card { -fx-padding: 22; -fx-border-color: -palette-4; }
 .focus-track { -fx-fill: transparent; -fx-stroke: -cizgi; -fx-stroke-width: 5; }
 .focus-progress { -fx-fill: transparent; -fx-stroke: -vurgu; -fx-stroke-width: 5; -fx-stroke-line-cap: round; }
 .focus-time { -fx-font-family: "Poppins"; -fx-font-size: 37px; -fx-text-fill: -yazi; }
@@ -581,12 +592,12 @@
 .planner-pool-card:hover { -fx-border-color: -color-accent-emphasis; }
 .planner-block { -fx-padding: 6; -fx-cursor: move; -fx-background-radius: 6; }
 .planner-block:focused, .planner-selected { -fx-border-color: -color-accent-emphasis; -fx-border-width: 2; }
-.planner-fixed { -fx-opacity: 0.72; -fx-cursor: default; }
+.planner-fixed { -fx-opacity: 1; -fx-cursor: default; }
 .planner-resize { -fx-background-color: -color-fg-muted; -fx-opacity: 0.35; -fx-cursor: v-resize; }
 .planner-today { -fx-background-color: -color-accent-subtle; }
 .planner-deadline { -fx-text-fill: -color-danger-fg; -fx-font-size: 10px; -fx-background-color: -color-bg-default; }
 .planner-selection, .planner-drop-target { -fx-background-color: -color-accent-subtle; -fx-border-color: -color-accent-emphasis; }
-.planner-ghost { -fx-opacity: 0.62; -fx-border-style: segments(6, 4); -fx-border-color: -color-accent-emphasis; -fx-border-width: 2; }
+.planner-ghost { -fx-opacity: 1; -fx-background-color: -gold-surface; -fx-border-style: segments(6, 4); -fx-border-color: -palette-4; -fx-border-width: 2; }
 
 .planner-conflict-preview { -fx-background-color: -color-danger-subtle; -fx-border-color: -color-danger-fg; -fx-opacity: 0.65; }
 
@@ -596,7 +607,7 @@
 .planner-week-title { -fx-font-family: "Poppins SemiBold"; -fx-font-size: 17px; -fx-padding: 0 8; }
 .planner-primary { -fx-background-color: -parlak; -fx-text-fill: -yuzey; -fx-border-color: -parlak; }
 .planner-primary:hover { -fx-background-color: -vurgu-koyu; }
-.planner-week-summary { -fx-background-color: -yuzey-2; -fx-background-radius: 10; -fx-padding: 10 14; -fx-text-fill: -kenar-yazi; }
+.planner-week-summary { -fx-background-color: -gold-surface; -fx-background-radius: 10; -fx-border-radius: 10; -fx-border-color: -palette-5; -fx-border-width: 0 0 0 3; -fx-padding: 10 14; -fx-text-fill: -accent-ink; }
 .planner-pool-panel { -fx-padding: 10 12 0 0; }
 .planner-pool-card .label { -fx-font-size: 12px; }
 .planner-calendar-panel { -fx-background-color: -yuzey; -fx-border-color: -cizgi; -fx-border-radius: 10; -fx-padding: 4; }

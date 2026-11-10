@@ -20,7 +20,7 @@ jobs:
           python-version: '3.12'
       - name: Test application
         shell: pwsh
-        run: .\gradlew.bat "-Dorg.gradle.java.home=$env:JAVA_HOME" :app:test --no-daemon
+        run: .\gradlew.bat "-Dorg.gradle.java.home=$env:JAVA_HOME" :app:test -PguiTests=true --no-daemon
       - name: Install NSIS compiler
         shell: pwsh
         run: choco install nsis --no-progress -y

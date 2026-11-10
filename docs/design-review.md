@@ -4,6 +4,27 @@
 SVG'ler ilk tasarım önerilerini kaydeder. Kullanıcının sonraki geri bildirimiyle haftalık ekranın
 yerleşimi uygulandı; güncel kapsam aşağıdadır. Dar Bugün taslağının tamamı henüz uygulanmadı.
 
+## Kullanıcının sıcak renk paleti — 10 Kasım
+
+Gümüş zemin ve beyaz yüzeyler korunarak şu beş renk native arayüze eklendi:
+
+| Renk | Kullanım |
+| --- | --- |
+| `#432523` | Altın zeminde koyu yazı; koyu temada seçili menü zemini |
+| `#633a30` | Açık temada seçili menü ve ana eylem dolgusu |
+| `#8a5a44` | Odak halkası, çalışma blokları, seçim kenarlıkları ve şimdiki zaman vurgusu |
+| `#bb895a` | Ders kartı çizgisi, kart/odak kenarlıkları ve koyu tema hover vurgusu |
+| `#d4bc6a` | Profil rozeti, hafta özeti çizgisi ve koyu temada ana vurgu |
+
+Kart yüzeylerinde paletten türetilen açık sıcak tonlar kullanılır; ana metin ve zemin nötr kalır.
+Öneri bloklarında metni solduran saydamlık kaldırılır; kesikli kenarlık korunur.
+Kırmızı teslim/çakışma ve yeşil tamamlanma anlamı sürer. Finansın ayrı HTML stil dosyası bu değişikliğe dahil değil.
+
+Ölçülen metin/zemin kontrastı: beyaz / `#633a30` **9.64:1**, `#432523` / `#d4bc6a`
+**7.33:1**, koyu metin / açık çalışma yüzeyi **12.57:1**, açık metin / koyu çalışma yüzeyi **11.58:1**.
+Bu ölçüm seçilen eşleşmeler içindir; uygulamanın bütün kontrollerinin erişilebilirlik denetimi değildir.
+CSS JavaFX ayrıştırıcısıyla, ekran bağlantısı olmadan kontrol edilir. Kullanıcının masaüstünde pencere açılmaz.
+
 ## Kullanıcı geri bildirimiyle uygulanan düzen
 
 - Bugün/Ajanda yapılacakları ve haftalık plan havuzunda, bugünden 7 günden daha eski işler gizlenir.
@@ -60,9 +81,9 @@ yerine mevcut yüzeyler düzenlenir. Önerilen ışık paleti mevcut CSS değiş
 | Ana metin | `#24262B` | `#ECEEF3` |
 | İkincil metin | `#626C7B` | `#ACB6C6` |
 | Çizgi | `#E1E5EC` | `#383E49` |
-| Ana eylem dolgusu | `#353D48` | `#DDE3ED` |
+| Ana eylem dolgusu | `#633a30` | `#d4bc6a` |
 
-Kırmızı teslim/gecikme/çakışma, yeşil tamamlanma, mavi şimdiki zaman için ayrılır.
+Kırmızı teslim/gecikme/çakışma, yeşil tamamlanma için ayrılır; şimdiki zaman kahverengi/altın çizgi ve saat etiketiyle gösterilir.
 Her durumun metin veya simge karşılığı da bulunur. Seçili blok düz koyu kenarlıkla,
 öneri kesikli kenarlık ve “Öneri” etiketiyle ayrılır; metnin saydamlığı azaltılmaz.
 

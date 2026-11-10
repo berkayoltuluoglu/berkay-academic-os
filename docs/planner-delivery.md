@@ -210,3 +210,20 @@ Yeni kurulum paketi üretilmedi; gerçek kullanıcı verisi ve Google hesabına 
 
 Arayüz sonrası son doğrulama: `./gradlew :app:test :app:installDist --offline --no-daemon` başarılı;
 **208 test, 0 başarısızlık, 0 hata, 0 atlanan**. `git diff --check` temiz.
+
+## Masaüstünde ek test pencereleri — 10 Kasım
+
+Önceki arayüz testleri geçici profille çalışsa da kullanıcının `DISPLAY` ekranına gerçek uygulama
+pencereleri açıyordu. Kullanıcı bu davranışı istemedi. Artık standart test komutunda JavaFX testleri
+varsayılan kapalıdır; yalnızca `-PguiTests=true` ile açıkça seçilir. Linux'ta bu seçim ayrı sanal
+ekranda kullanılmalıdır; komut `docs/testing.md` içindedir. Windows CI ayrı test makinesinde açıkça seçer.
+Uygulamanın normal açılış/bildirim davranışı değiştirilmedi. Penceresiz `test` ve `installDist` başarılı;
+arayüz testleri bu doğrulamada bilerek atlandı.
+
+## Kahverengi–altın renk vurguları — 10 Kasım
+
+Kullanıcının `#432523`, `#633a30`, `#8a5a44`, `#bb895a`, `#d4bc6a` paleti native CSS'e eklendi.
+Gümüş/beyaz zemin korunur; seçili menü, ana eylem, ders/çalışma blokları, odak ve hafta özeti sıcak vurgular alır.
+Açık/koyu temanın metin–zemin eşleşmeleri ayrı seçildi; örnek kontrast ölçümleri `docs/design-review.md` içindedir.
+Finansın ayrı HTML stili değiştirilmedi. `docs/remaining-work.md` güncel eksikleri önceliklendirir.
+CSS, JavaFX ayrıştırıcısıyla DISPLAY/Wayland bağlantısı olmadan kontrol edildi; masaüstünde test penceresi açılmadı.
