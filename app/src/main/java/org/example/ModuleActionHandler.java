@@ -41,6 +41,8 @@ public class ModuleActionHandler {
     private final GoogleClassroomService classroomService;
     private final java.util.function.Consumer<Boolean> busyUi;
     private final Runnable requireRestart;
+    private UpdateController updates;
+    void setUpdates(UpdateController controller) { updates = controller; }
     private final CloudSyncService cloud;
     private CloudSyncModuleView cloudView;
 
@@ -126,7 +128,7 @@ public class ModuleActionHandler {
                     VBox.setVgrow(classroomPanel, javafx.scene.layout.Priority.ALWAYS);
                     statusUpdater.update("Durum: Classroom açık"); return true;
                 case "settings":
-                    settingsView = new SettingsModuleView(projectRoot, focus, calendarModuleView.googleService(), classroomService, busyUi, requireRestart, cloud.drive());
+                    settingsView = new SettingsModuleView(projectRoot, focus, calendarModuleView.googleService(), classroomService, busyUi, requireRestart, cloud.drive()).updates(updates);
                     VBox settings = settingsView.build(); centerArea.getChildren().setAll(settings); VBox.setVgrow(settings, javafx.scene.layout.Priority.ALWAYS);
                     statusUpdater.update("Durum: Ayarlar açık"); return true;
                 case "tasks":

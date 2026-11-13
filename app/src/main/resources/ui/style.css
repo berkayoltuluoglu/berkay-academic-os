@@ -552,6 +552,8 @@
 .silver-event { -fx-background-color: -yuzey-2; -fx-border-color: -cizgi;
     -fx-background-radius: 12; -fx-border-radius: 12; -fx-padding: 8 14; -fx-alignment: CENTER_LEFT; }
 .lesson-event { -fx-background-color: -lesson-surface; -fx-border-color: -palette-4; -fx-border-width: 0 0 0 3; }
+.exam-event { -fx-background-color: -palette-2; -fx-text-fill: #ffffff; -fx-border-color: -palette-5; -fx-border-width: 0 0 0 4; }
+.exam-event .label { -fx-text-fill: #ffffff; }
 .study-event { -fx-background-color: -study-surface; -fx-border-color: -palette-3; -fx-border-width: 0 0 0 3; }
 .silver-event.conflicting-event { -fx-border-color: -tehlike; -fx-border-width: 2; }
 .silver-event:hover { -fx-border-color: -vurgu; }

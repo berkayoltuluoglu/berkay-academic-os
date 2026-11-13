@@ -57,11 +57,11 @@ public final class ClassroomImportService {
                     String time = old != null && current.dueTime().equals(old.dueTime()) ? remote.dueTime() : current.dueTime();
                     boolean done = old != null && current.done() == old.submitted() ? remote.submitted() : current.done();
                     works.remove(current); works.add(new CourseData.Work(current.id(), current.courseId(), title, current.kind(), date, done,
-                            time, current.estimatedMinutes(), current.loggedMinutes(), current.priority()));
+                            time, current.estimatedMinutes(), current.loggedMinutes(), current.priority(), current.endTime()));
                 }
             }
         }
-        var candidate = new CourseData(CourseData.VERSION, courses, works, local.sections());
+        var candidate = new CourseData(CourseData.VERSION, courses, works, local.sections(), local.cancellations());
         if (!candidate.equals(local)) storage.save(candidate);
     }
     public static String courseId(String account, String id) { return "gc-" + UUID.nameUUIDFromBytes((account + ":" + id).getBytes(StandardCharsets.UTF_8)); }

@@ -24,6 +24,9 @@ jobs:
       - name: Install NSIS compiler
         shell: pwsh
         run: choco install nsis --no-progress -y
+      - name: Test Windows packager
+        shell: pwsh
+        run: python -m unittest discover -s packaging -p test_windows_builder.py
       - name: Build installer with bundled runtime
         shell: pwsh
         env:

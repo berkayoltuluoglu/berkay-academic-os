@@ -12,6 +12,7 @@ import org.junit.jupiter.api.condition.EnabledIf;
 import org.junit.jupiter.api.io.TempDir;
 import java.nio.file.*;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.concurrent.*;
 import java.util.function.Consumer;
 import static org.junit.jupiter.api.Assertions.*;
@@ -86,6 +87,87 @@ class CourseModuleViewTest {
         dialog("#course-edit", form -> ((TextField) form.lookup("#course-name")).setText("Kaydedilemeyen")); ready();
         assertEquals("Matematik", new CourseStorageService(file).load().courses().getFirst().name());
         fx(() -> { assertTrue(((Label) scene().lookup("#courses-status")).getText().contains("Kaydedilemedi")); return null; });
+    }
+    @Test void examAcceptsKeyboardTextAndTypedDateThenCancellationCanBeRestored() throws Exception {
+        dialog("#course-add", form -> {
+            ((TextField) form.lookup("#course-name")).setText("Kontrol Sistemleri");
+            ((DatePicker) form.lookup("#course-start")).setValue(LocalDate.of(2026, 9, 1));
+            ((DatePicker) form.lookup("#course-end")).setValue(LocalDate.of(2027, 1, 31));
+            ((ComboBox<?>) form.lookup("#lesson-day")).getSelectionModel().selectFirst();
+            ((Button) form.lookup("#lesson-add")).fire();
+        }); ready();
+        fx(() -> { ((TabPane) scene().lookup("#courses-tabs")).getSelectionModel().select(2); return null; });
+        CompletableFuture<Void> closed = new CompletableFuture<>();
+        fx(() -> { Platform.runLater(() -> {
+            try { ((Button) scene().lookup("#work-add")).fire(); closed.complete(null); }
+            catch (Throwable failure) { closed.completeExceptionally(failure); }
+        }); return null; });
+        await(() -> Window.getWindows().stream().anyMatch(w -> w != stage && w.isShowing() && w.getScene().lookup("#work-title") != null));
+        fx(() -> {
+            Parent form = workWindow().getScene().getRoot();
+            ((ComboBox<?>) form.lookup("#work-kind")).getSelectionModel().select(1);
+            ((TextField) form.lookup("#work-title")).requestFocus();
+            return null;
+        });
+        // Native keyboard events in the isolated test display, rather than TextField.setText.
+        fx(() -> {
+            var robot = new javafx.scene.robot.Robot();
+            for (var key : List.of(javafx.scene.input.KeyCode.V, javafx.scene.input.KeyCode.I,
+                    javafx.scene.input.KeyCode.Z, javafx.scene.input.KeyCode.E)) robot.keyType(key);
+            return null;
+        });
+        await(() -> "vize".equals(((TextField) workWindow().getScene().lookup("#work-title")).getText()));
+        fx(() -> {
+            Parent form = workWindow().getScene().getRoot();
+            DatePicker date = (DatePicker) form.lookup("#work-date");
+            date.getEditor().setText(date.getConverter().toString(ExamScheduleTest.WEEK));
+            ((TextField) form.lookup("#work-start-time")).setText("15:00");
+            ((TextField) form.lookup("#work-end-time")).setText("14:00");
+            ((Button) form.lookup("#course-form-save")).fire();
+            assertTrue(workWindow().isShowing());
+            assertTrue(((Label) form.lookup("#work-form-error")).getText().contains("bitişi"));
+            assertEquals("vize", ((TextField) form.lookup("#work-title")).getText());
+            ((TextField) form.lookup("#work-end-time")).setText("16:20");
+            ((Button) form.lookup("#course-form-save")).fire(); return null;
+        }); closed.get(5, TimeUnit.SECONDS); ready();
+        var exam = new CourseStorageService(file).load().work().getFirst();
+        assertEquals("2026-11-16", exam.date()); assertEquals("15:00–16:20", exam.timeLabel());
+        fx(() -> { ((TabPane) scene().lookup("#courses-tabs")).getSelectionModel().select(4); return null; });
+        dialog("#cancellation-add", form -> {
+            ((DatePicker) form.lookup("#cancellation-from")).setValue(ExamScheduleTest.WEEK);
+            ((DatePicker) form.lookup("#cancellation-to")).setValue(ExamScheduleTest.WEEK.plusDays(4));
+            ((TextField) form.lookup("#cancellation-reason")).setText("Vize haftası");
+        }); ready();
+        var saved = new CourseStorageService(file).load();
+        assertEquals(1, saved.cancellations().size()); assertEquals("", saved.cancellations().getFirst().courseId());
+        assertTrue(TodayService.lessonsOn(saved, ExamScheduleTest.WEEK).isEmpty());
+        assertFalse(TodayService.lessonsOn(saved, ExamScheduleTest.WEEK.plusWeeks(1)).isEmpty());
+        fx(() -> {
+            ((TabPane) scene().lookup("#courses-tabs")).getSelectionModel().select(0);
+            var calendar = (CourseWeekView) scene().lookup("#planner-calendar");
+            calendar.showDate(ExamScheduleTest.WEEK);
+            calendar.update(saved, LocalDate.of(2026, 9, 1), LocalDate.of(2027, 1, 31));
+            scene().applyCss(); scene().layout();
+            assertNotNull(scene().lookup("#planner-exam-" + exam.id()));
+            assertEquals(1, scene().lookupAll(".planner-block").size());
+            screenshot("courses-exam-week");
+            ((TabPane) scene().lookup("#courses-tabs")).getSelectionModel().select(4);
+            ((ListView<?>) scene().lookup("#course-cancellation-list")).getSelectionModel().selectFirst();
+            Platform.runLater(() -> {
+                Window popup = Window.getWindows().stream().filter(w -> w != stage && w.isShowing()).findFirst().orElseThrow();
+                DialogPane pane = (DialogPane) popup.getScene().getRoot();
+                ((Button) pane.lookupButton(ButtonType.OK)).fire();
+            });
+            ((Button) scene().lookup("#cancellation-remove")).fire(); return null;
+        }); ready();
+        var restored = new CourseStorageService(file).load();
+        assertTrue(restored.cancellations().isEmpty()); assertEquals(saved.work(), restored.work());
+        assertFalse(TodayService.lessonsOn(restored, ExamScheduleTest.WEEK).isEmpty());
+    }
+
+    private Window workWindow() {
+        return Window.getWindows().stream().filter(w -> w != stage && w.isShowing()
+                && w.getScene().lookup("#work-title") != null).findFirst().orElseThrow();
     }
     @Test void importsPreviewsSelectsAndSwitchesSectionsWithoutLosingCoursework() throws Exception {
         dialog("#course-add", form -> {

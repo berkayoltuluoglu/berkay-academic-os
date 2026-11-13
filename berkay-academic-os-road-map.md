@@ -15,7 +15,7 @@
 # Berkay Academic OS — Tam Durum Dokümanı
 _Güncel teknik özet, yapılanlar, mevcut mimari, dosya düzeni, entegrasyonlar, hatalar, bekleyen işler ve sonraki adımlar_
 
-**Son durum: 10 Kasım 2026 — 1.5.1 Windows setup üretildi.** Planlama doğrulamaları, son 7 gün geçmiş filtresi, sabit teslim şeridi, tam ekran düzeni ve sıcak renk vurguları mevcut. İzole ekranda 210 uygulama testi ve 11 paketleme testi başarılı; son EXE arşivi ve 366 dosya hash'i doğrulandı. Dış ajan CLI'ı ve kılavuzları kurulumda; gerçek Windows kabulü bekler. Ayrıntılar **0.21–0.24**, `docs/release-1.5.1.md` ve `packaging/WINDOWS.md`; commit/push kullanıcıdadır.
+**Son durum: 13 Kasım 2026 — 1.6.0 güncelleme ve logolu Windows paketi.** GitHub Release kontrolü, isteğe bağlı otomatik indirme, SHA-256 doğrulama, onaylı kurulum/yeniden başlatma ve kaldırma eklendi. Kullanıcının onayladığı kahverengi komut logosu uygulama/Windows ikonlarına eklendi. Logolu arayüzle 227 uygulama testi izole ekranda, 12 paketleme testi geçici dizinlerde başarılı. Gerçek Windows kabulü bekler. Ayrıntılar **0.25**, `docs/updates.md` ve `packaging/WINDOWS.md`; commit/push kullanıcıdadır.
 
 **1 Ekim 2026 inceleme güncellemesi:** Kullanıcı ders planlayıcı projesini `/home/berkay/projects/ders-planlayici` konumunda paylaştı. İlk inceleme bulguları 0.8 bölümünde, ardından yapılan ilk aktarım 0.9 bölümünde. LLM entegrasyonu yapılmadı.
 
@@ -460,6 +460,25 @@ haftalık planda düzeltilmesini ve tam ekranın daha rahat kullanılmasını is
   Setup `app/build/windows/dist/BerkayAcademicOS-1.5.1-setup.exe` (80,8 MiB) üretildi;
   son EXE açılıp 366 dosyanın hash'i doğrulandı. Geniş dağıtım öncesinde gerçek Windows kabulü gerekir;
   kod imzası ve otomatik güncelleme henüz yoktur.
+
+---
+
+### 0.25 Uygulama içi güncelleme, kaldırma ve logo bağlantıları — 13 Kasım 2026
+
+- Sürüm 1.6.0. Kurulu Windows uygulaması herkese açık GitHub deposundaki yeni kararlı release'i kontrol eder.
+  Kullanıcı açılış kontrolü ve otomatik indirmeyi Ayarlar'dan seçer; sürüm notları, ilerleme ve iptal görünür.
+- Repo/tag/dosya adı, boyut, Windows biçimi ve SHA-256 doğrulanır. Yarım/hatalı/iptal edilen indirme kurulmaz.
+  Kaynak geliştirme ve CLI güncelleme kontrolü başlatmaz; OAuth veya GitHub anahtarı eklenmez.
+- Onaylı bakım yardımcısı program klasörü dışından çalışır. Bekleyen kayıtlar tamamlanır; aktif odak duraklatılır.
+  Java ve NSIS başlatıcının bitişi beklenir, setup aynı klasöre kurulur ve başarılıysa uygulama bir kez açılır.
+- Ayarlar'dan kaldırma eklendi. Setup'ın ürettiği `Uninstall.exe`, Başlat menüsü ve Windows uygulama listesi korunur;
+  kullanıcı profili kaldırmada silinmez. Windows kabul scripti gerçek yardımcı süreçle yükseltme/kaldırmayı denetler.
+- Kullanıcının gönderdiği kahverengi komut simgesi referans alınarak logo uyarlaması eklendi. PNG pencere/başlık/tepsi,
+  dokuz boyutlu ICO ise EXE/kısayol/setup/kaldırıcı için kullanılır. Kaynak ve üretim istemi `branding/README.md` içindedir.
+- Logolu arayüzle 227 uygulama testi (0 başarısız/hata/atlanan) izole Xvfb ekranında; 12 paketleme testi başarılı.
+  Gerçek Windows PowerShell/installer kabulü bu Linux makinede çalıştırılmadı.
+- İlk 1.6.0 geçişi elle kurulur; sonraki sürümlerde setup ve SHA-256 aynı kararlı GitHub Release'e yüklenir.
+  Ayrıntılar `docs/updates.md`; commit/push/yayınlama kullanıcıdadır.
 
 ---
 

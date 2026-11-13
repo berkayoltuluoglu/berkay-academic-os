@@ -1,6 +1,9 @@
 Unicode true
 !include "FileFunc.nsh"
 Name "Berkay Academic OS"
+!ifdef APP_ICON
+Icon "${APP_ICON}"
+!endif
 OutFile "${OUTPUT}"
 SilentInstall silent
 RequestExecutionLevel user

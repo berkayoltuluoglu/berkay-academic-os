@@ -1,4 +1,15 @@
-# Academic OS 1.5.1 — Windows ve dış ajanla planlama
+# Academic OS 1.6.0 — Uygulama içi Windows güncellemeleri
+
+Yeni sürüm Ayarlar'da GitHub Release kontrolü, isteğe bağlı otomatik indirme, SHA-256 doğrulama,
+onaylı güncelleme/yeniden başlatma ve uygulamadan kaldırma içerir.
+Kullanım: [WINDOWS.md](WINDOWS.md). Yayınlama ve geliştirici akışı: [docs/updates.md](../docs/updates.md).
+1.5.1'den 1.6.0'a ilk geçiş elle setup çalıştırılarak yapılır.
+Kullanıcının onayladığı kahverengi komut simgesi pencere, başlık, tepsi, EXE, setup ve kaldırıcı ikonlarına eklendi.
+PNG/ICO kaynakları `app/src/main/resources/branding`, logo üretim kaydı aynı klasördeki README içindedir.
+
+---
+
+# Academic OS 1.5.1 — Önceki Windows teslimi
 
 Yeni sürüm haftalık saat ızgarası, plan havuzu, oturuma bağlı odak, JSON CLI, öneri kutusu ve otomatik yerleştirme içerir.
 Ajan kullanımı: [AGENTS.md](../AGENTS.md), [komut başvurusu](../docs/agent-cli.md).

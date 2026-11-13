@@ -231,7 +231,7 @@ public final class PlannerService {
             } else if ("work".equals(c.kind())) {
                 var store = new CourseStorageService(root.resolve(DOMAIN.get(1))); var data = store.load();
                 if (data.work().stream().noneMatch(w -> w.id().equals(c.id()))) throw new IOException("Ödev bulunamadı");
-                store.save(data.withWork(data.work().stream().map(w -> w.id().equals(c.id()) ? new CourseData.Work(w.id(),w.courseId(),w.title(),w.kind(),w.date(),w.done(),w.dueTime(),c.minutes(),w.loggedMinutes(),w.priority()) : w).toList()));
+                store.save(data.withWork(data.work().stream().map(w -> w.id().equals(c.id()) ? new CourseData.Work(w.id(),w.courseId(),w.title(),w.kind(),w.date(),w.done(),w.dueTime(),c.minutes(),w.loggedMinutes(),w.priority(),w.endTime()) : w).toList()));
             } else throw new IOException("İş türü geçersiz");
         } else if (command instanceof ImportClassroomWork c) new ClassroomImportService(root).importWork(new GoogleClassroomService(root).loadCached(),c.courseId(),c.workId());
         else if (command instanceof SetPreferences c) { c.preferences().validate(); AtomicFileWriter.write(root.resolve(PlanningPreferences.FILE),PlanningFiles.JSON.writeValueAsBytes(c.preferences())); }
@@ -269,7 +269,7 @@ public final class PlannerService {
         var service = new DailyAgendaService(); service.saveSessionUncheckedOverlap(root, block, create);
     }
     private static boolean conflicts(List<DailyAgendaService.Event> occupied, PlanningPreferences prefs, LocalDate date, int start, int end) {
-        return occupied.stream().anyMatch(e -> !e.done() && start<PlanningPreferences.minute(e.end().toString()) && end>PlanningPreferences.minute(e.start().toString()))
+        return occupied.stream().anyMatch(e -> (!e.done() || !e.study()) && start<PlanningPreferences.minute(e.end().toString()) && end>PlanningPreferences.minute(e.start().toString()))
                 || prefs.closed().stream().anyMatch(c -> (date.toString().equals(c.date()) || ((c.date()==null || c.date().isBlank()) && c.day()==date.getDayOfWeek().getValue())) && start<PlanningPreferences.minute(c.end()) && end>PlanningPreferences.minute(c.start()));
     }
 }

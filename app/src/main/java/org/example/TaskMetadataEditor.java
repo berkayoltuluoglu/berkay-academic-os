@@ -8,6 +8,7 @@ import java.util.*;
 /** Shared optional task fields; old records have the same defaults as a new empty form. */
 final class TaskMetadataEditor extends VBox {
     private final TextField due = new TextField();
+    private final Label dueLabel = new Label("Son teslim saati");
     private final ComboBox<String> priority = new ComboBox<>();
     private final Spinner<Integer> estimate = new Spinner<>(0, 100000, 0, 15);
     private final Spinner<Integer> logged = new Spinner<>(0, 1000000, 0, 5);
@@ -29,12 +30,17 @@ final class TaskMetadataEditor extends VBox {
                 add(new TaskItem.Subtask(UUID.randomUUID().toString(), subtask.getText().trim(), false)); subtask.clear();
             }
         });
-        getChildren().setAll(new Label("Son teslim saati"), due, new Label("Öncelik"), priority,
+        dueLabel.setLabelFor(due);
+        getChildren().setAll(dueLabel, due, new Label("Öncelik"), priority,
                 new Label("Tahmini çalışma (dakika)"), estimate, new Label("Ek çalışma kaydı (dakika)"), logged,
                 new Label("Çalışma oturumlarında kaydedilen süre buna ayrıca eklenir."), progress);
         progress.setId("task-study-progress"); progress.setWrapText(true);
         if (includeSubtasks) getChildren().addAll(new Label("Alt görevler"), subtasks, new HBox(8, subtask, add));
         HBox.setHgrow(subtask, Priority.ALWAYS);
+    }
+
+    void showDueTime(boolean show) {
+        due.setVisible(show); due.setManaged(show); dueLabel.setVisible(show); dueLabel.setManaged(show);
     }
 
     void load(TaskItem task) {
@@ -53,7 +59,7 @@ final class TaskMetadataEditor extends VBox {
 
     void apply(TaskItem task) {
         try {
-            task.setDueTime(due.getText().isBlank() ? null : LocalTime.parse(due.getText().trim()));
+            task.setDueTime(!due.isManaged() || due.getText().isBlank() ? null : LocalTime.parse(due.getText().trim()));
             estimate.commitValue(); logged.commitValue();
             task.setPriority(priority.getValue()); task.setEstimatedMinutes(estimate.getValue()); task.setLoggedMinutes(logged.getValue());
             task.setSubtasks(values.entrySet().stream().map(entry -> new TaskItem.Subtask(

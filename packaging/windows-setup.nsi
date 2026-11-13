@@ -4,6 +4,10 @@ Unicode true
 !include "WinVer.nsh"
 !include "FileFunc.nsh"
 Name "Berkay Academic OS"
+!ifdef APP_ICON
+!define MUI_ICON "${APP_ICON}"
+!define MUI_UNICON "${APP_ICON}"
+!endif
 OutFile "${OUTPUT}"
 InstallDir "$LOCALAPPDATA\Programs\BerkayAcademicOS"
 InstallDirRegKey HKCU "Software\BerkayAcademicOS" "InstallDir"
@@ -31,12 +35,12 @@ Function .onInit
   SetShellVarContext current
   SetRegView 64
   ${IfNot} ${RunningX64}
-    MessageBox MB_OK|MB_ICONSTOP "Bu kurulum 64 bit Windows 10/11 içindir."
+    MessageBox MB_OK|MB_ICONSTOP "Bu kurulum 64 bit Windows 10/11 içindir." /SD IDOK
     SetErrorLevel 1
     Abort
   ${EndIf}
   ${IfNot} ${AtLeastWin10}
-    MessageBox MB_OK|MB_ICONSTOP "Windows 10 veya üzeri gerekiyor."
+    MessageBox MB_OK|MB_ICONSTOP "Windows 10 veya üzeri gerekiyor." /SD IDOK
     SetErrorLevel 1
     Abort
   ${EndIf}
@@ -50,7 +54,7 @@ Function .onInit
     Pop $1
     Pop $2
     ${If} $1 != 0
-      MessageBox MB_OK|MB_ICONSTOP "Güncellemeden önce Academic OS'u sistem tepsisinden tamamen kapat."
+      MessageBox MB_OK|MB_ICONSTOP "Güncellemeden önce Academic OS'u sistem tepsisinden tamamen kapat." /SD IDOK
       SetErrorLevel 1
       Abort
     ${EndIf}
@@ -70,7 +74,7 @@ Function VerifyInstallDirectory
   ${If} $1 != "."
   ${AndIf} $1 != ".."
     FindClose $0
-    MessageBox MB_OK|MB_ICONSTOP "Kurulum için boş bir klasör ya da mevcut Academic OS klasörünü seç."
+    MessageBox MB_OK|MB_ICONSTOP "Kurulum için boş bir klasör ya da mevcut Academic OS klasörünü seç." /SD IDOK
     SetErrorLevel 1
     Abort
   ${EndIf}
@@ -105,6 +109,8 @@ Section "Academic OS" SEC_APP
   WriteRegStr HKCU "Software\BerkayAcademicOS" "InstallDir" "$INSTDIR"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\BerkayAcademicOS" "DisplayName" "Berkay Academic OS"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\BerkayAcademicOS" "DisplayVersion" "${APP_VERSION}"
+  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\BerkayAcademicOS" "DisplayIcon" "$INSTDIR\BerkayAcademicOS.exe,0"
+  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\BerkayAcademicOS" "InstallLocation" "$INSTDIR"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\BerkayAcademicOS" "Publisher" "Berkay Oltuluoglu"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\BerkayAcademicOS" "UninstallString" '$\"$INSTDIR\Uninstall.exe$\"'
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\BerkayAcademicOS" "QuietUninstallString" '$\"$INSTDIR\Uninstall.exe$\" /S'
@@ -112,7 +118,7 @@ Section "Academic OS" SEC_APP
   WriteRegDWORD HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\BerkayAcademicOS" "NoRepair" 1
   Goto installed
   install_failed:
-    MessageBox MB_OK|MB_ICONSTOP "Kurulum tamamlanamadı. Disk alanını ve uygulamanın tamamen kapalı olduğunu kontrol et."
+    MessageBox MB_OK|MB_ICONSTOP "Kurulum tamamlanamadı. Disk alanını ve uygulamanın tamamen kapalı olduğunu kontrol et." /SD IDOK
     SetErrorLevel 1
     Abort
   installed:
@@ -125,7 +131,7 @@ Function un.onInit
   Pop $0
   Pop $1
   ${If} $0 != 0
-    MessageBox MB_OK|MB_ICONSTOP "Kaldırmadan önce Academic OS'u sistem tepsisinden tamamen kapat."
+    MessageBox MB_OK|MB_ICONSTOP "Kaldırmadan önce Academic OS'u sistem tepsisinden tamamen kapat." /SD IDOK
     SetErrorLevel 1
     Abort
   ${EndIf}

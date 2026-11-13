@@ -168,7 +168,7 @@ public final class WeeklyAgendaView {
             VBox cards=new VBox(6);
             for(var item:snapshot.pool()) if(recent(item) && group(item)==group && (item.title()+" "+item.kind()+" "+item.priority()+" "+item.courseId()).toLowerCase(TR).contains(query)) {
                 Label name=new Label(item.title());name.setWrapText(true);name.setMinWidth(0);name.setMaxWidth(Double.MAX_VALUE);HBox.setHgrow(name,Priority.ALWAYS);
-                Label detail=new Label((item.date().isBlank()?"Tarihsiz":item.date()+" "+item.dueTime())+"\n"+(item.estimatedMinutes()==0?"Tahmin yok":duration(item.remainingMinutes())+" kaldı")+" · "+duration(item.plannedMinutes())+" planlı");detail.setWrapText(true);detail.getStyleClass().add("soluk");
+                Label detail=new Label((item.date().isBlank()?"Tarihsiz":item.date()+" "+poolTime(item))+"\n"+(item.estimatedMinutes()==0?"Tahmin yok":duration(item.remainingMinutes())+" kaldı")+" · "+duration(item.plannedMinutes())+" planlı");detail.setWrapText(true);detail.getStyleClass().add("soluk");
                 CheckBox done=new CheckBox();done.setAccessibleText(item.title()+" tamamlandı");done.setDisable(!Set.of("task","work","classroom").contains(item.kind()));
                 done.setOnAction(e->run(()->{
                     if(item.kind().equals("classroom"))planner.execute(List.of(new ImportClassroomWork(item.sourceCourseId(),item.sourceWorkId()),new CompleteItem("work",item.id(),true)),"user","Classroom işi tamamlandı");
@@ -194,19 +194,25 @@ public final class WeeklyAgendaView {
         flushInspector();inspectedProposal="";selected="";selectedPool=item.kind()+":"+item.id();
         inspector.getChildren().setAll(new Label("İş ayrıntıları"),new Label(item.title()));
         if(Set.of("task","work").contains(item.kind())){
+            CourseData.Work source = item.kind().equals("work") ? courses.work().stream().filter(w -> w.id().equals(item.id())).findFirst().orElse(null) : null;
+            boolean exam = source != null && "Sınav".equals(source.kind());
             TextField name=new TextField(item.title());name.setId("pool-title");
             DatePicker due=new DatePicker(item.date().isBlank()?null:LocalDate.parse(item.date()));due.setId("pool-due-date");
             ComboBox<String> dueTime=times(item.dueTime().isBlank()?"17:00":item.dueTime());dueTime.getItems().addFirst("");dueTime.setValue(item.dueTime());dueTime.setId("pool-due-time");
+            ComboBox<String> endTime=times(source == null ? "" : source.endTime());endTime.setId("pool-exam-end");
             ComboBox<String> priority=new ComboBox<>();priority.getItems().setAll("Düşük","Normal","Yüksek");priority.setValue(item.priority());priority.setId("pool-priority");
             Spinner<Integer> estimate=new Spinner<>(0,100000,item.estimatedMinutes(),15);estimate.setId("pool-estimate");
             TextArea note=new TextArea(item.kind().equals("task")?tasks.stream().filter(t->t.getId().equals(item.id())).map(TaskItem::getDescription).findFirst().orElse(""):notes.getOrDefault(item.id(),""));note.setPrefRowCount(3);note.setId("pool-note");
             Runnable update=()->{inspectorSave=()->{
                 String dateValue=due.getValue()==null?"":due.getValue().toString(),timeValue=Objects.toString(dueTime.getValue(),""),priorityValue=priority.getValue(),titleValue=name.getText(),noteValue=note.getText();int estimated=estimate.getValue();
                 if(item.kind().equals("task"))tasks.stream().filter(t->t.getId().equals(item.id())).findFirst().ifPresent(t->{var value=t.copy();value.setTitle(titleValue);value.setDescription(noteValue);value.setEstimatedMinutes(estimated);value.setDate(dateValue.isBlank()?null:LocalDate.parse(dateValue));value.setDueTime(timeValue.isBlank()?null:LocalTime.parse(timeValue));value.setPriority(priorityValue);run(()->planner.execute(new UpdateTask(value)));});
-                else courses.work().stream().filter(w->w.id().equals(item.id())).findFirst().ifPresent(w->{var value=new CourseData.Work(w.id(),w.courseId(),titleValue,w.kind(),dateValue,w.done(),timeValue,estimated,w.loggedMinutes(),priorityValue);run(()->planner.execute(List.of(new UpdateWork(value),new SetNote(item.id(),noteValue)),"user","İş ayrıntıları"));});
+                else courses.work().stream().filter(w->w.id().equals(item.id())).findFirst().ifPresent(w->{var value=new CourseData.Work(w.id(),w.courseId(),titleValue,w.kind(),dateValue,w.done(),timeValue,estimated,w.loggedMinutes(),priorityValue,Objects.toString(endTime.getValue(),""));run(()->planner.execute(List.of(new UpdateWork(value),new SetNote(item.id(),noteValue)),"user","İş ayrıntıları"));});
             };debounce.setOnFinished(e->flushInspector());debounce.playFromStart();};
             name.textProperty().addListener((o,a,b)->update.run());note.textProperty().addListener((o,a,b)->update.run());due.valueProperty().addListener((o,a,b)->update.run());dueTime.valueProperty().addListener((o,a,b)->update.run());priority.valueProperty().addListener((o,a,b)->update.run());estimate.valueProperty().addListener((o,a,b)->update.run());
-            inspector.getChildren().addAll(name,new Label("Son tarih / saat"),due,dueTime,new Label("Öncelik"),priority,new Label("Tahmini dakika"),estimate,new Label("Not"),note);
+            endTime.valueProperty().addListener((o,a,b)->update.run());
+            inspector.getChildren().addAll(name,new Label(exam ? "Sınav tarihi / başlangıcı" : "Son tarih / saat"),due,dueTime);
+            if(exam)inspector.getChildren().addAll(new Label("Sınav bitişi"),endTime);
+            inspector.getChildren().addAll(new Label("Öncelik"),priority,new Label("Tahmini dakika"),estimate,new Label("Not"),note);
         }else inspector.getChildren().add(new Label("Son tarih: "+(item.date().isBlank()?"Tarihsiz":item.date()+" "+item.dueTime())));
         Button focusNow=button("Şimdi odaklan ▶","pool-focus",()->run(()->{
             if(focus.running())throw new IllegalStateException("Önce mevcut odağı bitir veya duraklat");
@@ -264,14 +270,19 @@ public final class WeeklyAgendaView {
     }
     private Button deadlineButton(PlanningSnapshot.PoolItem item) {
         Label name=new Label(item.title());name.setMinWidth(0);name.setMaxWidth(Double.MAX_VALUE);name.getStyleClass().add("planner-deadline-name");
-        String time=item.dueTime().isBlank()?"Gün içinde":item.dueTime();
-        Label due=new Label(time+" · Son teslim");due.getStyleClass().add("planner-deadline-time");
+        String time=item.dueTime().isBlank()?"Gün içinde":poolTime(item);
+        String kind = courses.work().stream().anyMatch(w -> item.kind().equals("work") && w.id().equals(item.id()) && "Sınav".equals(w.kind())) ? "Sınav" : "Son teslim";
+        Label due=new Label(time+" · "+kind);due.getStyleClass().add("planner-deadline-time");
         VBox content=new VBox(2,name,due);content.setMinWidth(0);content.setMaxWidth(Double.MAX_VALUE);
         Button result=button("","planner-deadline-"+item.id(),()->{setInspectorVisible(true);inspectPool(item);});result.setGraphic(content);result.setMaxWidth(Double.MAX_VALUE);result.setMinWidth(0);result.setPrefHeight(48);result.setMinHeight(48);result.setMaxHeight(48);result.getStyleClass().add("planner-deadline-card");
-        result.setAccessibleText(item.title()+" · "+item.date()+" · Son teslim "+time);result.setTooltip(new Tooltip(item.title()+"\nSon teslim: "+item.date()+" "+time));return result;
+        result.setAccessibleText(item.title()+" · "+item.date()+" · "+kind+" "+time);result.setTooltip(new Tooltip(item.title()+"\n"+kind+": "+item.date()+" "+time));return result;
+    }
+    private String poolTime(PlanningSnapshot.PoolItem item) {
+        return item.kind().equals("work") ? courses.work().stream().filter(w -> w.id().equals(item.id())).map(CourseData.Work::timeLabel).findFirst().orElse(item.dueTime()) : item.dueTime();
     }
     private void drawFixed(Pane pane,PlanningSnapshot.Block fixed){
-        Button b=new Button(fixed.title()+"\n"+fixed.start()+"–"+fixed.end());b.setWrapText(true);b.getStyleClass().addAll("silver-event","lesson-event","planner-fixed");
+        Button b=new Button((fixed.kind().equals("Sınav")?"Sınav · ":"")+fixed.title()+"\n"+fixed.start()+"–"+fixed.end());b.setWrapText(true);b.getStyleClass().addAll("silver-event","lesson-event","planner-fixed");
+        if(fixed.kind().equals("Sınav"))b.getStyleClass().add("exam-event");
         b.setAccessibleText("Sabit "+fixed.kind()+" · "+fixed.title());b.setId("fixed-"+fixed.id());
         b.setOnAction(e->{setInspectorVisible(true);selected="";selectedPool="";inspectedProposal="";inspector.getChildren().setAll(new Label(fixed.title()),new Label(fixed.kind()+" · Sabit blok"),button("Kaynakta aç","planner-open-source",()->navigate.accept(fixed.kind().equals("Google")?"calendar":"courses")));});
         place(pane,b,2,y(fixed.start()),141,Math.max(22,(Math.min(LAST,minute(fixed.end()))-Math.max(FIRST,minute(fixed.start())))*SCALE-3));

@@ -21,6 +21,9 @@ public final class SettingsModuleView {
     private final Label status = new Label();
     private boolean busy;
     private final Runnable requireRestart;
+    private UpdateSettingsView updateView;
+    private UpdateController updates;
+    SettingsModuleView updates(UpdateController controller) { updates = controller; return this; }
     public SettingsModuleView(Path profile, FocusTimerService focus, GoogleCalendarService calendar,
                               GoogleClassroomService classroom, Consumer<Boolean> busyChanged, Runnable requireRestart) {
         this(profile,focus,calendar,classroom,busyChanged,requireRestart,null);
@@ -73,7 +76,8 @@ public final class SettingsModuleView {
             return "Yerel Google bağlantıları kaldırıldı. Takvim, Classroom veya Google senkronizasyonu ekranından yeniden hesap seçebilirsin.";
         }, status::setText));
         Label googleHint = new Label("Google Calendar, Classroom ve Drive API'ları açık bir Google Cloud masaüstü OAuth istemcisi gerekir. Her kullanıcı kendi Google hesabıyla giriş yapar."); googleHint.setWrapText(true);
-        VBox content = new VBox(18, panel("Veri klasörü", path, new FlowPane(10, 8, open, move)), work,
+        updateView = new UpdateSettingsView(updates);
+        VBox content = new VBox(18, updateView.build(), panel("Veri klasörü", path, new FlowPane(10, 8, open, move)), work,
                 plannerSettings(), panel("Yedekleme", backupHint, new FlowPane(10, 8, export, restore)), panel("Google bağlantıları", googleHint, credentials, disconnect), status);
         content.setMaxWidth(760); ScrollPane scroll = new ScrollPane(content); scroll.setFitToWidth(true);
         root.getChildren().setAll(scroll); VBox.setVgrow(scroll, Priority.ALWAYS); return root;
@@ -165,5 +169,5 @@ public final class SettingsModuleView {
     private VBox panel(String title, javafx.scene.Node... nodes) {
         Label header = new Label(title); header.getStyleClass().add("panel-baslik"); VBox box = new VBox(10, header); box.getChildren().addAll(nodes); box.getStyleClass().add("panel"); return box;
     }
-    public void dispose() { if (busy) throw new IllegalStateException("Ayarlar/yedekleme işleminin tamamlanmasını bekle."); }
+    public void dispose() { if (busy) throw new IllegalStateException("Ayarlar/yedekleme işleminin tamamlanmasını bekle."); if (updateView != null) updateView.dispose(); }
 }

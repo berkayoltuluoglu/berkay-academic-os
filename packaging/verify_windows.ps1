@@ -7,7 +7,7 @@ if (Test-Path 'HKCU:\Software\BerkayAcademicOS') {
     $ExistingInstall = (Get-ItemProperty 'HKCU:\Software\BerkayAcademicOS' -ErrorAction SilentlyContinue).InstallDir
     if ($ExistingInstall) { throw 'Run installer verification in a clean Windows test account; an existing installation is registered.' }
 }
-$InstallDirectory = Join-Path $VerificationDirectory 'AcademicOS-installed'
+$InstallDirectory = Join-Path $VerificationDirectory 'Academic OS Türkçe installed'
 $SmokeDirectory = Join-Path $VerificationDirectory ('AcademicOS-smoke-profile-' + [guid]::NewGuid().ToString('N'))
 $ProfileDirectory = Join-Path $env:LOCALAPPDATA 'BerkayAcademicOS'
 New-Item -ItemType Directory -Path (Join-Path $ProfileDirectory 'data') -Force | Out-Null
@@ -17,6 +17,10 @@ Set-Content -Path $Marker -Value 'keep-user-data'
 $InstallProcess = Start-Process -FilePath $Installer -ArgumentList @('/S', "/D=$InstallDirectory") -Wait -PassThru
 if ($InstallProcess.ExitCode -ne 0) { throw "Installer failed: $($InstallProcess.ExitCode)" }
 $Java = Join-Path $InstallDirectory 'runtime/bin/java.exe'
+if (!(Test-Path (Join-Path $InstallDirectory 'Uninstall.exe'))) { throw 'The installer did not create Uninstall.exe.' }
+$InstalledRecord = Get-ItemProperty 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\BerkayAcademicOS'
+if ($InstalledRecord.DisplayIcon -ne "$InstallDirectory\BerkayAcademicOS.exe,0") { throw 'The Windows app-list icon is not registered correctly.' }
+if ($InstalledRecord.InstallLocation -ne $InstallDirectory) { throw 'The installation location is not registered correctly.' }
 $Manifest = Get-Content (Join-Path $InstallDirectory 'package-manifest.json') -Raw | ConvertFrom-Json
 foreach ($Entry in $Manifest.files.PSObject.Properties) {
     $File = Join-Path $InstallDirectory $Entry.Name
@@ -66,16 +70,42 @@ if (!(Test-Path (Join-Path $SmokeDirectory 'package-smoke.ok'))) { throw 'The in
 
 # An upgrade and uninstall must leave the user's separate profile untouched.
 $ApplicationJar = Get-ChildItem (Join-Path $InstallDirectory 'app/lib/app-*.jar') | Select-Object -First 1
+# Extract and exercise the same maintenance helper used by the installed application.
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+$MaintenanceScript = Join-Path $SmokeDirectory 'windows-maintenance.ps1'
+$ApplicationArchive = [System.IO.Compression.ZipFile]::OpenRead($ApplicationJar.FullName)
+try {
+    $MaintenanceEntry = $ApplicationArchive.GetEntry('maintenance/windows-maintenance.ps1')
+    if (!$MaintenanceEntry) { throw 'The package is missing the update/uninstall helper.' }
+    [System.IO.Compression.ZipFileExtensions]::ExtractToFile($MaintenanceEntry, $MaintenanceScript, $true)
+} finally { $ApplicationArchive.Dispose() }
+$ParseTokens = $null; $ParseErrors = $null
+[System.Management.Automation.Language.Parser]::ParseFile($MaintenanceScript, [ref]$ParseTokens, [ref]$ParseErrors) | Out-Null
+if ($ParseErrors.Count -ne 0) { throw "The maintenance helper has PowerShell syntax errors: $ParseErrors" }
+function Invoke-MaintenanceVerification([string]$Mode, [string]$Executable) {
+    $JobFile = Join-Path $SmokeDirectory ("maintenance-$Mode.json")
+    $ReadyFile = Join-Path $SmokeDirectory ("maintenance-$Mode.ready")
+    $ResultFile = Join-Path $SmokeDirectory ("maintenance-$Mode-result.json")
+    @{
+        mode = $Mode; executable = $Executable; installRoot = $InstallDirectory
+        sha256 = (Get-FileHash $Executable -Algorithm SHA256).Hash.ToLowerInvariant()
+        waitFor = @(); ready = $ReadyFile; result = $ResultFile; restart = $false
+    } | ConvertTo-Json -Depth 5 | Set-Content -Path $JobFile -Encoding utf8
+    $PowerShell = Join-Path $env:SystemRoot 'System32/WindowsPowerShell/v1.0/powershell.exe'
+    $Helper = Start-Process -FilePath $PowerShell -ArgumentList @('-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', "`"$MaintenanceScript`"", '-JobFile', "`"$JobFile`"") -PassThru
+    if (!$Helper.WaitForExit(120000)) { $Helper.Kill(); throw "Maintenance $Mode timed out." }
+    if ($Helper.ExitCode -ne 0 -or !(Test-Path $ReadyFile) -or !(Test-Path $ResultFile)) { throw "Maintenance $Mode did not finish successfully." }
+    $Result = Get-Content $ResultFile -Raw | ConvertFrom-Json
+    if ($Result.status -ne 'success') { throw "Maintenance $Mode failed: $($Result.message)" }
+}
 $ObsoleteJar = Join-Path $InstallDirectory 'app/lib/obsolete-release.jar'
 Copy-Item $ApplicationJar.FullName $ObsoleteJar
-$Upgrade = Start-Process -FilePath $Installer -ArgumentList @('/S', "/D=$InstallDirectory") -Wait -PassThru
-if ($Upgrade.ExitCode -ne 0) { throw 'Upgrade installation failed.' }
+Invoke-MaintenanceVerification -Mode 'update' -Executable $Installer
 if (Test-Path $ObsoleteJar) { throw 'Upgrade left obsolete application libraries on the classpath.' }
 & $Java '-Dacademic.os.packaged=true' '-cp' "$InstallDirectory/app/lib/*" 'org.example.AppLauncher' '--self-check'
 if ($LASTEXITCODE -ne 0) { throw 'Upgraded package check failed.' }
 if ((Get-Content $Marker).Trim() -ne 'keep-user-data') { throw 'Upgrade changed user data.' }
-$Uninstall = Start-Process -FilePath (Join-Path $InstallDirectory 'Uninstall.exe') -ArgumentList '/S' -Wait -PassThru
-if ($Uninstall.ExitCode -ne 0) { throw 'Uninstall failed.' }
+Invoke-MaintenanceVerification -Mode 'uninstall' -Executable (Join-Path $InstallDirectory 'Uninstall.exe')
 if ((Get-Content $Marker).Trim() -ne 'keep-user-data') { throw 'Uninstall changed user data.' }
-Write-Output 'Windows installation, launcher, upgrade and user-data preservation checks passed.'
+Write-Output 'Windows installation, launcher, maintenance-helper upgrade/uninstall and user-data preservation checks passed.'
 Write-Output "Application screenshot: $SmokeDirectory/package-smoke.png"

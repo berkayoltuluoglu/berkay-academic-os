@@ -31,7 +31,8 @@ public final class TodayService {
             Map<String, String> names = new HashMap<>();
             data.courses().forEach(c -> names.put(c.id(), c.name()));
             coursework = ok(data.work().stream().filter(w -> !w.done() && !w.date().isBlank() && !LocalDate.parse(w.date()).isAfter(until))
-                    .map(w -> new Entry(w.title(), LocalDate.parse(w.date()), w.kind() + " · " + names.get(w.courseId()), "courses", null))
+                    .map(w -> new Entry(w.title(), LocalDate.parse(w.date()), w.kind() + " · " + names.get(w.courseId())
+                            + (w.timeLabel().isBlank() ? "" : " · " + w.timeLabel()), "courses", null))
                     .sorted(Comparator.comparing(Entry::date)).toList());
         } catch (Exception ex) { lessons = error("Dersler okunamadı: " + ex.getMessage()); coursework = lessons; }
         Section payments;
@@ -46,9 +47,7 @@ public final class TodayService {
     static List<Entry> lessonsOn(CourseData data, LocalDate date) {
         List<Entry> result = new ArrayList<>();
         for (var course : data.courses()) {
-            if (!course.planned()) continue;
-            if (date.isBefore(LocalDate.parse(course.startDate())) || date.isAfter(LocalDate.parse(course.endDate()))) continue;
-            for (var lesson : course.lessons()) if (lesson.day() == date.getDayOfWeek().getValue())
+            for (var lesson : course.lessons()) if (CourseSchedule.occursOn(data, course, lesson, date))
                 result.add(new Entry(course.name(), date, lesson.start() + "–" + lesson.end()
                         + (course.section().isBlank() ? "" : " · " + course.section())
                         + ((lesson.room().isBlank() ? course.room() : lesson.room()).isBlank() ? "" : " · "

@@ -4,19 +4,32 @@ import java.util.List;
 import java.math.BigDecimal;
 
 /** Dates and times use ISO strings in the versioned file format. */
-public record CourseData(int schemaVersion, List<Course> courses, List<Work> work, List<Section> sections) {
-    public static final int VERSION = 2;
+public record CourseData(int schemaVersion, List<Course> courses, List<Work> work, List<Section> sections,
+                         List<LessonCancellation> cancellations) {
+    public static final int VERSION = 3;
     public CourseData {
         courses = List.copyOf(courses);
         work = List.copyOf(work);
         sections = sections == null ? List.of() : List.copyOf(sections);
+        cancellations = cancellations == null ? List.of() : List.copyOf(cancellations);
+    }
+    public CourseData(int schemaVersion, List<Course> courses, List<Work> work, List<Section> sections) {
+        this(schemaVersion, courses, work, sections, List.of());
     }
     public CourseData(int schemaVersion, List<Course> courses, List<Work> work) {
         this(schemaVersion, courses, work, List.of());
     }
     public static CourseData empty() { return new CourseData(VERSION, List.of(), List.of()); }
-    public CourseData withCourses(List<Course> value) { return new CourseData(VERSION, value, work, sections); }
-    public CourseData withWork(List<Work> value) { return new CourseData(VERSION, courses, value, sections); }
+    public CourseData withCourses(List<Course> value) { return new CourseData(VERSION, value, work, sections, cancellations); }
+    public CourseData withWork(List<Work> value) { return new CourseData(VERSION, courses, value, sections, cancellations); }
+    public CourseData withCancellations(List<LessonCancellation> value) { return new CourseData(VERSION, courses, work, sections, value); }
+    /** Empty courseId applies to all local lessons, never to exams or Google events. Dates are inclusive. */
+    public record LessonCancellation(String id, String courseId, String fromDate, String toDate, String reason) {
+        public LessonCancellation {
+            courseId = courseId == null ? "" : courseId;
+            reason = reason == null ? "" : reason;
+        }
+    }
     public record Lesson(int day, String start, String end, String room) {
         public Lesson { room = room == null ? "" : room; }
         public Lesson(int day, String start, String end) { this(day, start, end, ""); }
@@ -49,17 +62,24 @@ public record CourseData(int schemaVersion, List<Course> courses, List<Work> wor
         public Section { lessons = List.copyOf(lessons); }
     }
     public record Work(String id, String courseId, String title, String kind, String date, boolean done,
-                       String dueTime, int estimatedMinutes, int loggedMinutes, String priority) {
+                       String dueTime, int estimatedMinutes, int loggedMinutes, String priority, String endTime) {
         public Work {
             date = date == null ? "" : date;
             dueTime = dueTime == null ? "" : dueTime;
             priority = priority == null ? "Normal" : priority;
+            endTime = endTime == null ? "" : endTime;
+        }
+        public Work(String id, String courseId, String title, String kind, String date, boolean done,
+                    String dueTime, int estimatedMinutes, int loggedMinutes, String priority) {
+            this(id, courseId, title, kind, date, done, dueTime, estimatedMinutes, loggedMinutes, priority, "");
         }
         public Work(String id, String courseId, String title, String kind, String date, boolean done) {
             this(id, courseId, title, kind, date, done, "", 0, 0, "Normal");
         }
         public Work withDone(boolean value) {
-            return new Work(id, courseId, title, kind, date, value, dueTime, estimatedMinutes, loggedMinutes, priority);
+            return new Work(id, courseId, title, kind, date, value, dueTime, estimatedMinutes, loggedMinutes, priority, endTime);
         }
+        public boolean scheduledExam() { return "Sınav".equals(kind) && !date.isBlank() && !dueTime.isBlank() && !endTime.isBlank(); }
+        public String timeLabel() { return dueTime + (endTime.isBlank() ? "" : "–" + endTime); }
     }
 }

@@ -17,7 +17,9 @@ public final class AppLauncher {
         }
         if (args.length > 0 && args[0].equals("--self-check")) {
             for (String resource : new String[]{"/config.json", "/ui/style.css", "/ui/fonts/Poppins-Regular.ttf", "/finance/index.html", "/finance/ledger.js",
-                    "/agent-guide/AGENTS.md", "/agent-guide/CLAUDE.md", "/agent-guide/CLI.md", "/agent-guide/planner-proposal.json"}) {
+                    "/agent-guide/AGENTS.md", "/agent-guide/CLAUDE.md", "/agent-guide/CLI.md", "/agent-guide/planner-proposal.json",
+                    "/maintenance/windows-maintenance.ps1", "/branding/logo.png", "/branding/logo-32.png",
+                    "/branding/logo-64.png", "/branding/logo-128.png", "/branding/logo-256.png", "/branding/app-icon.ico"}) {
                 if (AppLauncher.class.getResource(resource) == null) throw new IllegalStateException("Eksik paket kaynağı: " + resource);
             }
             Class.forName("javafx.scene.web.WebView", false, AppLauncher.class.getClassLoader());

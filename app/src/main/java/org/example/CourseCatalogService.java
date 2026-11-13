@@ -16,7 +16,7 @@ public final class CourseCatalogService {
             Section previous = catalog.putIfAbsent(section.id(), section);
             if (previous != null && !previous.equals(section)) throw new IOException("Şube kimliği çakışıyor");
         }
-        CourseData next = new CourseData(VERSION, data.courses(), data.work(), List.copyOf(catalog.values()));
+        CourseData next = new CourseData(VERSION, data.courses(), data.work(), List.copyOf(catalog.values()), data.cancellations());
         CourseStorageService.validate(next);
         return next;
     }

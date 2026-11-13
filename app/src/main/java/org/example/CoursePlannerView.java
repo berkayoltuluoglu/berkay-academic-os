@@ -24,9 +24,13 @@ final class CoursePlannerView extends SplitPane {
     private boolean initialized, updating;
 
     CoursePlannerView(Consumer<CourseData> save, Consumer<Course> edit) {
+        this(save, edit, w -> {});
+    }
+
+    CoursePlannerView(Consumer<CourseData> save, Consumer<Course> edit, Consumer<Work> editWork) {
         this.save = save;
         setId("course-planner"); getStyleClass().add("course-planner");
-        calendar = new CourseWeekView(edit);
+        calendar = new CourseWeekView(edit, editWork);
         search.setPromptText("Ders kodu, adı veya hoca ara"); search.setId("section-search");
         Button clear = new Button("Temizle"); clear.setOnAction(e -> search.clear());
         HBox searchRow = new HBox(6, search, clear); HBox.setHgrow(search, Priority.ALWAYS);

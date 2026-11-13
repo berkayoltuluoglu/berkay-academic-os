@@ -109,7 +109,7 @@ final class DailyTimelineView extends VBox {
         }
         for (int i = 0; i < cluster.size(); i++) {
             var event = cluster.get(i); double laneWidth = (width - GUTTER) / ends.size();
-            Label name = new Label(event.title()); name.getStyleClass().add("silver-event-name"); name.setMaxWidth(Double.MAX_VALUE);
+            Label name = new Label((event.kind().equals("Sınav") ? "Sınav · " : "") + event.title()); name.getStyleClass().add("silver-event-name"); name.setMaxWidth(Double.MAX_VALUE);
             Label detail = new Label(event.start() + "–" + event.end() + (event.detail().isBlank() ? "" : " · " + event.detail()));
             detail.getStyleClass().add("silver-event-detail"); detail.setMaxWidth(Double.MAX_VALUE);
             VBox text = new VBox(4, name, detail); text.setMinWidth(0); HBox.setHgrow(text, Priority.ALWAYS);
@@ -117,6 +117,7 @@ final class DailyTimelineView extends VBox {
             if (event.study()) row.getChildren().add(UiTheme.icon("more-vertical"));
             Button block = new Button(); block.setGraphic(row);
             block.getStyleClass().addAll("silver-event", event.study() ? "study-event" : "lesson-event");
+            if (event.kind().equals("Sınav")) block.getStyleClass().add("exam-event");
             if (event.done()) block.getStyleClass().add("completed-event");
             if (cluster.stream().anyMatch(other -> other != event && DailyAgendaService.overlaps(event, other)))
                 block.getStyleClass().add("conflicting-event");

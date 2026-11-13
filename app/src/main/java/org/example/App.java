@@ -74,6 +74,7 @@ public class App extends Application {
     private java.nio.channels.FileChannel instanceChannel;
     private java.nio.channels.FileLock instanceLock;
     private boolean restartRequired;
+    private UpdateController updates;
 
     @Override
     public void start(Stage stage) {
@@ -105,6 +106,8 @@ public class App extends Application {
                 busy -> root.setDisable(busy),
                 () -> { restartRequired = true; root.setDisable(true); }
         );
+        updates = new UpdateController(getProjectRoot(), this::beginMaintenance);
+        moduleActionHandler.setUpdates(updates);
 
         try {
             ConfigLoader configLoader = new ConfigLoader();
@@ -141,7 +144,7 @@ public class App extends Application {
         pageHeading = new HBox(16, heading);
         pageHeading.setAlignment(Pos.CENTER_LEFT);
         pageHeading.getStyleClass().add("ust-cubuk");
-        Label brand = new Label("Academic OS", UiTheme.icon("command"));
+        Label brand = new Label("Academic OS", AppBranding.graphic());
         brand.getStyleClass().add("silver-brand");
         Label profile = new Label("B"); profile.getStyleClass().add("silver-profile");
         HBox topBar = new HBox(18, brand, spacer, search, profile);
@@ -243,6 +246,7 @@ public class App extends Application {
         stage.setMinWidth(Math.min(900, bounds.getWidth()));
         stage.setMinHeight(Math.min(600, bounds.getHeight()));
         stage.setTitle("Berkay Academic OS");
+        AppBranding.apply(stage);
         stage.setScene(scene);
         stage.setOnCloseRequest(event -> {
             try {
@@ -280,6 +284,30 @@ public class App extends Application {
         }
         if(projectRootOverride==null && Boolean.getBoolean("academic.os.packaged")) Thread.ofVirtual().name("agent-guide-install").start(()->{try{AgentGuide.install(getProjectRoot());}catch(Exception error){javafx.application.Platform.runLater(()->statusLabel.setText("Ajan kılavuzu kurulamadı: "+error.getMessage()));}});
         if (appConfig != null) openModuleById("today");
+        if (projectRootOverride == null) {
+            updates.stateProperty().addListener((observable, before, state) -> {
+                if (state.phase() == UpdateController.Phase.AVAILABLE || state.phase() == UpdateController.Phase.READY)
+                    statusLabel.setText(state.message() + " · Ayarlar → Uygulama ve güncellemeler");
+            });
+            updates.start();
+        }
+    }
+
+    private void beginMaintenance(Runnable launch) {
+        if (moduleActionHandler.focusTimer().running()) throw new IllegalStateException("Önce odak sayacını duraklat veya tamamla.");
+        try { leaveCurrentModule(); }
+        catch (Exception error) { throw new IllegalStateException("Bekleyen değişiklikler kaydedilemedi: " + error.getMessage(), error); }
+        root.setDisable(true);
+        javafx.concurrent.Task<Void> task = new javafx.concurrent.Task<>() {
+            @Override protected Void call() { launch.run(); return null; }
+        };
+        task.setOnSucceeded(event -> javafx.application.Platform.exit());
+        task.setOnFailed(event -> {
+            root.setDisable(false);
+            statusLabel.setText("Kurulum/kaldırma başlatılamadı: " + task.getException().getMessage());
+            updates.maintenanceFailed(task.getException().getMessage());
+        });
+        Thread.ofVirtual().name("maintenance-handoff").start(task);
     }
 
     private void leaveCurrentModule() throws Exception {
@@ -299,6 +327,7 @@ public class App extends Application {
         // A second launch exits before the UI is built ("zaten çalışıyor"); there is no module to leave then.
         try { if (moduleActionHandler != null) leaveCurrentModule(); }
         finally {
+            if (updates != null) updates.close();
             if(focusPulse!=null)focusPulse.stop();
             if (reminders != null) reminders.close(); tray.close();
             if (moduleActionHandler != null) moduleActionHandler.stopBackgroundSync();

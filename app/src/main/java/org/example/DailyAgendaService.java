@@ -65,14 +65,16 @@ public class DailyAgendaService {
             var data = snapshot.courses();
             courses = data.courses();
             for (var c : courses) {
-                if (!c.planned() || date.isBefore(LocalDate.parse(c.startDate())) || date.isAfter(LocalDate.parse(c.endDate()))) continue;
-                for (var l : c.lessons()) if (l.day() == date.getDayOfWeek().getValue()) {
+                for (var l : c.lessons()) if (CourseSchedule.occursOn(data, c, l, date)) {
                     String room = l.room().isBlank() ? c.room() : l.room();
                     events.add(new Event(c.id(), c.name(), date, LocalTime.parse(l.start()), LocalTime.parse(l.end()),
                             room.isBlank() ? c.code() : room, false, false));
                 }
             }
             Map<String, String> names = new HashMap<>(); courses.forEach(c -> names.put(c.id(), c.name()));
+            for (var w : data.work()) if (w.scheduledExam() && w.date().equals(date.toString()))
+                events.add(new Event("exam-" + w.id(), w.title(), date, LocalTime.parse(w.dueTime()), LocalTime.parse(w.endTime()),
+                        names.get(w.courseId()), false, w.done(), "Sınav"));
             for (var w : data.work()) if (!w.date().isBlank() && include(LocalDate.parse(w.date()), w.done(), date))
                 todos.add(new Todo(w.id(), w.title(), LocalDate.parse(w.date()), w.kind() + " · " + names.get(w.courseId()), true, w.done(),
                         w.dueTime().isBlank() ? null : LocalTime.parse(w.dueTime()), w.priority(), false, "courses"));
@@ -129,7 +131,8 @@ public class DailyAgendaService {
         return due != null && (done ? due.equals(date) : !due.isAfter(date.plusDays(7)));
     }
     public static boolean overlaps(Event a, Event b) {
-        return a.date().equals(b.date()) && !a.done() && !b.done() && a.start().isBefore(b.end()) && b.start().isBefore(a.end());
+        return a.date().equals(b.date()) && (!a.done() || "Sınav".equals(a.kind())) && (!b.done() || "Sınav".equals(b.kind()))
+                && a.start().isBefore(b.end()) && b.start().isBefore(a.end());
     }
 
     public void setDone(Path root, Todo todo, boolean done) throws Exception {

@@ -27,7 +27,7 @@ public final class CourseStorageService {
         catch (Exception ex) { throw new IOException("Ders dosyası okunamadı; mevcut dosya korunuyor", ex); }
         validate(data);
         // Reading never rewrites the legacy file; the next save backs it up before migration.
-        if (data.schemaVersion() == 1) data = new CourseData(CourseData.VERSION, data.courses(), data.work(), data.sections());
+        if (data.schemaVersion() < CourseData.VERSION) data = new CourseData(CourseData.VERSION, data.courses(), data.work(), data.sections(), data.cancellations());
         baseline = bytes;
         loaded = true;
         return data;
@@ -55,7 +55,7 @@ public final class CourseStorageService {
 
     static void validate(CourseData data) throws IOException {
         try {
-            require(data != null && (data.schemaVersion() == 1 || data.schemaVersion() == CourseData.VERSION), "Desteklenmeyen ders dosyası sürümü");
+            require(data != null && data.schemaVersion() >= 1 && data.schemaVersion() <= CourseData.VERSION, "Desteklenmeyen ders dosyası sürümü");
             require(data.courses().size() <= 500 && data.work().size() <= 10000, "Çok fazla ders veya teslim kaydı");
             require(data.sections().size() <= 5000, "Katalogda en fazla 5000 şube olabilir");
             Set<String> sections = new HashSet<>();
@@ -85,9 +85,23 @@ public final class CourseStorageService {
                 require(Set.of("Ödev", "Sınav").contains(work.kind()), "Geçersiz teslim türü");
                 if (!work.date().isBlank()) LocalDate.parse(work.date());
                 if (!work.dueTime().isEmpty()) LocalTime.parse(work.dueTime());
+                if (!work.endTime().isEmpty()) {
+                    require(work.scheduledExam(), "Sınav için tarih, başlangıç ve bitiş saati gerekiyor");
+                    require(work.dueTime().matches("[0-2][0-9]:[0-5][0-9]") && work.endTime().matches("[0-2][0-9]:[0-5][0-9]"), "Sınav saatlerini SS:DD biçiminde gir");
+                    require(LocalTime.parse(work.endTime()).isAfter(LocalTime.parse(work.dueTime())), "Sınav bitişi başlangıçtan sonra olmalı (aynı gün)");
+                }
                 require(Set.of("Düşük", "Normal", "Yüksek").contains(work.priority())
                         && work.estimatedMinutes() >= 0 && work.estimatedMinutes() <= 100000
                         && work.loggedMinutes() >= 0 && work.loggedMinutes() <= 1000000, "Teslim çalışma süresi/önceliği geçersiz");
+            }
+            require(data.cancellations().size() <= 5000, "En fazla 5000 ders iptali olabilir");
+            Set<String> cancellationIds = new HashSet<>();
+            for (var cancellation : data.cancellations()) {
+                require(cancellation != null && validId(cancellation.id()) && cancellationIds.add(cancellation.id()), "Tekrarlanan veya geçersiz iptal kimliği");
+                require(cancellation.courseId().isEmpty() || courses.contains(cancellation.courseId()), "İptal edilecek ders bulunamadı");
+                LocalDate from = LocalDate.parse(cancellation.fromDate()), to = LocalDate.parse(cancellation.toDate());
+                require(!to.isBefore(from) && java.time.temporal.ChronoUnit.DAYS.between(from, to) <= 366, "İptal aralığı 1–367 gün olmalı");
+                text(cancellation.reason(), 1000, false);
             }
         } catch (RuntimeException ex) { throw new IOException("Ders bilgileri geçersiz: " + ex.getMessage(), ex); }
     }

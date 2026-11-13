@@ -66,7 +66,8 @@ public final class ReminderService implements AutoCloseable {
             if (!day.errors().isEmpty()) error = String.join(" · ", day.errors());
             for (var todo : day.todos()) if (!todo.done() && !todo.date().isBefore(today)) {
                 LocalTime time = todo.dueTime() == null ? LocalTime.parse(preferences.dateOnlyReminderTime()) : todo.dueTime();
-                add(notices, keys, todo.module() + ":" + todo.id(), todo.title(), "Son teslim: " + todo.date() + " " + time,
+                String label = todo.coursework() && todo.detail().startsWith("Sınav ·") ? "Sınav başlangıcı: " : "Son teslim: ";
+                add(notices, keys, todo.module() + ":" + todo.id(), todo.title(), label + todo.date() + " " + time,
                         todo.date().atTime(time), preferences.reminderMinutes());
             }
             for (var event : day.events()) if (!event.done() && (event.study() || "Google".equals(event.kind())))

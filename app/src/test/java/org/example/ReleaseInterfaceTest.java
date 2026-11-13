@@ -48,6 +48,17 @@ class ReleaseInterfaceTest {
         TaskItem task = new TaskStorageService(directory.resolve("data/tasks.json")).loadTasks().getFirst();
         assertEquals(LocalTime.of(17, 30), task.getDueTime()); assertEquals("Yüksek", task.getPriority()); assertEquals(1, task.getSubtasks().size()); assertEquals("Tamamlandı", task.getStatus());
     }
+    @Test void approvedLogoIsUsedInTheTitleBarAndWindowIcons() throws Exception {
+        fx(() -> {
+            var brand = (Label)stage.getScene().lookup(".silver-brand");
+            assertInstanceOf(javafx.scene.image.ImageView.class, brand.getGraphic());
+            var graphic = (javafx.scene.image.ImageView)brand.getGraphic();
+            assertFalse(graphic.getImage().isError()); assertEquals(512, graphic.getImage().getWidth());
+            assertEquals(List.of(32.0, 64.0, 128.0, 256.0), stage.getIcons().stream().map(javafx.scene.image.Image::getWidth).toList());
+            assertTrue(stage.getIcons().stream().noneMatch(javafx.scene.image.Image::isError));
+            return null;
+        });
+    }
     @Test void weeklyAgendaRendersAndSettingsPersistWorkingPreferences() throws Exception {
         navigate("agenda");
         waitFor(() -> text("#weekly-agenda-status").contains("birlikte gösteriliyor"));

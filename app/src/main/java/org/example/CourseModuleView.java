@@ -100,10 +100,10 @@ public final class CourseModuleView {
 
     private void render() {
         if (tabs == null) {
-            planner = new CoursePlannerView(this::save, this::editCourse);
+            planner = new CoursePlannerView(this::save, this::editCourse, this::editWork);
             advancedPlanner = new AdvancedCoursePlannerView(profileRoot, this::save);
             tabs = new TabPane(); tabs.setId("courses-tabs");
-            tabs.getTabs().setAll(new Tab("Planlayıcı", planner), new Tab("Ders kayıtları"), new Tab("Ödev ve sınavlar"), new Tab("Müfredat / ÇAP ve alternatifler", advancedPlanner));
+            tabs.getTabs().setAll(new Tab("Planlayıcı", planner), new Tab("Ders kayıtları"), new Tab("Ödev ve sınavlar"), new Tab("Müfredat / ÇAP ve alternatifler", advancedPlanner), new Tab("Ders iptalleri"));
             tabs.getTabs().forEach(tab -> tab.setClosable(false));
             body.getChildren().setAll(tabs); VBox.setVgrow(tabs, Priority.ALWAYS);
         }
@@ -111,6 +111,7 @@ public final class CourseModuleView {
         advancedPlanner.update(data);
         tabs.getTabs().get(1).setContent(courseList());
         tabs.getTabs().get(2).setContent(workList());
+        tabs.getTabs().get(4).setContent(cancellationList());
     }
 
     private Node courseList() {
@@ -143,7 +144,8 @@ public final class CourseModuleView {
             UiTheme.styleDialog(confirm, root);
             if (confirm.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK)
                 save(new CourseData(VERSION, data.courses().stream().filter(c -> !c.id().equals(selected.id())).toList(),
-                        data.work().stream().filter(w -> !w.courseId().equals(selected.id())).toList(), data.sections()));
+                        data.work().stream().filter(w -> !w.courseId().equals(selected.id())).toList(), data.sections(),
+                        data.cancellations().stream().filter(c -> !c.courseId().equals(selected.id())).toList()));
         });
         VBox box = new VBox(12, new FlowPane(8, 8, edit, remove), list);
         box.getStyleClass().add("course-tab");
@@ -221,7 +223,7 @@ public final class CourseModuleView {
                 super.updateItem(w, empty);
                 setText(empty || w == null ? null : (w.done() ? "✓ " : "") + w.title() + "\n" +
                         courseName(w.courseId()) + " · " + w.kind() + " · " + (w.date().isBlank() ? "Son tarih yok" : w.date())
-                        + (w.dueTime().isBlank() ? "" : " " + w.dueTime()) + " · " + w.priority());
+                        + (w.dueTime().isBlank() ? "" : " " + w.timeLabel()) + " · " + w.priority());
             }
         });
         Button add = button("Ödev / sınav ekle", "plus", "accent", "work-add");
@@ -261,9 +263,22 @@ public final class CourseModuleView {
         DatePicker date = new DatePicker(old == null ? LocalDate.now() : old.date().isBlank() ? null : LocalDate.parse(old.date())); date.setId("work-date");
         CheckBox noDue = new CheckBox("Son tarih yok"); noDue.setSelected(old != null && old.date().isBlank()); noDue.setId("work-no-due");
         date.disableProperty().bind(noDue.selectedProperty());
+        TextField examStart = field("SS:DD", old == null || old.dueTime().isBlank() ? "09:00" : old.dueTime(), "work-start-time");
+        TextField examEnd = field("SS:DD", old == null ? "10:00" : old.endTime(), "work-end-time");
+        VBox examTimes = new VBox(8, label("Sınav başlangıç saati *", examStart), examStart,
+                label("Sınav bitiş saati *", examEnd), examEnd,
+                new Label("Aynı gün içinde, örn. 15:00–16:20. Çalışmalar sınav başlangıcından önce planlanır."));
         CheckBox done = new CheckBox("Tamamlandı"); done.setSelected(old != null && old.done());
         Label error = new Label(); error.setWrapText(true); error.getStyleClass().add("form-error");
+        error.setId("work-form-error");
         TaskMetadataEditor metadata = new TaskMetadataEditor(false);
+        Runnable updateKind = () -> {
+            boolean exam = "Sınav".equals(kind.getValue());
+            examTimes.setVisible(exam); examTimes.setManaged(exam); metadata.showDueTime(!exam);
+            noDue.setVisible(!exam); noDue.setManaged(!exam);
+            if (exam) noDue.setSelected(false);
+        };
+        kind.valueProperty().addListener((o, a, b) -> updateKind.run()); updateKind.run();
         if (old != null) {
             TaskItem fields = new TaskItem(old.title(), old.date().isBlank() ? LocalDate.now() : LocalDate.parse(old.date()), "", "Bekliyor");
             fields.setDueTime(old.dueTime().isBlank() ? null : LocalTime.parse(old.dueTime()));
@@ -273,16 +288,20 @@ public final class CourseModuleView {
                     new StudyStorageService(profileRoot.resolve("data/study/sessions.json")).load(), new StudyTimeLogService(profileRoot).load())); }
             catch (Exception failure) { status.setText("Çalışma süresi okunamadı: " + failure.getMessage()); }
         }
-        VBox form = new VBox(8, new Label("Ders *"), course, new Label("Başlık *"), title,
-                new Label("Tür"), kind, new Label("Teslim / sınav tarihi"), date, noDue, metadata, done, error);
+        VBox form = new VBox(8, label("Ders *", course), course, label("Başlık *", title), title,
+                label("Tür", kind), kind, label("Teslim / sınav tarihi", date), date, noDue, examTimes, metadata, done, error);
         String id = old == null ? UUID.randomUUID().toString() : old.id();
         formDialog(old == null ? "Ödev / sınav ekle" : "Kaydı düzenle", form, error, () -> {
+            date.commitValue();
+            boolean exam = "Sınav".equals(kind.getValue());
             TaskItem fields = new TaskItem(title.getText().trim(), date.getValue(), "", "Bekliyor");
             metadata.apply(fields);
+            if (exam && (examStart.getText().isBlank() || examEnd.getText().isBlank()))
+                throw new IllegalArgumentException("Sınav başlangıç ve bitiş saatini SS:DD biçiminde gir");
             Work work = new Work(id, course.getValue().id(), title.getText().trim(), kind.getValue(),
                     noDue.isSelected() ? "" : Objects.requireNonNull(date.getValue(), "Tarih gerekiyor").toString(), done.isSelected(),
-                    fields.getDueTime() == null ? "" : fields.getDueTime().toString(),
-                    fields.getEstimatedMinutes(), fields.getLoggedMinutes(), fields.getPriority());
+                    exam ? examStart.getText().trim() : fields.getDueTime() == null ? "" : fields.getDueTime().toString(),
+                    fields.getEstimatedMinutes(), fields.getLoggedMinutes(), fields.getPriority(), exam ? examEnd.getText().trim() : "");
             List<Work> next = new ArrayList<>(data.work()); next.removeIf(w -> w.id().equals(id)); next.add(work);
             return data.withWork(next);
         }).ifPresent(this::save);
@@ -290,6 +309,7 @@ public final class CourseModuleView {
 
     private Optional<CourseData> formDialog(String title, VBox form, Label error, Supplier<CourseData> candidate) {
         Dialog<CourseData> dialog = new Dialog<>(); dialog.setTitle(title); UiTheme.styleDialog(dialog, root);
+        dialog.setResizable(true);
         ScrollPane scroll = new ScrollPane(form); scroll.setFitToWidth(true);
         scroll.setPrefViewportWidth(550); scroll.setPrefViewportHeight(Math.min(610, javafx.stage.Screen.getPrimary().getVisualBounds().getHeight() - 190));
         form.setPadding(new Insets(12));
@@ -303,7 +323,75 @@ public final class CourseModuleView {
             catch (Exception ex) { error.setText(ex.getMessage()); e.consume(); }
         });
         dialog.setResultConverter(type -> type == save ? accepted[0] : null);
+        dialog.setOnShown(e -> javafx.application.Platform.runLater(() -> {
+            Node first = form.lookup("#work-title");
+            if (first == null) first = form.lookup(".text-field");
+            if (first != null) first.requestFocus();
+        }));
         return dialog.showAndWait();
+    }
+
+    private Node cancellationList() {
+        ListView<LessonCancellation> list = new ListView<>(); list.setId("course-cancellation-list");
+        list.getItems().setAll(data.cancellations().stream().sorted(Comparator.comparing(LessonCancellation::fromDate)).toList());
+        list.setPlaceholder(new Label("Ders iptali yok"));
+        list.setCellFactory(v -> new ListCell<>() {
+            { setWrapText(true); }
+            @Override protected void updateItem(LessonCancellation c, boolean empty) {
+                super.updateItem(c, empty);
+                setText(empty || c == null ? null : c.fromDate() + " — " + c.toDate() + " · "
+                        + (c.courseId().isEmpty() ? "Tüm dersler" : courseName(c.courseId()))
+                        + (c.reason().isBlank() ? "" : "\n" + c.reason()));
+            }
+        });
+        Button add = button("Tarih aralığında ders iptal et", "calendar", "accent", "cancellation-add");
+        Button edit = button("Düzenle", "edit-2", "flat", "cancellation-edit");
+        Button restore = button("İptali kaldır", "rotate-ccw", "flat", "cancellation-remove");
+        add.setDisable(data.courses().isEmpty());
+        edit.disableProperty().bind(list.getSelectionModel().selectedItemProperty().isNull());
+        restore.disableProperty().bind(list.getSelectionModel().selectedItemProperty().isNull());
+        add.setOnAction(e -> editCancellation(null));
+        edit.setOnAction(e -> editCancellation(list.getSelectionModel().getSelectedItem()));
+        restore.setOnAction(e -> {
+            var selected = list.getSelectionModel().getSelectedItem();
+            Alert confirm = new Alert(Alert.AlertType.CONFIRMATION, "Bu tarih aralığındaki ders iptali kaldırılsın mı? Diğer iptaller geçerliyse korunur.", ButtonType.CANCEL, ButtonType.OK);
+            UiTheme.styleDialog(confirm, root);
+            if (confirm.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK)
+                save(data.withCancellations(data.cancellations().stream().filter(c -> !c.id().equals(selected.id())).toList()));
+        });
+        Label explanation = new Label("Başlangıç ve bitiş günleri dahildir. Yalnızca haftalık ders saatleri iptal edilir; sınavlar ve Google etkinlikleri korunur. Diğer haftalar değişmez.");
+        explanation.setWrapText(true);
+        VBox box = new VBox(12, explanation, new FlowPane(8, 8, add, edit, restore), list);
+        box.getStyleClass().add("course-tab"); VBox.setVgrow(list, Priority.ALWAYS); return box;
+    }
+
+    private void editCancellation(LessonCancellation old) {
+        ComboBox<String> course = new ComboBox<>(); course.setId("cancellation-course");
+        course.getItems().add("Tüm dersler"); data.courses().forEach(c -> course.getItems().add(c.toString()));
+        int selected = 0;
+        if (old != null && !old.courseId().isEmpty())
+            for (int i = 0; i < data.courses().size(); i++) if (data.courses().get(i).id().equals(old.courseId())) selected = i + 1;
+        course.getSelectionModel().select(selected); course.setMaxWidth(Double.MAX_VALUE);
+        DatePicker from = new DatePicker(old == null ? LocalDate.now() : LocalDate.parse(old.fromDate())); from.setId("cancellation-from");
+        DatePicker to = new DatePicker(old == null ? LocalDate.now() : LocalDate.parse(old.toDate())); to.setId("cancellation-to");
+        TextField reason = field("Örn. vize haftası", old == null ? "" : old.reason(), "cancellation-reason");
+        Label error = new Label(); error.setId("cancellation-error"); error.setWrapText(true); error.getStyleClass().add("form-error");
+        VBox form = new VBox(8, label("Kapsam", course), course, label("İlk gün (dahil)", from), from,
+                label("Son gün (dahil)", to), to, label("Açıklama", reason), reason, error);
+        String id = old == null ? UUID.randomUUID().toString() : old.id();
+        formDialog("Tarih bazlı ders iptali", form, error, () -> {
+            from.commitValue(); to.commitValue();
+            int index = course.getSelectionModel().getSelectedIndex();
+            var cancellation = new LessonCancellation(id, index == 0 ? "" : data.courses().get(index - 1).id(),
+                    Objects.requireNonNull(from.getValue(), "İlk gün gerekiyor").toString(),
+                    Objects.requireNonNull(to.getValue(), "Son gün gerekiyor").toString(), reason.getText().trim());
+            List<LessonCancellation> next = new ArrayList<>(data.cancellations()); next.removeIf(c -> c.id().equals(id)); next.add(cancellation);
+            return data.withCancellations(next);
+        }).ifPresent(this::save);
+    }
+
+    private static Label label(String text, javafx.scene.control.Control control) {
+        Label label = new Label(text); label.setLabelFor(control); control.setAccessibleText(text); return label;
     }
 
     static String sectionDescription(Section s) {

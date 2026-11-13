@@ -12,11 +12,12 @@ final class CalendarMonthService {
         if(showLocal)for(var day:new DailyAgendaService().loadMonth(root,month)) {
             warnings.addAll(day.errors());
             for(var event:day.events())if(!event.kind().equals("Google")) {
-                String source=event.study()?"Çalışma":"Ders",id="local:"+(event.study()?"study":"courses");
+                String source=event.study()?"Çalışma":event.kind(),id="local:"+(event.study()?"study":"courses");
                 var item=CalendarEventItem.timed(event.id()+"-"+day.date()+"-"+event.start(),event.title(),day.date().atTime(event.start()),day.date().atTime(event.end()),event.detail(),"")
-                        .withGoogleMetadata(day.date(),"",false,false).withSource(id,source,event.study()?"#8e24aa":"#0b8043").withDone(event.done());items.add(item);localCount++;
+                        .withGoogleMetadata(day.date(),"",false,false).withSource(id,source,event.kind().equals("Sınav")?"#633a30":event.study()?"#8e24aa":"#0b8043").withDone(event.done());items.add(item);localCount++;
             }
             for(var todo:day.todos())if(todo.date().equals(day.date())&&!todo.module().equals("calendar")) {
+                if(todo.coursework() && todo.module().equals("courses") && day.events().stream().anyMatch(e -> e.kind().equals("Sınav") && e.id().equals("exam-" + todo.id()))) continue;
                 String name=switch(todo.module()){case "classroom"->"Classroom";case "finance"->"Burs / başvuru";case "courses"->"Ödev / sınav";default->"Görev";};
                 var item=CalendarEventItem.allDay(todo.id(),todo.title(),todo.date(),todo.detail(),"");
                 if(todo.dueTime()!=null)item=CalendarEventItem.timed(todo.id(),todo.title(),todo.date().atTime(todo.dueTime()),todo.date().atTime(todo.dueTime()),todo.detail(),"");

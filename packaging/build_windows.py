@@ -25,14 +25,14 @@ def sha256(path: Path) -> str:
 
 
 def download(address: str, target: Path) -> None:
-    request = urllib.request.Request(address, headers={'User-Agent': 'AcademicOS-Packager/1.5.1'})
+    request = urllib.request.Request(address, headers={'User-Agent': 'AcademicOS-Packager/1.6.0'})
     with urllib.request.urlopen(request, timeout=120) as source, target.open('wb') as output:
         shutil.copyfileobj(source, output)
 
 
 def runtime(cache: Path) -> tuple[Path, dict]:
     address = 'https://api.adoptium.net/v3/assets/latest/21/hotspot?architecture=x64&image_type=jre&os=windows&vendor=eclipse'
-    request = urllib.request.Request(address, headers={'User-Agent': 'AcademicOS-Packager/1.5.1'})
+    request = urllib.request.Request(address, headers={'User-Agent': 'AcademicOS-Packager/1.6.0'})
     with urllib.request.urlopen(request, timeout=60) as response:
         choices = json.load(response)
     choice = choices[0]
@@ -124,14 +124,17 @@ def main() -> None:
     prefix = '/D' if os.name == 'nt' else '-D'
     verbosity = '/V2' if os.name == 'nt' else '-V2'
     launcher = payload / 'BerkayAcademicOS.exe'
-    subprocess.run([args.makensis, verbosity, prefix + 'OUTPUT=' + str(launcher), str(REPOSITORY / 'packaging/windows-launcher.nsi')], env=environment, check=True)
+    icon = REPOSITORY / 'app/src/main/resources/branding/app-icon.ico'
+    icon_args = [prefix + 'APP_ICON=' + str(icon)] if icon.is_file() else []
+    manifest['customIconBundled'] = icon.is_file()
+    subprocess.run([args.makensis, verbosity, *icon_args, prefix + 'OUTPUT=' + str(launcher), str(REPOSITORY / 'packaging/windows-launcher.nsi')], env=environment, check=True)
     manifest['files'] = {path.relative_to(payload).as_posix(): sha256(path)
                          for path in sorted(payload.rglob('*')) if path.is_file()}
     (payload / 'package-manifest.json').write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding='utf-8')
     output = BUILD / 'dist'
     output.mkdir(parents=True, exist_ok=True)
     installer = output / f'BerkayAcademicOS-{version}-setup.exe'
-    subprocess.run([args.makensis, verbosity, prefix + 'APP_VERSION=' + version, prefix + 'OUTPUT=' + str(installer),
+    subprocess.run([args.makensis, verbosity, *icon_args, prefix + 'APP_VERSION=' + version, prefix + 'OUTPUT=' + str(installer),
                     prefix + 'PAYLOAD=' + str(payload), str(REPOSITORY / 'packaging/windows-setup.nsi')], env=environment, check=True)
     digest = sha256(installer)
     (output / (installer.name + '.sha256')).write_text(digest + '  ' + installer.name + '\n', encoding='ascii')

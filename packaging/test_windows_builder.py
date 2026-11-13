@@ -46,7 +46,9 @@ class WindowsBuilderTest(unittest.TestCase):
         self.temporary.cleanup()
 
     def build_payload(self):
+        commands = []
         def compile_nsis(command, **kwargs):
+            commands.append(command)
             output = next(value.split('=', 1)[1] for value in command if value.startswith(('-DOUTPUT=', '/DOUTPUT=')))
             Path(output).write_bytes(b'MZ compiler fixture')
 
@@ -55,6 +57,7 @@ class WindowsBuilderTest(unittest.TestCase):
                 patch.object(builder.subprocess, 'run', side_effect=compile_nsis), \
                 patch('sys.argv', ['build_windows.py', '--skip-gradle', '--makensis', 'mock-makensis']):
             builder.main()
+        return commands
 
     def test_clean_build_contains_cli_guides_and_complete_file_hashes(self):
         self.build_payload()
@@ -104,6 +107,17 @@ class WindowsBuilderTest(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, 'Unsafe runtime'):
             builder.extract_runtime(self.archive, self.root / 'runtime')
         self.assertFalse((self.root / 'escape').exists())
+
+    def test_approved_icon_is_passed_to_launcher_and_setup_compilers(self):
+        icon = self.repo / 'app/src/main/resources/branding/app-icon.ico'
+        icon.parent.mkdir(parents=True)
+        icon.write_bytes(b'icon fixture')
+        commands = self.build_payload()
+        self.assertEqual(2, len(commands))
+        for command in commands:
+            self.assertTrue(any(value.endswith('APP_ICON=' + str(icon)) for value in command), command)
+        manifest = json.loads((self.payload / 'package-manifest.json').read_text())
+        self.assertTrue(manifest['customIconBundled'])
 
 
 if __name__ == '__main__':

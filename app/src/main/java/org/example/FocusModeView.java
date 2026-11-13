@@ -32,7 +32,7 @@ final class FocusModeView {
 
     FocusModeView(Path root,FocusTimerService timer){this.root=root;this.timer=timer;}
     void show(Window owner){
-        stage.initOwner(owner);stage.setTitle("Academic OS · Odak");
+        stage.initOwner(owner);stage.setTitle("Academic OS · Odak");AppBranding.apply(stage);
         clock.getStyleClass().add("focus-time");name.getStyleClass().add("silver-section-title");
         Button toggle=new Button("Duraklat / devam et"),finish=new Button("Bitir"),rest=new Button("Mola");
         toggle.setOnAction(e->run(()->{timer.toggle();return null;},false));finish.setOnAction(e->run(()->{timer.finish();return null;},true));

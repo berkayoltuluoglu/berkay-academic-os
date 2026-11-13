@@ -15,6 +15,9 @@ final class TrayController implements AutoCloseable {
             Graphics2D graphics = image.createGraphics(); graphics.setColor(new Color(40, 54, 74));
             graphics.fillRoundRect(0, 0, 48, 48, 12, 12); graphics.setColor(Color.WHITE);
             graphics.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 22)); graphics.drawString("AO", 6, 32); graphics.dispose();
+            try (var logo = TrayController.class.getResourceAsStream("/branding/logo.png")) {
+                if (logo != null) { var custom = javax.imageio.ImageIO.read(logo); if (custom != null) image = custom; }
+            } catch (java.io.IOException ignored) { /* Keep the built-in mark if an optional image cannot be read. */ }
             PopupMenu menu = new PopupMenu(); MenuItem open = new MenuItem("Academic OS'u aç"), exit = new MenuItem("Tamamen çık");
             open.addActionListener(e -> Platform.runLater(show)); exit.addActionListener(e -> Platform.runLater(quit));
             menu.add(open); menu.add(exit); icon = new TrayIcon(image, "Berkay Academic OS", menu); icon.setImageAutoSize(true);
