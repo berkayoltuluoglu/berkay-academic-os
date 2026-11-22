@@ -77,7 +77,7 @@ class FinanceModuleViewTest {
 
     private void pay(String id, String amount, String account) throws Exception {
         click("[data-tab=borclar]");
-        click("[data-pay=" + id + "]");
+        click("[data-pay=\"" + id + "\"]");
         value("od-tutar", amount);
         value("od-hesap", account);
         click("#bt-odeme-kaydet");
@@ -96,6 +96,10 @@ class FinanceModuleViewTest {
         assertEquals(1200, summary().path("period").asInt());
         click("[data-tab=panel]");
         assertEquals("rgb(52, 62, 80)", js("getComputedStyle(document.querySelector('[data-tab=panel]')).color"));
+        capture("finance-preview");
+    }
+
+    private void capture(String name) throws Exception {
         var snapshot = new java.util.concurrent.CompletableFuture<WritableImage>();
         fx(() -> {
             view.webView().snapshot(result -> { snapshot.complete(result.getImage()); return null; }, null, null);
@@ -105,7 +109,7 @@ class FinanceModuleViewTest {
         var pixels = image.getPixelReader();
         var png = new java.awt.image.BufferedImage((int) image.getWidth(), (int) image.getHeight(), java.awt.image.BufferedImage.TYPE_INT_ARGB);
         for (int y=0; y<png.getHeight(); y++) for (int x=0; x<png.getWidth(); x++) png.setRGB(x,y,pixels.getArgb(x,y));
-        Path screenshot = Path.of("build/reports/finance-preview.png");
+        Path screenshot = Path.of("build/reports/" + name + ".png");
         Files.createDirectories(screenshot.getParent());
         javax.imageio.ImageIO.write(png, "png", screenshot.toFile());
     }
@@ -216,5 +220,190 @@ class FinanceModuleViewTest {
         assertEquals(0, state().path("flows").size());
         assertTrue(((String)js("document.getElementById('bt-sync').textContent")).contains("kaydedilemedi"));
         assertEquals(original, Files.readString(file));
+    }
+
+    private void newCard(String period, String total) throws Exception {
+        click("[data-tab=borclar]"); click("#bt-new");
+        value("f-name", "WORLD"); value("f-limit", "15000");
+        value("f-balance", period); value("f-total-balance", total);
+        value("f-due", "2026-01-01");
+        click("#bt-save");
+    }
+
+    @Test void futureCardDebtDoesNotBecomeCurrentMinimumOrOverdueDebt() throws Exception {
+        open(false);
+        newCard("0", "12.440,52");
+        assertEquals(1, state().path("debts").size());
+        assertEquals(12440.52, summary().path("debt").asDouble(), .001);
+        assertEquals(0, summary().path("period").asDouble(), .001);
+        assertEquals(0, ((Number)js("document.querySelectorAll('#bt-borclar .bt-chip.red').length")).intValue());
+        capture("finance-card-balances");
+        click("[data-tab=panel]");
+        assertFalse(((String)js("document.getElementById('bt-panel').textContent")).contains("gün önce geçti"));
+        close(); open(false);
+        assertEquals(0, summary().path("period").asDouble(), .001);
+        assertEquals(12440.52, summary().path("debt").asDouble(), .001);
+    }
+
+    @Test void cardFormDistinguishesEmptyZeroAndOneCentAndKeepsInvalidInput() throws Exception {
+        open(false);
+        js("window.testErrors=[];window.addEventListener('error',e=>window.testErrors.push(e.message))");
+        click("[data-tab=borclar]"); click("#bt-new");
+        value("f-name", "Küçük tutar"); value("f-balance", "");
+        click("#bt-save");
+        assertEquals(0, state().path("debts").size());
+        assertEquals("Küçük tutar", js("document.getElementById('f-name').value"));
+        value("f-balance", "0,01"); click("#bt-save");
+        assertEquals(.01, state().path("debts").get(0).path("balance").asDouble(), .00001);
+        assertEquals(.01, summary().path("debt").asDouble(), .00001);
+        String id = state().path("debts").get(0).path("id").asText();
+        click("[data-toggle=\"" + id + "\"]");
+        assertEquals(0, ((Number)js("window.testErrors.length")).intValue());
+        close(); open(false);
+        assertEquals(.01, state().path("debts").get(0).path("balance").asDouble(), .00001);
+    }
+
+    @Test void explicitCardMinimumPaymentDoesNotInventANewStatement() throws Exception {
+        open(false);
+        newCard("100", "1000");
+        String id = state().path("debts").get(0).path("id").asText();
+        pay(id, "5", "");
+        assertEquals(15, summary().path("period").asInt());
+        pay(id, "15", "");
+        assertEquals(80, debt(id).path("balance").asInt());
+        assertEquals(980, debt(id).path("totalBalance").asInt());
+        assertEquals("2026-01-01", debt(id).path("due").asText());
+        assertEquals(0, summary().path("period").asInt());
+        pay(id, "100", "");
+        assertEquals(80, debt(id).path("balance").asInt());
+        pay(id, "80", "");
+        assertEquals(0, debt(id).path("balance").asInt());
+        assertEquals(900, summary().path("debt").asInt());
+        assertEquals(0, summary().path("period").asInt());
+    }
+
+    @Test void cashFlowEditAccountChangeDeleteAndReloadApplyExactlyOnce() throws Exception {
+        open(true);
+        click("[data-tab=akis]");
+        value("fl-account", "bank"); value("fl-amount", "-25,50");
+        click("#bt-flow-add");
+        assertEquals(4974.50, summary().path("cash").asDouble(), .001);
+        String id = state().path("flows").get(0).path("id").asText();
+        click("[data-editflow=\"" + id + "\"]");
+        value("fl-amount", "40"); click("#bt-flow-add");
+        assertEquals(4960, summary().path("cash").asInt());
+        click("[data-editflow=\"" + id + "\"]");
+        value("fl-type", "in"); value("fl-amount", "10"); click("#bt-flow-add");
+        assertEquals(5010, summary().path("cash").asInt());
+        close(); open(false);
+        assertEquals(5010, summary().path("cash").asInt());
+        click("[data-tab=akis]"); click("[data-editflow=\"" + id + "\"]");
+        value("fl-account", ""); click("#bt-flow-add");
+        assertEquals(5000, summary().path("cash").asInt());
+        click("[data-delflow=\"" + id + "\"]");
+        assertEquals(0, state().path("flows").size());
+        assertEquals(5000, summary().path("cash").asInt());
+    }
+
+    @Test void flowReversalRestoresRestrictedCashAndInvalidExpenseDoesNotMutateState() throws Exception {
+        open(true);
+        click("[data-tab=akis]");
+        value("fl-account", "bank"); value("fl-amount", "4980"); click("#bt-flow-add");
+        assertEquals(20, summary().path("cash").asInt());
+        assertEquals(20, state().path("accounts").get(0).path("kisitli").asInt());
+        String id = state().path("flows").get(0).path("id").asText();
+        click("[data-delflow=\"" + id + "\"]");
+        assertEquals(5000, summary().path("cash").asInt());
+        assertEquals(500, state().path("accounts").get(0).path("kisitli").asInt());
+        value("fl-amount", "5001"); value("fl-account", "bank"); click("#bt-flow-add");
+        assertEquals(0, state().path("flows").size());
+        assertEquals(5000, summary().path("cash").asInt());
+    }
+
+    @Test void failedCashFlowSavePreservesBalancesAndShowsErrorWithoutUnhandledScriptError() throws Exception {
+        open(true);
+        String original = Files.readString(file);
+        Path backup = Files.createDirectory(file.resolveSibling("ledger.json.bak"));
+        Files.writeString(backup.resolve("keep"), "keep");
+        js("window.testErrors=[];window.addEventListener('error',e=>window.testErrors.push(e.message))");
+        click("[data-tab=akis]");
+        value("fl-account", "bank"); value("fl-amount", "0,01"); click("#bt-flow-add");
+        assertEquals(5000, summary().path("cash").asInt());
+        assertEquals(0, state().path("flows").size());
+        assertEquals(original, Files.readString(file));
+        assertEquals(0, ((Number)js("window.testErrors.length")).intValue());
+        assertTrue(((String)js("document.getElementById('bt-error').textContent")).contains("Kaydedilemedi"));
+        assertEquals("0,01", js("document.getElementById('fl-amount').value"));
+    }
+
+    @Test void movingFlowToAnotherAccountAndDeletingItPreservesBothBalances() throws Exception {
+        open(true);
+        click("[data-tab=kasa]"); value("ac-name", "Cüzdan"); value("ac-balance", "100"); click("#bt-acc-save");
+        String wallet = state().path("accounts").get(1).path("id").asText();
+        click("[data-tab=akis]"); value("fl-account", "bank"); value("fl-amount", "30"); click("#bt-flow-add");
+        String id = state().path("flows").get(0).path("id").asText();
+        click("[data-editflow=\"" + id + "\"]"); value("fl-account", wallet); click("#bt-flow-add");
+        assertEquals(5000, state().path("accounts").get(0).path("balance").asInt());
+        assertEquals(70, state().path("accounts").get(1).path("balance").asInt());
+        assertEquals(1, state().path("flows").size());
+        click("[data-tab=kasa]"); click("[data-accdel=\"" + wallet + "\"]");
+        assertEquals(2, state().path("accounts").size());
+        click("[data-tab=akis]"); click("[data-delflow=\"" + id + "\"]");
+        assertEquals(100, state().path("accounts").get(1).path("balance").asInt());
+        assertEquals(5100, summary().path("cash").asInt());
+    }
+
+    @Test void csvAndJsonRoundTripsKeepCardTotalsAndDoNotReplayAccountEffects() throws Exception {
+        open(true);
+        newCard("0", "12440,52");
+        click("[data-tab=akis]"); value("fl-account", "bank"); value("fl-amount", "4980"); click("#bt-flow-add");
+        String id = state().path("flows").get(0).path("id").asText();
+        String csv = (String)js("window.financeApp.exportCsv()");
+        assertEquals(true, js("window.financeApp.importText(" + mapper.writeValueAsString(csv) + ",'replace')"));
+        assertEquals(20, summary().path("cash").asInt());
+        assertEquals(16440.52, summary().path("debt").asDouble(), .001);
+        String json = state().toString();
+        assertEquals(true, js("window.financeApp.importText(" + mapper.writeValueAsString(json) + ",'merge')"));
+        assertEquals(20, summary().path("cash").asInt());
+        click("[data-delflow=\"" + id + "\"]");
+        assertEquals(5000, summary().path("cash").asInt());
+        assertEquals(500, state().path("accounts").get(0).path("kisitli").asInt());
+    }
+
+    @Test void editingPaidCardMetadataPreservesMinimumAndNewStatementResetsIt() throws Exception {
+        open(false);
+        newCard("100", "1000");
+        String id = state().path("debts").get(0).path("id").asText();
+        pay(id, "5", "");
+        click("[data-edit=\"" + id + "\"]"); value("f-note", "Ekstre notu"); click("#bt-save");
+        assertEquals(15, summary().path("period").asInt());
+        click("[data-edit=\"" + id + "\"]"); value("f-balance", "200"); value("f-due", "2026-12-31"); click("#bt-save");
+        assertEquals(40, summary().path("period").asInt());
+        assertEquals(995, summary().path("debt").asInt());
+        assertEquals(1, state().path("debts").size());
+    }
+
+    @Test void invalidCardAmountsAndFailedEditKeepInputForRetry() throws Exception {
+        open(true);
+        click("[data-tab=borclar]"); click("[data-edit=card]");
+        value("f-balance", "0,000001"); click("#bt-save");
+        assertEquals(1000, debt("card").path("balance").asInt());
+        assertEquals("0,000001", js("document.getElementById('f-balance').value"));
+        value("f-balance", "1000");
+        value("f-total-balance", "1"); click("#bt-save");
+        assertEquals(1000, debt("card").path("balance").asInt());
+        assertEquals("1", js("document.getElementById('f-total-balance').value"));
+        value("f-total-balance", "1000"); value("f-limit", "yanlış"); click("#bt-save");
+        assertEquals("yanlış", js("document.getElementById('f-limit').value"));
+        value("f-limit", "50000");
+        Path backup = Files.createDirectory(file.resolveSibling("ledger.json.bak"));
+        Files.writeString(backup.resolve("keep"), "keep");
+        value("f-note", "Yeniden dene"); click("#bt-save");
+        assertEquals(3, state().path("debts").size());
+        assertEquals("Yeniden dene", js("document.getElementById('f-note').value"));
+        Files.delete(backup.resolve("keep")); Files.delete(backup);
+        click("#bt-save");
+        assertEquals(3, state().path("debts").size());
+        assertEquals("Yeniden dene", debt("card").path("note").asText());
     }
 }

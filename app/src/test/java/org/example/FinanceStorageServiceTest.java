@@ -77,4 +77,38 @@ class FinanceStorageServiceTest {
         assertThrows(IOException.class, () -> storage.save(FinanceTestData.empty().toString()));
         assertEquals(saved, Files.readString(file));
     }
+
+    @Test void cardStatementAndTotalBalancesAreValidatedWithoutRewritingLegacyRecords() throws Exception {
+        FinanceStorageService storage = new FinanceStorageService(directory.resolve("ledger.json"));
+        var data = FinanceTestData.populated();
+        var card = (com.fasterxml.jackson.databind.node.ObjectNode)data.withArray("debts").get(0);
+        assertFalse(new com.fasterxml.jackson.databind.ObjectMapper().readTree(storage.validate(data.toString()))
+                .path("debts").get(0).has("totalBalance"));
+        card.put("balance", 0).put("totalBalance", 12440.52);
+        storage.validate(data.toString());
+        card.put("balance", .01);
+        storage.validate(data.toString());
+        card.put("totalBalance", 0);
+        assertThrows(IOException.class, () -> storage.validate(data.toString()));
+        card.put("totalBalance", -1);
+        assertThrows(IOException.class, () -> storage.validate(data.toString()));
+        card.put("totalBalance", "not-a-number");
+        assertThrows(IOException.class, () -> storage.validate(data.toString()));
+    }
+
+    @Test void flowAccountAndReservedCashEffectsCannotBeMalformed() throws Exception {
+        FinanceStorageService storage = new FinanceStorageService(directory.resolve("ledger.json"));
+        var data = FinanceTestData.populated();
+        var flow = data.withArray("flows").addObject().put("id", "flow").put("type", "out")
+                .put("amount", 4980).put("date", "2026-11-22").put("accountId", "bank").put("restrictedUsed", 480);
+        storage.validate(data.toString());
+        flow.put("restrictedUsed", 4981);
+        assertThrows(IOException.class, () -> storage.validate(data.toString()));
+        flow.put("restrictedUsed", 1).put("type", "in");
+        assertThrows(IOException.class, () -> storage.validate(data.toString()));
+        flow.put("type", "out").put("accountId", "");
+        assertThrows(IOException.class, () -> storage.validate(data.toString()));
+        flow.put("restrictedUsed", 0).put("accountId", "bad\"id");
+        assertThrows(IOException.class, () -> storage.validate(data.toString()));
+    }
 }

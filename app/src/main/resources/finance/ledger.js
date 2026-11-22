@@ -68,6 +68,18 @@ const num = v => {
   return /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/.test(text) ? Number(text) : NaN;
 };
 const money = value => Math.round((num(value) + Number.EPSILON) * 100) / 100;
+function amountValue(text, label, required = false){
+  if(required && !String(text).trim()) throw new Error(label + " alanını doldur; sıfır için 0 yazabilirsin");
+  const value = num(text);
+  if(!Number.isFinite(value) || value < 0 || value > 1e12)
+    throw new Error(label + " için geçerli, sıfır veya pozitif bir tutar gir");
+  let normalized = String(text).trim().replace(/\s/g, "");
+  if(normalized.includes(",")) normalized = normalized.replace(/\./g, "").replace(",", ".");
+  if((normalized.split(".")[1] || "").length > 2)
+    throw new Error(label + " en fazla iki ondalık basamak içerebilir");
+  return money(value);
+}
+const separateCard = d => d.type === "kredikarti" && d.totalBalance != null;
 const alacakMi = d => d.type === "elden" && d.yon === "alacak";
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 
@@ -138,11 +150,13 @@ function hesaplaKart(d){
   // Hiç ödenmezse: tüm bakiyeye gecikme faizi
   const gecikmeFaiz = borc * gecikme/100 * (1+vergi);
 
-  const kalanLimit = Math.max(0, limit - borc);
-  const doluluk = limit > 0 ? Math.min(100, borc/limit*100) : 0;
+  const toplamBorc = separateCard(d) ? num(d.totalBalance) : borc;
+  const gelecekBorc = money(Math.max(0, toplamBorc - borc));
+  const kalanLimit = Math.max(0, limit - toplamBorc);
+  const doluluk = limit > 0 ? Math.min(100, toplamBorc/limit*100) : 0;
 
   return { borc, limit, avans, oran, asgari, akdi, akdiAzami, gecikme, kalan,
-           faizHam, faizVergi, faizToplam, sonrakiBorc, gecikmeFaiz, kalanLimit, doluluk };
+           faizHam, faizVergi, faizToplam, sonrakiBorc, gecikmeFaiz, kalanLimit, doluluk, toplamBorc, gelecekBorc };
 }
 
 // "Hep asgari ödersem" projeksiyonu (yeni harcama yok)
@@ -153,7 +167,7 @@ function projeksiyon(d, ay = 60){
   let b = num(d.balance), odenen = 0, faiz = 0;
   const seri = [b];
   let i = 0;
-  for(; i < ay && b > 1; i++){
+  for(; i < ay && b > 0; i++){
     const tier = d.type === "avans" ? s.nakitAvans : d.kurumsal ? s.kurumsal : ccTier(b);
     const r = (d.rateOverride != null && d.rateOverride !== "" ? num(d.rateOverride) : tier.akdi)/100;
     const asg = Math.min(b, Math.max(b*oran, 1));
@@ -161,10 +175,10 @@ function projeksiyon(d, ay = 60){
     const kalan = b - asg;
     const f = kalan * r * (1+vergi);
     faiz += f;
-    b = kalan + f;
+    b = money(kalan + f);
     seri.push(b);
   }
-  return { ay:i, odenen, faiz, bitti: b <= 1, seri, kalanBorc:b };
+  return { ay:i, odenen, faiz, bitti: b === 0, seri, kalanBorc:b };
 }
 
 // Kredi: eşit taksitli (annüite) ödeme
@@ -212,6 +226,7 @@ function donemTutari(d){ return alacakMi(d) ? 0 : donemDurumu(d).kalan; }
 const tekrarliBorc = d => d.type === "kredikarti" || d.type === "avans" || d.type === "kredi";
 function toplamBakiye(d){
   if(d.type === "kredi") return hesaplaKredi(d).kalanOdeme;
+  if(separateCard(d)) return num(d.totalBalance);
   return num(d.balance);
 }
 
@@ -229,6 +244,7 @@ function resetEditors(){
   odemeSecim = null;
 }
 function save(){
+  const editors = [editingDebt, editSub, editAcc, editInc, editGoal, editFlow].map(item => item && item.id);
   try {
     const checked = hostResult(window.financeHost.validate(JSON.stringify(state))).data;
     hostResult(window.financeHost.save(JSON.stringify(checked)));
@@ -237,11 +253,11 @@ function save(){
     setSync("bu bilgisayara kaydedildi");
   } catch(error) {
     if(committed) state = clone(committed);
-    resetEditors();
-    render();
+    const collections = ["debts", "subs", "accounts", "incomes", "goals", "flows"];
+    [editingDebt, editSub, editAcc, editInc, editGoal, editFlow] = editors.map((id, index) =>
+      id ? state[collections[index]].find(item => item.id === id) || null : null);
     setSync("kaydedilemedi — son kayıt korundu");
-    toast("Kaydedilemedi: " + error.message);
-    throw error; // Stops the event handler before a success toast can be displayed.
+    throw new Error("Kaydedilemedi: " + error.message);
   }
 }
 
@@ -282,7 +298,8 @@ const CSV_COLS = ["kayit_tipi","id","tur","ad","banka","limit","bakiye","anapara
   "aylik_faiz","vade","kalan_taksit","taksit","nakit_avans","asgari_oran_ozel",
   "akdi_oran_ozel","gecikme_oran_ozel","kurumsal","son_odeme","hesap_kesim","kisi","yon","alinma_tarihi",
   "akis_yonu","tutar","tarih","kategori","borc_id","hesap_id","hesap_turu","bagli_hesap","odeme_gunu",
-  "tekrar","aktif","oncelik","kisitli_tutar","donem_hedef","donem_odenen","donem_anahtari","aciklama"];
+  "tekrar","aktif","oncelik","kisitli_tutar","donem_hedef","donem_odenen","donem_anahtari","aciklama",
+  "toplam_kart_borcu","kullanilan_harclik"];
 
 const csvOut = v => {
   if(v === null || v === undefined) return "";
@@ -309,13 +326,14 @@ function buildCSV(){
     kurumsal: d.kurumsal ? "evet" : "hayir",
     son_odeme:d.due, hesap_kesim:d.kesim, kisi:d.kisi, yon:d.yon,
     alinma_tarihi:d.alindi, donem_hedef:d.donemHedef, donem_odenen:d.donemOdenen,
-    donem_anahtari:d.donemAnahtari, aciklama:d.note
+    donem_anahtari:d.donemAnahtari, aciklama:d.note, toplam_kart_borcu:d.totalBalance
   })));
 
   state.flows.forEach(f => rows.push(line({
     kayit_tipi:"hareket", id:f.id,
     akis_yonu: f.type === "in" ? "girdi" : "cikti",
-    tutar:f.amount, tarih:f.date, kategori:f.category, aciklama:f.note, borc_id:f.debtId, hesap_id:f.accountId
+    tutar:f.amount, tarih:f.date, kategori:f.category, aciklama:f.note, borc_id:f.debtId, hesap_id:f.accountId,
+    kullanilan_harclik:f.restrictedUsed
   })));
 
   state.accounts.forEach(a => rows.push(line({
@@ -388,6 +406,7 @@ function readCSV(text){
       const set = (k,v) => { if(v !== "") d[k] = v; };
       set("limit",    csvNum(at(r,"limit")));
       set("balance",  csvNum(at(r,"bakiye")));
+      set("totalBalance", csvNum(at(r,"toplam_kart_borcu")));
       set("principal",csvNum(at(r,"anapara")));
       set("rate",     csvNum(at(r,"aylik_faiz")));
       set("vade",     csvNum(at(r,"vade")));
@@ -416,6 +435,7 @@ function readCSV(text){
         date: at(r,"tarih") || isoOf(today()),
         category: at(r,"kategori"),
         debtId: at(r,"borc_id") || undefined, accountId: at(r,"hesap_id") || undefined,
+        restrictedUsed: csvNum(at(r,"kullanilan_harclik")) || 0,
         note: at(r,"aciklama")
       });
 
@@ -509,6 +529,49 @@ function toast(msg){
   document.getElementById("bt-app").appendChild(el);
   clearTimeout(toastTimer);
   toastTimer = setTimeout(()=>el.remove(), 2400);
+}
+function handleAction(action){
+  return event => {
+    const errorBox = document.getElementById("bt-error");
+    try {
+      errorBox.hidden = true;
+      action(event);
+    } catch(error) {
+      errorBox.textContent = error.message || "İşlem tamamlanamadı; kayıtları kontrol et";
+      errorBox.hidden = false;
+      toast(errorBox.textContent);
+    }
+  };
+}
+
+/* Reverse the previous account effect before applying the replacement. Imports are snapshots,
+   so account effects are applied here only, never on load or import. */
+function replaceFlow(original, replacement){
+  if(original && original.debtId) throw new Error("Borç işlemine bağlı hareketi ayrı değiştiremezsin");
+  const accounts = clone(state.accounts);
+  const accountFor = id => {
+    const account = accounts.find(item => item.id === id);
+    if(!account) throw new Error("Hareketin bağlı hesabı bulunamadı; hesap kaydını kontrol et");
+    return account;
+  };
+  if(original && original.accountId){
+    const account = accountFor(original.accountId);
+    account.balance = money(num(account.balance) - (original.type === "in" ? 1 : -1) * num(original.amount));
+    account.kisitli = money(num(account.kisitli) + num(original.restrictedUsed));
+  }
+  if(replacement && replacement.accountId){
+    const account = accountFor(replacement.accountId);
+    account.balance = money(num(account.balance) + (replacement.type === "in" ? 1 : -1) * replacement.amount);
+    replacement.restrictedUsed = money(Math.max(0, num(account.kisitli) - account.balance));
+    account.kisitli = money(num(account.kisitli) - replacement.restrictedUsed);
+  } else if(replacement) replacement.restrictedUsed = 0;
+  for(const account of accounts){
+    if(account.balance < 0 || num(account.kisitli) < 0 || num(account.kisitli) > account.balance)
+      throw new Error("Hesap bakiyesi bu işleme yetmiyor; hareket ve harçlık tutarlarını kontrol et");
+  }
+  state.accounts = accounts;
+  state.flows = state.flows.filter(item => !original || item.id !== original.id);
+  if(replacement) state.flows.push(replacement);
 }
 
 /* =========================================================
@@ -684,7 +747,7 @@ function borcOlaylari(bas, bit, gecmisiDahilEt){
     if(!d.due || alacakMi(d) || toplamBakiye(d) <= 0) return;
     const first = parseDate(d.due);
     if(!first) return;
-    const recurring = tekrarliBorc(d);
+    const recurring = tekrarliBorc(d) && !separateCard(d);
     const periods = d.type === "kredi" ? hesaplaKredi(d).kalanTaksit : recurring ? 120 : 1;
     for(let index = 0; index < periods; index++){
       const date = addMonth(d.due, index), parsed = parseDate(date);
@@ -969,7 +1032,7 @@ function renderPanel(){
       </div>`;
   } else {
     const ilk = yakin[0];
-    let alt = "Kayıtlarda vade tarihi girilmemiş.";
+    let alt = "Yaklaşan ödeme yok. Ekstre dışı borçlar bu dönemin ödemesine dahil değil.";
     if(ilk){
       const g = daysUntil(ilk.date);
       const ne = g < 0 ? `${-g} gün önce geçti` : g === 0 ? "bugün" : `${g} gün sonra`;
@@ -1074,7 +1137,10 @@ function formHTML(){
         <div class="hint">Asgari oranı limite göre belirlenir.</div></div>
       <div class="bt-field"><label for="f-balance">Dönem borcu (₺)</label>
         <input id="f-balance" type="text" inputmode="decimal" value="${v("balance")}" placeholder="13238">
-        <div class="hint">Ekstredeki toplam borç.</div></div>
+        <div class="hint">Bu ekstre için ödenmemiş borç. Borç yoksa 0 yaz; gelecek taksitleri ekleme.</div></div>
+      ${t === "kredikarti" ? `<div class="bt-field"><label for="f-total-balance">Toplam kalan kart borcu (₺)</label>
+        <input id="f-total-balance" type="text" inputmode="decimal" value="${v("totalBalance", v("balance"))}" placeholder="Boşsa dönem borcu">
+        <div class="hint">Dönem borcu ve gelecek taksitler dahil toplam. Boş bırakırsan dönem borcu kullanılır.</div></div>` : ""}
       <div class="bt-field"><label for="f-avans">Bunun nakit avans kısmı (₺)</label>
         <input id="f-avans" type="text" inputmode="decimal" value="${v("avans")}" placeholder="0">
         <div class="hint">Nakit çekime %${state.settings.nakitAvans.akdi} işler.</div></div>
@@ -1156,32 +1222,38 @@ function formHTML(){
   </div>`;
 }
 
-function readForm(){
+function readForm(strict = false){
   const g = id => { const e = document.getElementById(id); return e ? e.value.trim() : ""; };
+  const amount = (id, label, required = false) => strict ? amountValue(g(id), label, required) : num(g(id));
   const t = formType;
   const d = { id: editingDebt ? editingDebt.id : uid(), type: t, name: g("f-name"), note: g("f-note"), due: g("f-due") };
   if(t === "kredikarti" || t === "avans"){
     Object.assign(d, {
-      bank: g("f-bank"), limit: num(g("f-limit")), balance: num(g("f-balance")),
-      avans: num(g("f-avans")), kesim: g("f-kesim"),
+      bank: g("f-bank"), limit: amount("f-limit", "Kart limiti"), balance: amount("f-balance", "Dönem borcu", true),
+      avans: amount("f-avans", "Nakit avans"), kesim: g("f-kesim"),
       rateOverride: g("f-rate"), asgariOverride: g("f-asgari"),
       kurumsal: g("f-kurumsal") === "1"
     });
+    if(t === "kredikarti") d.totalBalance = g("f-total-balance") === "" ? d.balance : amount("f-total-balance", "Toplam kalan kart borcu");
+    if(strict && separateCard(d) && d.totalBalance < d.balance)
+      throw new Error("Toplam kalan kart borcu dönem borcundan az olamaz");
+    if(strict && d.avans > d.balance) throw new Error("Nakit avans kısmı dönem borcunu aşamaz");
     if(!d.name) d.name = (d.bank || "Kredi kartı") + " kartı";
   } else if(t === "kredi"){
     Object.assign(d, {
-      bank: g("f-bank"), principal: num(g("f-principal")), rate: num(g("f-rate2")),
+      bank: g("f-bank"), principal: amount("f-principal", "Anapara", true), rate: num(g("f-rate2")),
       vade: num(g("f-vade")), kalanTaksit: g("f-kalan"), taksit: g("f-taksit")
     });
     if(!d.name) d.name = (d.bank || "Kredi") + " kredisi";
   } else if(t === "elden"){
-    Object.assign(d, { yon: g("f-yon"), kisi: g("f-kisi"), balance: num(g("f-balance")), alindi: g("f-alindi") });
+    Object.assign(d, { yon: g("f-yon"), kisi: g("f-kisi"), balance: amount("f-balance", "Tutar", true), alindi: g("f-alindi") });
     if(!d.name) d.name = d.kisi || "Elden borç";
   } else {
-    d.balance = num(g("f-balance"));
+    d.balance = amount("f-balance", "Tutar", true);
     if(!d.name) d.name = "Borç";
   }
-  if(editingDebt && editingDebt.type === d.type && editingDebt.due === d.due){
+  if(editingDebt && editingDebt.type === d.type && editingDebt.due === d.due
+      && (!separateCard(d) || num(editingDebt.balance) === d.balance)){
     ["donemAnahtari", "donemHedef", "donemOdenen"].forEach(key => { if(editingDebt[key] != null) d[key] = editingDebt[key]; });
   }
   return d;
@@ -1239,13 +1311,16 @@ function debtCard(d){
       ? `<span class="big">${fmt(st.kalan)}</span><span class="lbl">bu dönem kalan</span>`
       : `<span class="big">${fmt(c.asgari)}</span><span class="lbl">bu ay asgari</span>`;
     chips = kismiChip + `<span class="bt-chip pine">asgari ${pct(c.oran)}</span><span class="bt-chip grey">akdi ${pct(c.akdi)}</span>` +
+            (separateCard(d) ? `<span class="bt-chip grey">toplam ${fmt(c.toplamBorc)}</span><span class="bt-chip grey">dönem ${fmt(c.borc)}</span><span class="bt-chip grey">ekstre dışı ${fmt(c.gelecekBorc)}</span>` : "") +
             (c.doluluk >= 90 ? `<span class="bt-chip red">limit %${c.doluluk.toFixed(0)} dolu</span>` : "") +
             (d.kurumsal ? `<span class="bt-chip grey">ticari</span>` : "");
     govde = `
       <div class="bt-kv">
-        <div><span>Dönem borcu</span><b>${fmt(c.borc)}</b></div>
+        <div><span>Kalan dönem borcu</span><b>${fmt(c.borc)}</b></div>
+        ${separateCard(d) ? `<div><span>Toplam kalan kart borcu</span><b>${fmt(c.toplamBorc)}</b></div>
+        <div><span>Ekstre dışı borç / gelecek taksitler</span><b>${fmt(c.gelecekBorc)}</b></div>` : ""}
         <div><span>Limit / kalan</span><b>${fmt0(c.limit)} · ${fmt0(c.kalanLimit)}</b></div>
-        <div><span>Asgari ödeme (${pct(c.oran)})</span><b>${fmt(c.asgari)}</b></div>
+        <div><span>Ödenmesi kalan asgari</span><b>${fmt(st.kalan)}</b></div>
         ${st.kismi?`<div><span>Bu dönem ödenen / kalan</span><b>${fmt(st.odenen)} / ${fmt(st.kalan)}</b></div>`:""}
         <div><span>Asgari sonrası kalan</span><b>${fmt(c.kalan)}</b></div>
         <div><span>Akdi faiz (${pct(c.akdi)})</span><b>${fmt(c.faizHam)}</b></div>
@@ -1256,9 +1331,10 @@ function debtCard(d){
         <div><span>Gecikme faizi senaryosu (yaklaşık) (${pct(c.gecikme)})</span><b style="color:var(--red)">${fmt(c.gecikmeFaiz)}</b></div>
       </div>
       <div class="bt-callout">
+        ${separateCard(d) ? "Gelecek taksitler bu dönemin asgarisine veya gecikme uyarısına dahil edilmez. Yeni ekstre geldiğinde dönem borcunu ve son ödeme tarihini güncelle.<br>" : "Eski kayıtta tek borç tutarı var. Düzenleyerek toplam borcu ve dönem borcunu ayırabilirsin.<br>"}
         Kayıtlı oranlarla, yalnızca asgari ödeme ve yeni harcama olmaması varsayımıyla bu borç
         <b>${p.bitti ? p.ay + " ayda" : "60 aydan uzun sürede"}</b> kapanır;
-        toplam <b>${fmt(p.odenen)}</b> ödersin, bunun <b>${fmt(p.faiz)}</b>'si faiz.
+        toplam <b>${fmt(p.odenen)}</b> ödersin, bunun <b>${fmt(p.faiz)}</b>'si faiz. Bu tahmin yalnızca dönem borcunu kapsar.
         ${sparkline(p.seri)}
       </div>`;
   } else if(d.type === "kredi"){
@@ -1295,7 +1371,7 @@ function debtCard(d){
       <div class="bt-card-id">
         <h3>${esc(d.name)}</h3>
         <p>${TURLER[d.type]}${d.bank?" · "+esc(d.bank):""}${d.due?" · son ödeme "+fmtDate(d.due):""}</p>
-        <div style="margin-top:7px">${chips}${d.due?vadeChip(d.due):""}</div>
+        <div style="margin-top:7px">${chips}${d.due && (alacakMi(d) ? toplamBakiye(d) : donemTutari(d)) > 0 ? vadeChip(d.due) : ""}</div>
         ${d.note?`<p style="margin-top:6px">${esc(d.note)}</p>`:""}
       </div>
       <div class="bt-card-amt">${sag}</div>
@@ -1303,7 +1379,7 @@ function debtCard(d){
     ${acik ? `<div class="bt-card-body">${govde}</div>` : ""}
     <div class="bt-card-actions">
       <button class="bt-btn quiet sm" data-toggle="${d.id}">${acik?"Detayı kapat":"Detay"}</button>
-      <button class="bt-btn ghost sm" data-pay="${d.id}">${alacakMi(d) ? "Tahsilat kaydet" : "Ödeme kaydet"}</button>
+      <button class="bt-btn ghost sm" data-pay="${d.id}" ${separateCard(d) && num(d.balance) === 0 ? "disabled" : ""}>${separateCard(d) && num(d.balance) === 0 ? "Dönem borcu yok" : alacakMi(d) ? "Tahsilat kaydet" : "Ödeme kaydet"}</button>
       <button class="bt-btn quiet sm" data-edit="${d.id}">Düzenle</button>
       <button class="bt-btn danger sm" data-del="${d.id}">Sil</button>
     </div>
@@ -1312,7 +1388,7 @@ function debtCard(d){
 
 /* Ayrı ödeme giriş formu — kısmi ödemeler buradan girilir */
 function odemeFormHTML(){
-  const borclar = state.debts.filter(d => toplamBakiye(d) > 0 || donemTutari(d) > 0);
+  const borclar = state.debts.filter(d => separateCard(d) ? num(d.balance) > 0 : toplamBakiye(d) > 0 || donemTutari(d) > 0);
   if(!borclar.length){
     return `<div class="bt-empty"><b>Ödenecek borç yok</b>Önce bir borç kaydı ekle.</div>`;
   }
@@ -1339,6 +1415,7 @@ function odemeFormHTML(){
     <div class="bt-live">
       <b>${esc(d.name)}</b> — son ödeme ${fmtDate(d.due)} ${d.due?`(${daysUntil(d.due)} gün)`:""}<br>
       Bu dönem gereken <b>${fmt(st.hedef)}</b> · ödenen <b>${fmt(st.odenen)}</b> · kalan <b>${fmt(st.kalan)}</b><br>
+      ${separateCard(d) ? `Kalan ekstre borcu <b>${fmt(d.balance)}</b>. Asgariyi ödemek ekstreyi kapatmaz; yeni dönem kendiliğinden oluşturulmaz.<br>` : ""}
       Kalanı bugün ödemezsen vade ileri kaymaz; aynı gün için borç olarak durmaya devam eder.
     </div>
     <div class="bt-form-actions">
@@ -1403,6 +1480,7 @@ function renderAkis(){
   const kat = {};
   kayit.filter(f=>f.type==="out").forEach(f=>{ kat[f.category||"Diğer"] = (kat[f.category||"Diğer"]||0)+num(f.amount); });
   const katSirali = Object.entries(kat).sort((a,b)=>b[1]-a[1]);
+  const selectedAccount = editFlow ? editFlow.accountId || "" : state.accounts.length === 1 ? state.accounts[0].id : "";
 
   el.innerHTML = `
     <div class="bt-section" style="margin-top:22px">
@@ -1418,7 +1496,13 @@ function renderAkis(){
               <option value="in" ${editFlow && editFlow.type === "in" ? "selected" : ""}>Girdi (para geldi)</option>
             </select></div>
           <div class="bt-field"><label for="fl-amount">Tutar (₺)</label>
-            <input id="fl-amount" type="text" inputmode="decimal" value="${editFlow ? esc(editFlow.amount) : ""}" placeholder="0"></div>
+            <input id="fl-amount" type="text" inputmode="decimal" value="${editFlow ? esc(editFlow.amount) : ""}" placeholder="0">
+            <div class="hint">Giderde eksi tutar da yazabilirsin; çıktı yönü bir kez uygulanır.</div></div>
+          <div class="bt-field"><label for="fl-account">Hesap</label>
+            <select id="fl-account"><option value="">Yalnızca kayıt — bakiyeyi değiştirme</option>
+            ${state.accounts.map(account => `<option value="${account.id}" ${account.id === selectedAccount ? "selected" : ""}>${esc(account.name)} · ${fmt(account.balance)}</option>`).join("")}
+            ${selectedAccount && !state.accounts.some(account => account.id === selectedAccount) ? `<option value="${esc(selectedAccount)}" selected>Silinmiş hesap — kaydı kontrol et</option>` : ""}</select>
+            <div class="hint">Seçili hesabın bakiyesi kayıtta güncellenir. Düzenleme ve silme önceki etkiyi geri alır.</div></div>
           <div class="bt-field"><label for="fl-date">Tarih</label>
             <input id="fl-date" type="date" value="${editFlow ? esc(editFlow.date) : isoOf(today())}"></div>
           <div class="bt-field"><label for="fl-cat">Kategori</label>
@@ -1451,9 +1535,10 @@ function renderAkis(){
     <div class="bt-section">
       <div class="bt-section-head"><h2>Hareketler</h2></div>
       ${kayit.length ? `<div class="bt-scroll"><table class="bt-table">
-        <thead><tr><th>Tarih</th><th>Kategori</th><th>Açıklama</th><th class="num">Tutar</th><th></th></tr></thead>
+        <thead><tr><th>Tarih</th><th>Hesap</th><th>Kategori</th><th>Açıklama</th><th class="num">Tutar</th><th></th></tr></thead>
         <tbody>${kayit.map(f=>`<tr>
           <td>${fmtDate(f.date)}</td>
+          <td>${esc(f.accountId ? (state.accounts.find(account => account.id === f.accountId) || {}).name || "Silinmiş hesap" : "Yalnızca kayıt")}</td>
           <td>${esc(f.category||"—")}</td>
           <td>${esc(f.note||"")}</td>
           <td class="num ${f.type}">${f.type==="in"?"+":"−"}${fmt(num(f.amount))}</td>
@@ -1995,6 +2080,7 @@ function odemeIsle(d, tutar, tarih, aciklama, accountId = ""){
   tutar = money(tutar);
   if(!d || !Number.isFinite(tutar) || tutar <= 0) { toast("Pozitif bir tutar gir"); return null; }
   if(tutar > money(toplamBakiye(d))) { toast("Tutar kalan borcu veya alacağı aşamaz"); return null; }
+  if(separateCard(d) && tutar > money(d.balance)) { toast("Ödeme kalan dönem borcunu aşamaz; gelecek taksitler ayrı izlenir"); return null; }
   const account = accountId ? state.accounts.find(a => a.id === accountId) : null;
   if(accountId && !account) { toast("Hesap bulunamadı"); return null; }
   if(account && !alacakMi(d) && tutar > money(num(account.balance) - num(account.kisitli))){
@@ -2024,9 +2110,10 @@ function odemeIsle(d, tutar, tarih, aciklama, accountId = ""){
     d.donemHedef = st.hedef;
     d.donemOdenen = money(st.odenen + tutar);
     d.balance = money(Math.max(0, num(d.balance) - tutar));
+    if(separateCard(d)) d.totalBalance = money(num(d.totalBalance) - tutar);
     if(d.avans != null) d.avans = Math.min(num(d.avans), d.balance);
     tamamlandi = d.donemOdenen >= money(d.donemHedef) || d.balance === 0;
-    if(tamamlandi){
+    if(tamamlandi && !separateCard(d)){
       if(d.due && tekrarliBorc(d) && d.balance > 0) d.due = addMonth(d.due, 1);
       d.donemAnahtari = null; d.donemHedef = null; d.donemOdenen = 0;
     }
@@ -2039,7 +2126,7 @@ function odemeIsle(d, tutar, tarih, aciklama, accountId = ""){
   return {tamamlandi, kalan:donemDurumu(d).kalan, faizEklendi:0};
 }
 
-document.getElementById("bt-app").addEventListener("click", e => {
+document.getElementById("bt-app").addEventListener("click", handleAction(e => {
   const t = e.target.closest("button");
   if(!t) return;
 
@@ -2059,7 +2146,7 @@ document.getElementById("bt-app").addEventListener("click", e => {
   if(t.id === "bt-odeme-kaydet"){
     const g = id => document.getElementById(id).value.trim();
     const d = state.debts.find(x => x.id === g("od-borc"));
-    const tutar = num(g("od-tutar"));
+    const tutar = amountValue(g("od-tutar"), "Ödeme tutarı", true);
     if(!d){ toast("Borç seç"); return; }
     if(tutar <= 0){ toast("Tutar gir"); return; }
     const r = odemeIsle(d, tutar, g("od-tarih") || isoOf(today()), g("od-not"), g("od-hesap"));
@@ -2083,13 +2170,13 @@ document.getElementById("bt-app").addEventListener("click", e => {
     el.dataset.form="0"; editingDebt=null; renderBorclar(); return;
   }
   if(t.id === "bt-save"){
-    const d = readForm();
-    if(!num(d.balance) && !num(d.principal)){ toast("Tutar girmen gerekiyor"); return; }
+    const d = readForm(true);
     const i = state.debts.findIndex(x=>x.id===d.id);
     if(i >= 0) state.debts[i] = d; else state.debts.push(d);
+    save();
     document.getElementById("bt-borclar").dataset.form="0";
     editingDebt = null;
-    save(); renderBorclar();
+    renderBorclar();
     toast(i>=0 ? "Güncellendi" : "Borç eklendi");
     return;
   }
@@ -2137,7 +2224,7 @@ document.getElementById("bt-app").addEventListener("click", e => {
     };
     const i = state.subs.findIndex(x=>x.id===rec.id);
     if(i >= 0) state.subs[i] = rec; else state.subs.push(rec);
-    editSub = null; save(); renderAbonelik();
+    save(); editSub = null; renderAbonelik();
     toast(i>=0 ? "Abonelik güncellendi" : "Abonelik eklendi");
     return;
   }
@@ -2168,7 +2255,7 @@ document.getElementById("bt-app").addEventListener("click", e => {
     };
     const i = state.accounts.findIndex(x=>x.id===rec.id);
     if(i >= 0) state.accounts[i] = rec; else state.accounts.push(rec);
-    editAcc = null; save(); renderKasa();
+    save(); editAcc = null; renderKasa();
     toast(i>=0 ? "Bakiye güncellendi" : "Hesap eklendi");
     return;
   }
@@ -2179,6 +2266,7 @@ document.getElementById("bt-app").addEventListener("click", e => {
   }
   if(t.dataset.accdel){
     const x = state.accounts.find(y=>y.id===t.dataset.accdel);
+    if(x && state.flows.some(flow => flow.accountId === x.id)) throw new Error("Bu hesabın hareket kayıtları var; hareketlere bağlı hesap silinemez");
     if(x && confirm(`"${x.name}" hesabı silinsin mi?`)){
       state.accounts = state.accounts.filter(y=>y.id!==x.id);
       if(editAcc && editAcc.id===x.id) editAcc = null;
@@ -2199,7 +2287,7 @@ document.getElementById("bt-app").addEventListener("click", e => {
     };
     const i = state.incomes.findIndex(x=>x.id===rec.id);
     if(i >= 0) state.incomes[i] = rec; else state.incomes.push(rec);
-    editInc = null; save(); renderPlan();
+    save(); editInc = null; renderPlan();
     toast(i>=0 ? "Gelir güncellendi" : "Gelir eklendi");
     return;
   }
@@ -2235,7 +2323,7 @@ document.getElementById("bt-app").addEventListener("click", e => {
     };
     const i = state.goals.findIndex(x=>x.id===rec.id);
     if(i >= 0) state.goals[i] = rec; else state.goals.push(rec);
-    editGoal = null; save(); renderHedef();
+    save(); editGoal = null; renderHedef();
     toast(i>=0 ? "Hedef güncellendi" : "Hedef eklendi");
     return;
   }
@@ -2268,19 +2356,17 @@ document.getElementById("bt-app").addEventListener("click", e => {
 
   if(t.id === "bt-flow-add"){
     const g = id => document.getElementById(id).value;
-    const amount = num(g("fl-amount"));
-    if(amount <= 0){ toast("Tutar gir"); return; }
-    if(editFlow){
-      Object.assign(editFlow, { type: g("fl-type"), amount, date: g("fl-date"),
-                                category: g("fl-cat"), note: g("fl-note").trim() });
-    }else{
-      state.flows.push({ id: uid(), type: g("fl-type"), amount, date: g("fl-date"),
-                         category: g("fl-cat"), note: g("fl-note").trim() });
-    }
+    const input = g("fl-amount").trim();
+    const amount = amountValue(g("fl-type") === "out" ? input.replace(/^-/, "") : input, "Hareket tutarı", true);
+    if(amount <= 0) throw new Error("Hareket tutarı sıfırdan büyük olmalı");
+    const rec = { id: editFlow ? editFlow.id : uid(), type: g("fl-type"), amount, date: g("fl-date"),
+                  category: g("fl-cat"), note: g("fl-note").trim(), accountId: g("fl-account") };
+    replaceFlow(editFlow, rec);
     const guncellendi = !!editFlow;
+    save();
     editFlow = null;
     document.getElementById("bt-akis").dataset.month = monthKey(g("fl-date"));
-    save(); renderAkis();
+    renderAkis();
     toast(guncellendi ? "Hareket güncellendi" : "Kaydedildi");
     return;
   }
@@ -2294,9 +2380,12 @@ document.getElementById("bt-app").addEventListener("click", e => {
   if(t.id === "bt-flow-cancel"){ editFlow = null; renderAkis(); return; }
   if(t.dataset.delflow){
     if(state.flows.find(f=>f.id===t.dataset.delflow)?.debtId){ toast("Borç işlemine bağlı hareketler ayrı silinemez."); return; }
-    if(editFlow && editFlow.id === t.dataset.delflow) editFlow = null;
-    state.flows = state.flows.filter(f=>f.id!==t.dataset.delflow);
-    save(); renderAkis(); toast("Silindi");
+    const original = state.flows.find(f=>f.id===t.dataset.delflow);
+    if(!original) return;
+    replaceFlow(original, null);
+    save();
+    if(editFlow && editFlow.id === original.id) editFlow = null;
+    renderAkis(); toast("Silindi");
     return;
   }
 
@@ -2329,9 +2418,9 @@ document.getElementById("bt-app").addEventListener("click", e => {
     }
     return;
   }
-});
+}));
 
-document.getElementById("bt-app").addEventListener("input", e => {
+document.getElementById("bt-app").addEventListener("input", handleAction(e => {
   const el = e.target;
 
   if(el.id === "f-type"){ formType = el.value; renderBorclar(); document.getElementById("f-name")?.focus(); return; }
@@ -2339,9 +2428,9 @@ document.getElementById("bt-app").addEventListener("input", e => {
   if(el.closest(".bt-form") && document.getElementById("bt-live")){ renderLive(); }
 
 
-});
+}));
 
-document.getElementById("bt-app").addEventListener("change", e => {
+document.getElementById("bt-app").addEventListener("change", handleAction(e => {
   const el = e.target;
   if(el.dataset.tier != null){
     state.settings.ccTiers[+el.dataset.tier][el.dataset.f] = num(el.value);
@@ -2363,7 +2452,7 @@ document.getElementById("bt-app").addEventListener("change", e => {
     sel.innerHTML = katOpsiyon(e.target.value, onceki);
     return;
   }
-});
+}));
 
 /* =========================================================
    10. BAŞLAT

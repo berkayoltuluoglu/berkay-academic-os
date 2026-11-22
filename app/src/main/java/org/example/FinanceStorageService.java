@@ -22,7 +22,7 @@ public final class FinanceStorageService {
     public static final int MAX_BYTES = 5 * 1024 * 1024;
     private static final String[] COLLECTIONS = {"debts", "flows", "accounts", "subs", "incomes", "goals"};
     private static final Set<String> MONEY_FIELDS = Set.of("limit", "balance", "principal", "avans", "amount",
-            "saved", "kisitli", "taksit", "donemHedef", "donemOdenen");
+            "saved", "kisitli", "taksit", "donemHedef", "donemOdenen", "totalBalance", "restrictedUsed");
     private static final Set<String> RATE_FIELDS = Set.of("rate", "rateOverride", "asgariOverride", "gecikmeOverride");
     private static final Set<String> DATE_FIELDS = Set.of("date", "due", "kesim", "alindi");
     private final Path file;
@@ -130,12 +130,27 @@ public final class FinanceStorageService {
                         } else {
                             number(entry.get("balance"));
                         }
+                        if (entry.hasNonNull("totalBalance")) {
+                            require(type.equals("kredikarti"), "Toplam kart borcu yalnızca kredi kartında kullanılabilir");
+                            require(number(entry.get("totalBalance")).compareTo(number(entry.get("balance"))) >= 0,
+                                    "Toplam kalan kart borcu dönem borcundan az olamaz");
+                        }
                         if (entry.hasNonNull("yon")) require(Set.of("", "borc", "alacak").contains(entry.path("yon").asText()), "Geçersiz borç yönü");
                     }
                     case "flows" -> {
                         require(Set.of("in", "out").contains(entry.path("type").asText()), "Geçersiz hareket yönü");
                         require(number(entry.get("amount")).signum() > 0, "Hareket tutarı pozitif olmalı");
                         require(entry.path("date").isTextual() && !entry.path("date").asText().isBlank(), "Hareket tarihi gerekiyor");
+                        if (entry.hasNonNull("accountId") && !entry.path("accountId").asText().isBlank()) {
+                            require(entry.path("accountId").isTextual()
+                                    && entry.path("accountId").asText().matches("[a-zA-Z0-9_-]{1,80}"), "Geçersiz hareket hesabı");
+                        }
+                        if (entry.hasNonNull("restrictedUsed")) {
+                            BigDecimal used = number(entry.get("restrictedUsed"));
+                            require(used.compareTo(number(entry.get("amount"))) <= 0, "Kullanılan harçlık hareket tutarını aşamaz");
+                            require(used.signum() == 0 || (entry.path("type").asText().equals("out")
+                                    && !entry.path("accountId").asText().isBlank()), "Harçlık kullanımı için çıktı hesabı gerekiyor");
+                        }
                     }
                     case "subs" -> {
                         optionalNumber(entry, "day", new BigDecimal("31"), true);
