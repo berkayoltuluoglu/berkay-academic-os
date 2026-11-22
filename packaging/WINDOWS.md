@@ -1,4 +1,4 @@
-# Academic OS 1.6.0 — Windows kurulumu, güncelleme ve dış ajanla planlama
+# Academic OS 1.6.1 — Windows kurulumu, güncelleme ve dış ajanla planlama
 
 Windows 10/11 x64 içindir. Java 21, JavaFX ve planlama CLI'ı pakettedir; Java, Python veya Gradle kurman gerekmez.
 UART ve script modülleri Windows menüsünde kapalıdır. Uygulamanın içinde model veya AI API anahtarı bulunmaz.
@@ -6,7 +6,7 @@ Kahverengi komut simgeli logo uygulama, pencere, tepsi, Windows kısayolları, s
 
 ## Kurulum
 
-1. `BerkayAcademicOS-1.6.0-setup.exe` dosyasını Windows'a kopyalayıp çalıştır.
+1. `BerkayAcademicOS-1.6.1-setup.exe` dosyasını Windows'a kopyalayıp çalıştır.
 2. Kurulum sonunda Academic OS'u aç. Varsayılan program klasörü `%LOCALAPPDATA%\Programs\BerkayAcademicOS`.
 3. Kayıtlar `%LOCALAPPDATA%\BerkayAcademicOS` altında tutulur; Ayarlar'da veri konumunu görebilirsin.
    Güncelleme ve kaldırma bu ayrı profili silmez. Program klasörünü veri klasörü olarak seçme.
@@ -18,10 +18,11 @@ Paket dijital imzasızdır; Windows yayıncıyı doğrulanmamış gösterebilir.
 dosyanın aynı olduğunu PowerShell'de kontrol edebilirsin:
 
 ```powershell
-Get-FileHash .\BerkayAcademicOS-1.6.0-setup.exe -Algorithm SHA256
+Get-FileHash .\BerkayAcademicOS-1.6.1-setup.exe -Algorithm SHA256
 ```
 
-Bu pakete kişisel veri, Google tokenı veya Google istemci dosyası eklenmez. Google kullanacaksan
+Bu pakete kişisel veri veya Google tokenı eklenmez. Yayıncı Desktop OAuth istemcisinin pakete dahil edilip
+edilmediği `package-manifest.json` içindeki `googleClientBundled` alanında belirtilir. İstemci yoksa
 Ayarlar'dan kendi Desktop OAuth istemci dosyanı seç, ardından Calendar/Classroom/Drive bağlantılarını aç.
 Classroom ödevlerini ve Google etkinliklerini uygulamada yenile; ajan CLI'ı Google ağına bağlanmaz.
 
@@ -30,6 +31,28 @@ Classroom ödevlerini ve Google etkinliklerini uygulamada yenile; ajan CLI'ı Go
 Bugün, Haftalık Plan, Dersler ve Ayarlar ekranlarını aç. Haftalık planın teslim şeridini kontrol et.
 Yeni bir görev/blok ekle, geri al/yinele işlemini dene. Pencereyi kapatıp tepsiden geri açma tercihini
 Ayarlar'dan yönetebilirsin; tam çıkış veya bilgisayarın kapanması hatırlatmaları durdurur.
+
+## 1.6.1'de yeni
+
+- **Yapılacaklar:** hızlı görev girişi, listeler, ders bağlantısı ve görev ayrıntıları.
+- **Bugün Ne Yaptım?:** saat aralığı veya süreyle faaliyet kaydı, günlük toplam ve odak kayıtlarıyla eşleştirme.
+  Örnek: `10:00–11:00 Matematik tekrarı` veya `45 dk Kitap okuma`.
+- **Finans:** dönem borcu/toplam kart borcu ayrımı, sıfır tutar desteği, hesaba bağlı gelir/gider,
+  aylık taksit çizelgesi, hesaplar arası transfer ve CSV/TSV ekstre karşılaştırması.
+- İşlemler geri alınabilir; faaliyet kaydı kendi başına takvime çalışma bloğu eklemez.
+
+Güncellemeden önce Ayarlar'dan ZIP yedeği al. Finans defteri eski kayıtları okuyabilir; ilk yeni kayıtta
+şema 2'ye geçer ve önceki dosyayı `.bak` olarak saklar. Eski uygulama yeni şemayı açamaz;
+eski sürüme dönüş için o sürüme uygun yedek gerekir. Güncelleme kullanıcı profilini silmez.
+
+### Windows'ta güncellemeyi deneme
+
+1. 1.6.0 kuruluysa Ayarlar → Uygulama ve güncellemeler → **Şimdi kontrol et** ile 1.6.1'i bul.
+2. **Güncellemeyi indir**, ardından **Yeniden başlat ve güncelle** seç. Etkin odağı önce duraklat.
+3. Uygulama yeniden açıldığında Ayarlar'da sürümün **1.6.1** olduğunu ve eski kayıtlarının korunduğunu kontrol et.
+4. Yapılacaklar, Bugün Ne Yaptım? ve Finans ekranlarını aç. Pencereyi kapatıp tepsiden yeniden açmayı dene.
+
+1.5.1 ve öncesinde ilk adım yerine yeni setup'ı elle çalıştır; bu sürümler uygulama içi güncelleme içermez.
 
 ## Sınav ve ders iptali
 
@@ -43,7 +66,7 @@ Sonraki haftalar, sınavlar ve Google etkinlikleri korunur. İptal kaydını dü
 
 ## Uygulama içinden güncelleme
 
-1.5.1 ve önceki sürümler güncelleme kontrolü içermediğinden 1.6.0'ı ilk kez elle kur.
+1.5.1 ve önceki sürümler güncelleme kontrolü içermediğinden 1.6.1'i ilk kez elle kur.
 Önce uygulamadan ve sistem tepsisinden tamamen çık; yeni setup'ı mevcut program klasörüne kur.
 
 1.6.0 sonrasında **Ayarlar → Uygulama ve güncellemeler** bölümünde:

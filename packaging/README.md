@@ -1,3 +1,9 @@
+# Academic OS 1.6.1 — Finans, yapılacaklar ve faaliyet günlüğü
+
+Hızlı görev listeleri, Bugün Ne Yaptım? faaliyet günlüğü, finans düzeltmeleri, taksit çizelgesi,
+transferler ve ekstre karşılaştırması bu sürüme eklendi. [Sürüm notları](../docs/release-1.6.1.md).
+1.6.0'dan uygulama içi güncelleme yapılabilir; 1.5.1 ve öncesinden ilk geçiş elle setup ile yapılır.
+
 # Academic OS 1.6.0 — Uygulama içi Windows güncellemeleri
 
 Yeni sürüm Ayarlar'da GitHub Release kontrolü, isteğe bağlı otomatik indirme, SHA-256 doğrulama,

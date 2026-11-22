@@ -1,5 +1,9 @@
 # 1.6.0 güncelleme sistemi ve yayınlama
 
+Güncel paket: **1.6.1**. Finans ve faaliyet günlüğü değişiklikleri için
+[1.6.1 sürüm notları](release-1.6.1.md) ve [Windows kılavuzu](../packaging/WINDOWS.md).
+1.5.1 ve öncesinden geçişte 1.6.1 setup'ı elle çalıştırılır; kurulu 1.6.0'dan uygulama içi güncelleme denenebilir.
+
 Güncelleme kaynağı herkese açık `berkayoltuluoglu/berkay-academic-os` GitHub deposudur.
 Java 21 HttpClient kullanılır; GitHub/OAuth anahtarı ürüne eklenmez. Kontrol ve indirme ayrı sanal iş parçacıklarında yapılır.
 Sürüm numarası eski kullanıcı config'inden değil, uygulama JAR'ına gömülü sürümden okunur.

@@ -16,11 +16,11 @@ import static org.junit.jupiter.api.Assertions.*;
 class ReleaseUpdateServiceTest {
     @TempDir Path root;
     final byte[] setup = "MZ windows installer fixture".getBytes(StandardCharsets.UTF_8);
-    final String filename = "BerkayAcademicOS-1.6.1-setup.exe";
-    final String prefix = "https://github.com/" + ReleaseUpdateService.REPOSITORY + "/releases/download/v1.6.1/";
+    final String filename = "BerkayAcademicOS-1.6.2-setup.exe";
+    final String prefix = "https://github.com/" + ReleaseUpdateService.REPOSITORY + "/releases/download/v1.6.2/";
     ObjectNode metadata() {
         var data = PlanningFiles.JSON.createObjectNode();
-        data.put("tag_name", "v1.6.1"); data.put("draft", false); data.put("prerelease", false); data.put("body", "Türkçe sürüm notları");
+        data.put("tag_name", "v1.6.2"); data.put("draft", false); data.put("prerelease", false); data.put("body", "Türkçe sürüm notları");
         var assets = data.putArray("assets");
         assets.addObject().put("name", filename).put("state", "uploaded").put("size", setup.length).put("browser_download_url", prefix + filename);
         assets.addObject().put("name", filename + ".sha256").put("state", "uploaded").put("size", 100).put("browser_download_url", prefix + filename + ".sha256");
@@ -42,15 +42,15 @@ class ReleaseUpdateServiceTest {
         assertTrue(ReleaseVersion.parse("1.10.0").compareTo(ReleaseVersion.parse("v1.6.9")) > 0);
         assertTrue(ReleaseVersion.parse("2.0.0").compareTo(ReleaseVersion.parse("1.99.99")) > 0);
         for (String bad : List.of("1.6.0-beta.1", "../1.6.0", "1.06.0", "1.6", "1.6.0.exe", "999999999999.0.0")) assertThrows(IllegalArgumentException.class, () -> ReleaseVersion.parse(bad));
-        assertEquals("1.6.0", ReleaseVersion.current().toString());
+        assertEquals("1.6.1", ReleaseVersion.current().toString());
     }
     @Test void findsNewWindowsReleaseAndPreservesNotes() throws Exception {
         var release = service(metadata()).check(ReleaseVersion.parse("1.6.0")).orElseThrow();
-        assertEquals("1.6.1", release.version().toString()); assertEquals("Türkçe sürüm notları", release.notes());
+        assertEquals("1.6.2", release.version().toString()); assertEquals("Türkçe sürüm notları", release.notes());
         assertEquals(filename, release.filename());
     }
     @Test void sameOlderDraftAndPrereleaseDoNotOfferUpdates() throws Exception {
-        assertTrue(service(metadata()).check(ReleaseVersion.parse("1.6.1")).isEmpty());
+        assertTrue(service(metadata()).check(ReleaseVersion.parse("1.6.2")).isEmpty());
         assertTrue(service(metadata()).check(ReleaseVersion.parse("2.0.0")).isEmpty());
         assertTrue(service(metadata().put("draft", true)).check(ReleaseVersion.parse("1.6.0")).isEmpty());
         assertTrue(service(metadata().put("prerelease", true)).check(ReleaseVersion.parse("1.6.0")).isEmpty());
@@ -62,7 +62,7 @@ class ReleaseUpdateServiceTest {
         assertThrows(IOException.class, () -> service(duplicate).check(ReleaseVersion.parse("1.6.0")));
     }
     @Test void unexpectedHostRepositoryAndPathCannotSupplyInstaller() throws Exception {
-        for (String uri : List.of("https://evil.example/setup.exe", "https://github.com/somebody/other/releases/download/v1.6.1/" + filename,
+        for (String uri : List.of("https://evil.example/setup.exe", "https://github.com/somebody/other/releases/download/v1.6.2/" + filename,
                 prefix + "../" + filename, prefix + filename + "?redirect=evil")) {
             ObjectNode data = metadata(); ((ObjectNode)data.path("assets").get(0)).put("browser_download_url", uri);
             assertThrows(IOException.class, () -> service(data).check(ReleaseVersion.parse("1.6.0")));

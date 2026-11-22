@@ -67,7 +67,7 @@ class UpdateInterfaceTest {
         AtomicInteger requests = new AtomicInteger();
         open(new ReleaseUpdateService(uri -> { requests.incrementAndGet(); throw new AssertionError("No network expected"); }), false, launch -> fail("No installer expected"));
         fx(() -> { controller.start(); controller.check(); assertNull(stage.getScene().lookup("#updates-check"));
-            assertTrue(((Label)stage.getScene().lookup("#settings-app-version")).getText().contains("1.6.0")); return null; });
+            assertTrue(((Label)stage.getScene().lookup("#settings-app-version")).getText().contains("1.6.1")); return null; });
         assertEquals(0, requests.get());
     }
     UpdateController.Phase phase() { try { return fx(() -> controller.state().phase()); } catch (Exception error) { throw new RuntimeException(error); } }
