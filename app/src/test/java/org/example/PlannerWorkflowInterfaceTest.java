@@ -9,7 +9,7 @@ import static org.example.FxTestSupport.fx;import static org.junit.jupiter.api.A
 class PlannerWorkflowInterfaceTest {
     @TempDir Path root;
     @Test void classroomPoolFocusReviewAndCliProposalPartialAcceptanceAreVisibleAndDurable()throws Exception{
-        FxTestSupport.initialize();LocalDate week=LocalDate.now().with(java.time.temporal.TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        FxTestSupport.initialize();LocalDate week=LocalDate.now(ZoneId.of("Europe/Istanbul")).with(java.time.temporal.TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
         var task=new TaskItem("task","Fizik raporu",week.plusDays(6),"Kaynaklar","Bekliyor");task.setEstimatedMinutes(180);task.setSubtasks(List.of(new TaskItem.Subtask("read","Kaynakları oku",false)));
         var planner=new PlannerService(root);planner.execute(new CreateTask(task));planner.execute(new SaveBlock(new StudySession("block","Fizik raporu",week.toString(),"10:00","11:00","",false,"task","",0),true,ConflictPolicy.REJECT));
         var data=new ClassroomData(1,"student@example.test",Instant.now().toString(),List.of(new ClassroomData.Course("physics","Fizik","","")),List.of(new ClassroomData.Work("work","physics","Classroom deney raporu","",week.plusDays(13).toString(),"17:00","NEW","")));AtomicFileWriter.write(root.resolve("data/classroom/catalog.json"),PlanningFiles.JSON.writeValueAsBytes(data));

@@ -40,7 +40,7 @@ public final class WeeklyAgendaView {
     private final PauseTransition debounce=new PauseTransition(Duration.millis(400));
     private final Timeline autoScroll=new Timeline();private double scrollDy,scrollDx;
     private final Timeline watch=new Timeline(new KeyFrame(Duration.seconds(3),e->checkChanges()));
-    private LocalDate week=LocalDate.now().with(java.time.temporal.TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+    private LocalDate week;
     private PlanningSnapshot snapshot;
     private Task<?> pending;
     private boolean disposed,saving,checking,alt,openFocus;
@@ -57,11 +57,12 @@ public final class WeeklyAgendaView {
     }
     WeeklyAgendaView(Path root,GoogleCalendarService google,Consumer<LocalDate> openDay,Consumer<String> navigate,FocusTimerService focus) {
         rootPath=root;this.openDay=openDay;this.navigate=navigate;this.focus=focus;planner=new PlannerService(root);
+        week=today().with(java.time.temporal.TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
     }
     public VBox build() {
         root.setId("weekly-agenda");root.setMinWidth(0);status.setId("weekly-agenda-status");status.setWrapText(true);
         Button previous=button("Önceki hafta","week-previous",()->changeWeek(week.minusWeeks(1))),next=button("Sonraki hafta","week-next",()->changeWeek(week.plusWeeks(1))),
-                current=button("Bu hafta","week-current",()->changeWeek(LocalDate.now())),refresh=button("Yenile","week-refresh",this::load),
+                current=button("Bu hafta","week-current",()->changeWeek(today())),refresh=button("Yenile","week-refresh",this::load),
                 undo=button("Geri al","planner-undo",()->run(()->planner.undo())),redo=button("Yinele","planner-redo",()->run(()->planner.redo()));
         proposalsButton.setId("planner-proposals");proposalsButton.setOnAction(e->showProposals());
         Button automatic=button("Otomatik yerleştir","planner-suggest",()->run(()->{
@@ -86,7 +87,7 @@ public final class WeeklyAgendaView {
         pool.setId("planner-pool");pool.setMinWidth(0);pool.setMaxWidth(Double.MAX_VALUE);
         search.setPromptText("İş, ders, kaynak, öncelik ara");search.setId("planner-search");search.textProperty().addListener((o,a,b)->renderPool());
         TextField quick=new TextField();quick.setId("planner-quick-add");quick.setPromptText("Fizik raporu cuma 17:00 2s");
-        quick.setOnAction(e->{if(!quick.getText().isBlank()){var value=QuickTaskParser.parse(quick.getText(),LocalDate.now());quick.clear();run(()->planner.execute(new CreateTask(value)));}});
+        quick.setOnAction(e->{if(!quick.getText().isBlank()){var value=QuickTaskParser.parse(quick.getText(),today());quick.clear();run(()->planner.execute(new CreateTask(value)));}});
         Label poolTitle=new Label("Plan havuzu");poolTitle.getStyleClass().add("silver-section-title");
         Label historyHint=new Label("Gecikmiş işler: yalnızca son 7 gün");historyHint.getStyleClass().add("soluk");historyHint.setWrapText(true);
         VBox left=new VBox(10,poolTitle,quick,search,historyHint,scroll(pool));left.setMinWidth(228);left.setPrefWidth(280);left.setMaxWidth(340);left.getStyleClass().add("planner-pool-panel");VBox.setVgrow(left.getChildren().getLast(),Priority.ALWAYS);
@@ -187,7 +188,12 @@ public final class WeeklyAgendaView {
         }
         if(pool.getChildren().isEmpty())pool.getChildren().add(new Label("Planlanacak iş yok"));
     }
-    private LocalDate today(){return LocalDate.now(ZoneId.of(snapshot.timezone()));}
+    private LocalDate today(){
+        String timezone=PlanningPreferences.defaults().timezone();
+        if(snapshot!=null)timezone=snapshot.timezone();
+        else try{timezone=PlanningPreferences.load(rootPath).timezone();}catch(java.io.IOException ignored){}
+        return LocalDate.now(ZoneId.of(timezone));
+    }
     private boolean recent(PlanningSnapshot.PoolItem item){return item.date().isBlank()||!LocalDate.parse(item.date()).isBefore(today().minusDays(7));}
     private int group(PlanningSnapshot.PoolItem item) {if(item.date().isBlank())return 4;LocalDate d=LocalDate.parse(item.date());return d.isBefore(today())?0:!d.isAfter(week.plusDays(6))?1:!d.isAfter(week.plusDays(13))?2:3;}
     private void inspectPool(PlanningSnapshot.PoolItem item) {

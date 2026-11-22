@@ -9,7 +9,7 @@ import static org.example.FxTestSupport.fx;import static org.junit.jupiter.api.A
 class WeeklyPlannerInterfaceTest {
     @TempDir Path profile;
     @Test void gridCreationCrossDayMoveResizeInspectorAndUndoUseRealProfileAndControls() throws Exception {
-        FxTestSupport.initialize();LocalDate week=LocalDate.now().with(java.time.temporal.TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        FxTestSupport.initialize();LocalDate week=LocalDate.now(ZoneId.of("Europe/Istanbul")).with(java.time.temporal.TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
         var courseStore=new CourseStorageService(profile.resolve("data/courses/academic.json"));courseStore.load();courseStore.save(new CourseData(2,List.of(new CourseData.Course("fixed","Sabit ders","","","",week.toString(),week.plusDays(6).toString(),List.of(new CourseData.Lesson(1,"09:00","10:00")))),List.of()));
         WeeklyAgendaView view=new WeeklyAgendaView(profile,new GoogleCalendarService(),date->{},id->{});Stage[] stage=new Stage[1];
         fx(()->{UiTheme.loadFonts();var root=view.build();new UiTheme(profile.resolve("theme.properties"),"light").apply(root);stage[0]=new Stage();stage[0].setTitle("Academic OS Planner Verification");stage[0].setScene(new Scene(root,1450,900));stage[0].getScene().getStylesheets().add(UiTheme.class.getResource("/ui/style.css").toExternalForm());stage[0].show();return null;});

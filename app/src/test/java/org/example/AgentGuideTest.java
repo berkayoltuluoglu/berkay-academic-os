@@ -6,19 +6,19 @@ import static org.junit.jupiter.api.Assertions.*;
 class AgentGuideTest {
     @TempDir Path root;
     @Test void documentedJsonExampleValidatesAndPackagedGuideMatchesSource()throws Exception{
-        String guide=Files.readString(Path.of("../AGENTS.md"));Matcher match=Pattern.compile("```json\\n(.*?)\\n```",Pattern.DOTALL).matcher(guide);assertTrue(match.find());
+        String guide=Files.readString(Path.of("../AGENTS.md"));Matcher match=Pattern.compile("```json\\R(.*?)\\R```",Pattern.DOTALL).matcher(guide);assertTrue(match.find());
         Path proposal=root.resolve("example.json");Files.writeString(proposal,match.group(1));var out=new ByteArrayOutputStream();assertEquals(0,AgentCli.run(new String[]{"--profile",root.toString(),"validate",proposal.toString()},new PrintStream(out),java.time.Clock.fixed(java.time.Instant.parse("2026-11-09T00:00:00Z"),java.time.ZoneId.of("Europe/Istanbul"))),out.toString());
         assertTrue(PlanningFiles.JSON.readTree(out.toString()).path("stale").asBoolean());
         try(var stream=AgentGuide.class.getResourceAsStream("/agent-guide/AGENTS.md")){assertNotNull(stream);assertEquals(guide,new String(stream.readAllBytes(),java.nio.charset.StandardCharsets.UTF_8));}
         AgentGuide.install(root);assertEquals(guide,Files.readString(root.resolve("AGENTS.md")));Files.writeString(root.resolve("AGENTS.md"),"Özel kullanıcı kılavuzu");AgentGuide.install(root);assertEquals("Özel kullanıcı kılavuzu",Files.readString(root.resolve("AGENTS.md")));
     }
     @Test void generatedLauncherRunsWithoutDisplayAndUsesAnIsolatedProfile()throws Exception{
-        var javaCommand=Path.of(System.getProperty("java.home"),"bin","java").toString();var builder=new ProcessBuilder(javaCommand,"-cp",Path.of("build/install/app/lib/*").toAbsolutePath().toString(),"org.example.AgentCli","--profile",root.toString(),"snapshot","--week","2026-11-09");builder.environment().remove("DISPLAY");var process=builder.start();String result=new String(process.getInputStream().readAllBytes(),java.nio.charset.StandardCharsets.UTF_8);assertTrue(process.waitFor(10,java.util.concurrent.TimeUnit.SECONDS));assertEquals(0,process.exitValue(),new String(process.getErrorStream().readAllBytes()));assertEquals("Europe/Istanbul",PlanningFiles.JSON.readTree(result).path("timezone").asText());
+        var javaCommand=Path.of(System.getProperty("java.home"),"bin","java").toString();var builder=new ProcessBuilder(javaCommand,"-cp",Path.of("build/install/app/lib").toAbsolutePath() + File.separator + "*","org.example.AgentCli","--profile",root.toString(),"snapshot","--week","2026-11-09");builder.environment().remove("DISPLAY");var process=builder.start();String result=new String(process.getInputStream().readAllBytes(),java.nio.charset.StandardCharsets.UTF_8);assertTrue(process.waitFor(10,java.util.concurrent.TimeUnit.SECONDS));assertEquals(0,process.exitValue(),new String(process.getErrorStream().readAllBytes()));assertEquals("Europe/Istanbul",PlanningFiles.JSON.readTree(result).path("timezone").asText());
     }
     @Test void cliJsonStaysUtf8EvenWhenWindowsStyleConsoleEncodingIsRequested()throws Exception{
         var javaCommand=Path.of(System.getProperty("java.home"),"bin","java").toString();
         var builder=new ProcessBuilder(javaCommand,"-Dfile.encoding=windows-1254","-Dstdout.encoding=windows-1254",
-                "-cp",Path.of("build/install/app/lib/*").toAbsolutePath().toString(),"org.example.AgentCli",
+                "-cp",Path.of("build/install/app/lib").toAbsolutePath() + File.separator + "*","org.example.AgentCli",
                 "--profile",root.toString(),"task","add","--title","Türkçe görev");
         builder.environment().remove("DISPLAY");builder.environment().remove("WAYLAND_DISPLAY");
         var process=builder.start();byte[] result=process.getInputStream().readAllBytes();

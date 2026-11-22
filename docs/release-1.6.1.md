@@ -12,6 +12,7 @@
 - Aylık taksit çizelgesi ve CSV çıktısı; hesaplar arası transfer.
 - CSV/TSV banka ekstresi karşılaştırması; karşılaştırma bakiye veya hareket oluşturmaz.
 - Önceki 1.6.0 geliştirmeleri: uygulama içi Windows güncellemesi, logo, saatli sınavlar ve ders iptalleri.
+- Haftalık planın ilk açılışı, Bu hafta düğmesi ve hızlı görev tarihi profilin saat dilimini kullanır.
 
 ## Geçiş ve Windows kontrolü
 
@@ -35,6 +36,7 @@ Kişisel profil ve Google tokenları dağıtıma dahil edilmez.
   **271 test**, başarısızlık/hata/atlanan yok.
 - Windows paketleyici birim testleri: **7 başarılı**.
 - Java 21 ile yerel dağıtımın `--self-check` kontrolü başarılı.
+- UTC ortamında da 271 uygulama testi başarılı; testlerin Windows dosya yolu/satır sonu uyumu ve kayıt sonunu beklemesi düzeltildi.
 - Windows CI kurulum ve bakım kontrolleri yayın hazırlığı sırasında çalıştırılır; gerçek kullanıcı bilgisayarındaki
   uygulama içi indirme ve yeniden açılış kabulü ayrıca takip edilir.
 

@@ -26,7 +26,15 @@ class ReleaseInterfaceTest {
         fx(() -> { app = new App(directory); stage = new Stage(); app.start(stage); return null; });
         waitFor(() -> text("#today-status").isBlank());
     }
-    @AfterEach void close() throws Exception { if (app != null) fx(() -> { app.stop(); stage.close(); return null; }); }
+    @AfterEach void close() throws Exception {
+        if (app != null) {
+            waitFor(() -> { try { return fx(() -> {
+                var workspace=stage.getScene().lookup("#journal-workspace");
+                return workspace==null||!workspace.isDisabled();
+            }); } catch(Exception error) { throw new RuntimeException(error); } });
+            fx(() -> { app.stop(); stage.close(); return null; });
+        }
+    }
     private void navigate(String id) throws Exception { fx(() -> {
         ((ButtonBase) stage.getScene().lookup("#nav-" + id)).fire();
         stage.getScene().getRoot().applyCss(); stage.getScene().getRoot().layout(); return null;
