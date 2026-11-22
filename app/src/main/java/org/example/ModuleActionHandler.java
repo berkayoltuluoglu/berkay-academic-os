@@ -19,6 +19,7 @@ public class ModuleActionHandler {
     private final java.util.function.Consumer<String> navigate;
     private final FocusTimerService focus;
     private WeeklyAgendaView weeklyView;
+    private JournalModuleView journalView;
     FocusTimerService focusTimer() { return focus; }
     void startFocusShortcut(javafx.stage.Window owner, java.util.function.Consumer<String> failure) {
         javafx.concurrent.Task<Void> task=new javafx.concurrent.Task<>() {
@@ -74,6 +75,7 @@ public class ModuleActionHandler {
             calendarModuleView.refreshFromBackground();
             if (todayView != null) todayView.refreshFromBackground();
             if (weeklyView != null) weeklyView.refreshFromBackground();
+            if (journalView != null) journalView.refreshFromBackground();
         }));
         try {
             focus.creditCompleted();
@@ -131,11 +133,12 @@ public class ModuleActionHandler {
                     settingsView = new SettingsModuleView(projectRoot, focus, calendarModuleView.googleService(), classroomService, busyUi, requireRestart, cloud.drive()).updates(updates);
                     VBox settings = settingsView.build(); centerArea.getChildren().setAll(settings); VBox.setVgrow(settings, javafx.scene.layout.Priority.ALWAYS);
                     statusUpdater.update("Durum: Ayarlar açık"); return true;
-                case "tasks":
-                    VBox tasksPanel = calendarModuleView.buildTasks(projectRoot.resolve("data/tasks.json"));
+                case "tasks", "activity":
+                    journalView=new JournalModuleView(projectRoot,"activity".equals(moduleId));
+                    VBox tasksPanel = journalView.build();
                     centerArea.getChildren().setAll(tasksPanel);
                     VBox.setVgrow(tasksPanel, javafx.scene.layout.Priority.ALWAYS);
-                    statusUpdater.update("Durum: Görevler açık");
+                    statusUpdater.update("Durum: Yapılacaklar ve günlük açık");
                     return true;
                 case "courses":
                     courseView = new CourseModuleView(projectRoot.resolve("data/courses/academic.json"));
@@ -198,6 +201,7 @@ public class ModuleActionHandler {
     }
 
     public void leaveModule() {
+        if(journalView!=null){journalView.dispose();journalView=null;}
         if (cloudView != null) { cloudView.dispose(); cloudView=null; }
         calendarModuleView.dispose();
         if (settingsView != null) { settingsView.dispose(); settingsView = null; }

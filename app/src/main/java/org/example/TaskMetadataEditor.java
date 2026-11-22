@@ -15,6 +15,8 @@ final class TaskMetadataEditor extends VBox {
     private final VBox subtasks = new VBox(5);
     private final Map<CheckBox, TaskItem.Subtask> values = new LinkedHashMap<>();
     private final Label progress = new Label();
+    private Runnable changed=()->{};
+    void onChange(Runnable value){changed=value;}
 
     TaskMetadataEditor() { this(true); }
     TaskMetadataEditor(boolean includeSubtasks) {
@@ -23,6 +25,10 @@ final class TaskMetadataEditor extends VBox {
         priority.getItems().setAll("Düşük", "Normal", "Yüksek"); priority.setValue("Normal"); priority.setId("task-priority");
         estimate.setId("task-estimate"); logged.setId("task-logged");
         estimate.setEditable(true); logged.setEditable(true);
+        due.textProperty().addListener((o,a,b)->changed.run());priority.valueProperty().addListener((o,a,b)->changed.run());
+        estimate.valueProperty().addListener((o,a,b)->changed.run());logged.valueProperty().addListener((o,a,b)->changed.run());
+        estimate.getEditor().textProperty().addListener((o,a,b)->changed.run());logged.getEditor().textProperty().addListener((o,a,b)->changed.run());
+        subtasks.getChildren().addListener((javafx.collections.ListChangeListener<javafx.scene.Node>)change->changed.run());
         TextField subtask = new TextField(); subtask.setPromptText("Yeni alt görev"); subtask.setId("task-subtask-title");
         Button add = new Button("Ekle"); add.setId("task-subtask-add");
         add.setOnAction(event -> {
@@ -70,6 +76,7 @@ final class TaskMetadataEditor extends VBox {
 
     private void add(TaskItem.Subtask task) {
         CheckBox check = new CheckBox(task.title()); check.setSelected(task.done()); check.setWrapText(true);
+        check.selectedProperty().addListener((o,a,b)->changed.run());
         Button remove = new Button("×"); remove.setAccessibleText("Alt görevi kaldır");
         HBox row = new HBox(8, check, remove); HBox.setHgrow(check, Priority.ALWAYS);
         remove.setOnAction(event -> { values.remove(check); subtasks.getChildren().remove(row); });

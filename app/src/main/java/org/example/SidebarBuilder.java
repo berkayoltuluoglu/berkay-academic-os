@@ -46,7 +46,7 @@ public class SidebarBuilder {
                 }
                 menu.getChildren().add(section);
             }
-            List<String> primary = List.of("today", "agenda", "courses", "tasks", "finance");
+            List<String> primary = List.of("today", "agenda", "courses", "tasks", "activity", "finance");
             var ordered = new ArrayList<>(config.getModules());
             ordered.sort(Comparator.comparingInt(m -> primary.contains(m.getId()) ? primary.indexOf(m.getId()) : 10));
             for (ModuleItem module : ordered) {
@@ -115,6 +115,7 @@ public class SidebarBuilder {
         return switch (Objects.toString(module.getIcon(), "")) {
             case "sun" -> "home";
             case "tasks" -> "check-square";
+            case "journal" -> "edit-3";
             case "courses" -> "book-open";
             case "folder" -> "folder";
             case "terminal" -> "terminal";

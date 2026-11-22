@@ -13,7 +13,7 @@ public record PlanningSnapshot(int schemaVersion, String week, String until, Str
     public record PoolItem(String kind, String id, String title, String date, String dueTime, String courseId,
                            String priority, int estimatedMinutes, int studiedMinutes, int remainingMinutes, int plannedMinutes,
                            String sourceCourseId, String sourceWorkId) {
-        public int unplannedMinutes() { return estimatedMinutes == 0 ? Math.max(0, 60 - plannedMinutes) : Math.max(0, remainingMinutes - plannedMinutes); }
+        public int unplannedMinutes() { return estimatedMinutes == 0 ? Math.max(0, 60 - studiedMinutes - plannedMinutes) : Math.max(0, remainingMinutes - plannedMinutes); }
     }
     public static PlanningSnapshot load(Path root, LocalDate start) throws Exception {
         return load(root, start, tasks -> {});
@@ -34,9 +34,11 @@ public record PlanningSnapshot(int schemaVersion, String week, String until, Str
         taskReader.accept(data);
         var prefs = PlanningPreferences.load(root);
         var focus = new StudyTimeLogService(root).load(); var progress = new StudyProgressService();
+        var errors=new ArrayList<>(data.errors());JournalStore.Document journal=JournalStore.empty();
+        try{journal=JournalStore.load(root);}catch(java.io.IOException failure){errors.add("Yapılacaklar / günlük: "+failure.getMessage());}
         List<PoolItem> pool = new ArrayList<>();
         for (var t : data.tasks()) if (!"Tamamlandı".equals(t.getStatus()) && !t.getId().startsWith("application-")) {
-            var p = progress.forTask(t, data.sessions(), focus);
+            var p = progress.forTask(t, data.sessions(), focus,journal.activities());
             pool.add(new PoolItem("task", t.getId(), t.getTitle(), t.getDate() == null ? "" : t.getDate().toString(),
                     Objects.toString(t.getDueTime(), ""), "", t.getPriority(), p.estimatedMinutes(), p.studiedMinutes(), p.remainingMinutes(), p.plannedMinutes(), "", ""));
         }
@@ -55,7 +57,7 @@ public record PlanningSnapshot(int schemaVersion, String week, String until, Str
             String linkedId=PlannerService.applicationTaskId(a.id());
             var task=data.tasks().stream().filter(t->t.getId().equals(linkedId)).findFirst().orElse(null);
             if(task!=null && "Tamamlandı".equals(task.getStatus()))continue;
-            var p=task==null?new StudyProgressService.Progress(0,0,0,0):progress.forTask(task,data.sessions(),focus);
+            var p=task==null?new StudyProgressService.Progress(0,0,0,0):progress.forTask(task,data.sessions(),focus,journal.activities());
             pool.add(new PoolItem("application", a.id(), a.name(), a.deadline(), "", "", "Yüksek", p.estimatedMinutes(),p.studiedMinutes(),p.remainingMinutes(),p.plannedMinutes(), "", ""));
         }
         pool.sort(Comparator.comparing((PoolItem p) -> p.date().isBlank() ? "9999-12-31" : p.date())
@@ -69,7 +71,7 @@ public record PlanningSnapshot(int schemaVersion, String week, String until, Str
                 && !LocalDate.parse(s.date()).isAfter(end)).toList();
         String fingerprint = PlannerService.fingerprint(root, start);
         return new PlanningSnapshot(1, start.toString(), end.toString(), prefs.timezone(), fingerprint, fixed, blocks, List.copyOf(pool),
-                slots(start, fixed, blocks, prefs), prefs, data.errors());
+                slots(start, fixed, blocks, prefs), prefs, List.copyOf(errors));
     }
     static int priority(String value) { return "Yüksek".equals(value) ? 0 : "Düşük".equals(value) ? 2 : 1; }
     static List<Slot> slots(LocalDate week, List<Block> fixed, List<StudySession> blocks, PlanningPreferences prefs) {

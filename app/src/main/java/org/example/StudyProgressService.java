@@ -26,6 +26,11 @@ public final class StudyProgressService {
                 sessions.stream().filter(s -> s.workId().equals(work.id())).toList());
         return new Progress(base.estimatedMinutes(), base.studiedMinutes() + extra, Math.max(0, base.remainingMinutes() - extra), base.plannedMinutes());
     }
+    Progress forTask(TaskItem task,List<StudySession> sessions,List<StudyTimeLogService.Entry> focus,List<JournalStore.Activity> activities){
+        Progress base=forTask(task,sessions,focus);
+        int manual=activities.stream().filter(a->a.focusId().isBlank()&&a.taskId().equals(task.getId())).mapToInt(JournalStore.Activity::minutes).sum();
+        return new Progress(base.estimatedMinutes(),base.studiedMinutes()+manual,Math.max(0,base.remainingMinutes()-manual),base.plannedMinutes());
+    }
     private Progress progress(int estimate, int manual, List<StudySession> sessions) {
         int studied = manual + sessions.stream().mapToInt(StudySession::studiedMinutes).sum();
         int planned = sessions.stream().filter(s -> !s.done()).mapToInt(s -> Math.max(0, (int) java.time.Duration.between(

@@ -16,5 +16,12 @@ public sealed interface PlannerCommand {
     record ImportClassroomWork(String courseId, String workId) implements PlannerCommand {}
     record SetPreferences(PlanningPreferences preferences) implements PlannerCommand {}
     record SetNote(String id, String note) implements PlannerCommand {}
+    record CreateList(String id,String name) implements PlannerCommand {}
+    record RenameList(String id,String name) implements PlannerCommand {}
+    record DeleteList(String id) implements PlannerCommand {}
+    record PlaceTask(String id,String listId,String courseId) implements PlannerCommand {}
+    record SaveActivity(JournalStore.Activity activity,boolean allowOverlap) implements PlannerCommand {}
+    record DeleteActivity(String id) implements PlannerCommand {}
+    record DeleteTask(String id) implements PlannerCommand {}
     enum ConflictPolicy { REJECT, NEAREST, ALLOW }
 }

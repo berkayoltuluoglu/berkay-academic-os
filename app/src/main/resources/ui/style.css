@@ -8,6 +8,32 @@
      ikincil metin için .soluk sınıflarını kullan.
    =================================================================== */
 
+/* AOS-015 · Claude reference: Yapilacaklar ve Gunluk.dc.html */
+.journal-workspace { -fx-background-color: -zemin; -fx-padding: 14 20 12 10; }
+.journal-title { -fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: -yazi; }
+.journal-total { -fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: -palette-2; }
+.journal-quick { -fx-pref-height: 44px; -fx-background-color: -yuzey; -fx-background-radius: 10; -fx-border-radius: 10; -fx-border-color: -cizgi; }
+.journal-lists { -fx-background-color: -yuzey-2; -fx-padding: 16 12; -fx-border-color: transparent -cizgi transparent transparent; -fx-border-width: 1; }
+.journal-task-list, .journal-lists .list-view { -fx-background-color: transparent; -fx-border-width: 0; -fx-padding: 0; }
+.journal-task-list .list-cell, .journal-lists .list-cell { -fx-background-color: transparent; -fx-text-fill: -yazi; -fx-padding: 5 6; }
+.journal-task-list .list-cell:filled:hover, .journal-lists .list-cell:filled:hover { -fx-background-color: -yuzey-2; }
+.journal-task-list .list-cell:filled:selected, .journal-lists .list-cell:filled:selected { -fx-background-color: -vurgu-acik; -fx-background-radius: 8; }
+.journal-task-row { -fx-min-height: 34; -fx-padding: 2 3; }
+.journal-task-row .label { -fx-text-fill: -yazi; }
+.journal-task-row .check-box > .box { -fx-background-radius: 20; -fx-border-radius: 20; }
+.journal-done { -fx-opacity: 0.6; }
+.journal-small { -fx-font-size: 11.5px; -fx-padding: 4 7; -fx-min-height: 26; }
+.journal-details, .journal-summary { -fx-background-color: -yuzey-2; -fx-padding: 16; -fx-border-color: transparent transparent transparent -cizgi; -fx-border-width: 1; }
+.journal-detail-scroll, .journal-detail-scroll > .viewport { -fx-background-color: -yuzey-2; }
+.journal-scroll, .journal-scroll > .viewport { -fx-background-color: transparent; -fx-padding: 0; }
+.journal-entry { -fx-background-color: -yuzey; -fx-padding: 9 6; -fx-border-color: transparent transparent -cizgi transparent; -fx-min-height: 42; }
+.journal-section-title { -fx-font-size: 11.5px; -fx-font-weight: bold; -fx-text-fill: -yazi-soluk; -fx-padding: 14 0 6; }
+.journal-manual-badge { -fx-background-color: -yuzey-2; -fx-text-fill: -yazi-soluk; -fx-background-radius: 10; -fx-padding: 2 6; -fx-font-size: 11; }
+.journal-focus-badge { -fx-background-color: -vurgu-acik; -fx-text-fill: -palette-2; -fx-background-radius: 10; -fx-padding: 2 6; -fx-font-size: 11; }
+.journal-link { -fx-text-fill: -palette-2; -fx-font-size: 12; }
+.journal-error { -fx-text-fill: -tehlike; -fx-padding: 6; }
+.journal-toast { -fx-padding: 8 14; -fx-background-color: -vurgu-acik; -fx-background-radius: 10; }
+
 .root {
     -fx-font-family: "Poppins", "Segoe UI", "Noto Sans", sans-serif;
     -fx-font-size: 13.5px;
@@ -648,3 +674,13 @@
 .today-deadline-line { -fx-background-color: -tehlike; -fx-opacity: 0.85; }
 .today-deadline-tag { -fx-background-color: -tehlike; -fx-text-fill: white; -fx-font-size: 11px; -fx-font-weight: bold;
     -fx-padding: 2 8; -fx-background-radius: 6; -fx-cursor: hand; }
+
+/* AOS-015: native adaptation of the supplied Claude prototype. */
+.journal-workspace { -fx-padding: 18 22; -fx-background-color: -zemin; }
+.journal-lists { -fx-padding: 12 10; -fx-background-color: -yuzey-2; }
+.journal-task-pane, .journal-diary-pane { -fx-padding: 4 16; }
+.journal-title { -fx-font-size: 20; -fx-font-weight: bold; }
+.journal-quick { -fx-min-height: 44; }
+.journal-total { -fx-font-size: 20; -fx-font-weight: bold; -fx-text-fill: -palette-2; }
+
+.journal-tab:active { -fx-background-color: -palette-2; -fx-text-fill: white; }

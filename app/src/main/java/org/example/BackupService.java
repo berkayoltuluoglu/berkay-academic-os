@@ -142,7 +142,7 @@ public final class BackupService {
 
     private void validateRecords(Path stage) throws IOException {
         try {
-            PlanningPreferences.load(stage); PlannerService.notes(stage);PlannerService.history(stage); // validates every recorded edit's file and path
+            PlanningPreferences.load(stage); PlannerService.notes(stage);PlannerService.history(stage);JournalStore.load(stage); // validates every recorded edit's file and path
             new ProposalService(stage).list(null);
             if (Files.exists(stage.resolve("data/tasks.json"))) new TaskStorageService(stage.resolve("data/tasks.json")).loadTasks();
             if (Files.exists(stage.resolve("data/courses/academic.json"))) new CourseStorageService(stage.resolve("data/courses/academic.json")).load();
@@ -198,7 +198,7 @@ public final class BackupService {
     private RecordLocks lockRecords() throws IOException {
         var held = new RecordLocks();
         try {
-            for (String name : List.of("data/tasks.json", "data/courses/academic.json", "data/courses/curricula.json", "data/study/sessions.json", "data/finance/ledger.json", "data/finance/applications.json", PlanningPreferences.FILE, PlannerService.HISTORY, "data/planning/notes.json")) {
+            for (String name : List.of("data/tasks.json", "data/courses/academic.json", "data/courses/curricula.json", "data/study/sessions.json", "data/finance/ledger.json", "data/finance/applications.json", PlanningPreferences.FILE, PlannerService.HISTORY, "data/planning/notes.json",JournalStore.FILE)) {
                 Path path = safeTarget(name + ".lock", true); Files.createDirectories(path.getParent());
                 var channel = java.nio.channels.FileChannel.open(path, StandardOpenOption.CREATE, StandardOpenOption.WRITE);
                 held.channels.add(channel);

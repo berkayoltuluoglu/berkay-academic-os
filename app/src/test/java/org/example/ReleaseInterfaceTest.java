@@ -37,14 +37,28 @@ class ReleaseInterfaceTest {
     }
     @Test void editsRichTaskFieldsThroughTheActualFormAndPreservesThemOnDone() throws Exception {
         navigate("tasks");
+        waitFor(() -> {
+            try { return fx(() -> stage.getScene().lookup("#journal-open-tasks") instanceof ListView<?> list && !list.getItems().isEmpty()); }
+            catch(Exception error) { throw new RuntimeException(error); }
+        });
         fx(() -> {
-            @SuppressWarnings("unchecked") ListView<TaskItem> tasks = (ListView<TaskItem>) stage.getScene().lookup("#task-list");
+            @SuppressWarnings("unchecked") ListView<TaskItem> tasks = (ListView<TaskItem>) stage.getScene().lookup("#journal-open-tasks");
             tasks.getSelectionModel().selectFirst();
+            stage.getScene().getRoot().applyCss();stage.getScene().getRoot().layout();
+            ((TitledPane)stage.getScene().lookup("#journal-advanced")).setExpanded(true);
+            stage.getScene().getRoot().applyCss();stage.getScene().getRoot().layout();
             ((TextField) stage.getScene().lookup("#task-due-time")).setText("17:30");
             @SuppressWarnings("unchecked") ComboBox<String> priority = (ComboBox<String>) stage.getScene().lookup("#task-priority"); priority.setValue("Yüksek");
             ((TextField) stage.getScene().lookup("#task-subtask-title")).setText("Oku"); ((Button) stage.getScene().lookup("#task-subtask-add")).fire();
-            findButton("Seçiliyi Güncelle").fire(); findButton("Tamamlandı Yap").fire(); return null;
+            ((Button)stage.getScene().lookup("#journal-save-details")).fire();return null;
         });
+        waitFor(() -> {
+            try { return fx(() -> !stage.getScene().lookup("#journal-workspace").isDisabled())
+                    && new TaskStorageService(directory.resolve("data/tasks.json")).loadTasks().getFirst().getSubtasks().size()==1; }
+            catch(Exception error) { throw new RuntimeException(error); }
+        });
+        fx(() -> {stage.getScene().getRoot().applyCss();stage.getScene().getRoot().layout();((CheckBox)stage.getScene().lookup(".journal-task-row .check-box")).fire();return null;});
+        waitFor(() -> "Tamamlandı".equals(new TaskStorageService(directory.resolve("data/tasks.json")).loadTasks().getFirst().getStatus()));
         TaskItem task = new TaskStorageService(directory.resolve("data/tasks.json")).loadTasks().getFirst();
         assertEquals(LocalTime.of(17, 30), task.getDueTime()); assertEquals("Yüksek", task.getPriority()); assertEquals(1, task.getSubtasks().size()); assertEquals("Tamamlandı", task.getStatus());
     }

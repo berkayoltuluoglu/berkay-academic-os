@@ -9,7 +9,7 @@ import static org.example.PlannerCommand.*;
 /** All planning writes are validated on an isolated copy, then committed under record locks. */
 public final class PlannerService {
     static final List<String> DOMAIN = List.of("data/tasks.json", "data/courses/academic.json", "data/study/sessions.json",
-            PlanningPreferences.FILE, "data/planning/notes.json");
+            PlanningPreferences.FILE, "data/planning/notes.json", JournalStore.FILE);
     static final String HISTORY = "data/planning/history.json";
     /** One undoable step: only the fields that changed, never whole-file copies (see {@link PlanEdits}). */
     public record PlanChange(String id, String at, String actor, String reason, List<PlanEdits.Edit> edits) {}
@@ -24,6 +24,8 @@ public final class PlannerService {
     List<TaskItem> snapshotTasks() { return snapshotTasks; }
     private String expected;
     private LocalDate expectedWeek;
+    private Map<String,byte[]> expectedFiles=Map.of();
+    synchronized void expectFiles(Map<String,byte[]> value){expectedFiles=new LinkedHashMap<>(value);}
     public PlannerService(Path root) { this.root = root.toAbsolutePath().normalize(); }
     public synchronized PlanningSnapshot snapshot(LocalDate week) throws Exception {
         var snapshot = PlanningSnapshot.load(root, week, data -> { snapshotTasks = data.tasks();snapshotCourses=data.courses(); }); expected = snapshot.fingerprint(); expectedWeek = LocalDate.parse(snapshot.week()); return snapshot;
@@ -52,12 +54,17 @@ public final class PlannerService {
         if (commands == null || commands.isEmpty() || commands.size() > 500) throw new IOException("INVALID_COMMAND: 1–500 komut gerekli");
         if (actor == null || actor.isBlank() || actor.length() > 300 || reason == null || reason.length() > 5000) throw new IOException("İşlem açıklaması geçersiz");
         if (expected != null && !expected.equals(fingerprint(root, expectedWeek))) throw new IOException("STALE_SNAPSHOT: Dosya değişti. Önce yenile.");
-        PlanningPreferences.load(root); notes(root); history(root);
+        PlanningPreferences.load(root); notes(root); history(root);JournalStore.load(root);
         Map<String, byte[]> before = PlanningFiles.capture(root, DOMAIN);
         Map<String, byte[]> guards = new LinkedHashMap<>(before);
+        for(var guard:expectedFiles.entrySet()){
+            if(!Arrays.equals(PlanningFiles.bytes(root,guard.getKey()),guard.getValue()))throw new IOException("STALE_SNAPSHOT: Kayıtlar başka yerde değişti; önce yenile. Girdin korundu.");
+            guards.put(guard.getKey(),guard.getValue());
+        }
         // Protect all read dependencies throughout the transaction, without exposing any credentials.
         for (String name : List.of("data/classroom/catalog.json", "data/time/focus-log.json", "data/calendar/account.properties", "data/calendar/sources.json", "data/calendar/outbox.json", "data/finance/applications.json"))
-            guards.put(name, PlanningFiles.bytes(root, name));
+            guards.putIfAbsent(name, PlanningFiles.bytes(root, name));
+        guards.put("data/focus.properties",PlanningFiles.bytes(root,"data/focus.properties"));
         Set<YearMonth> months = new TreeSet<>();
         for (var command : commands) {
             if (command instanceof SaveBlock c) months.add(YearMonth.from(LocalDate.parse(c.block().date())));
@@ -124,7 +131,7 @@ public final class PlannerService {
             for(var e:files.entrySet())if(e.getValue()!=null){Path target=stage.resolve(e.getKey());Files.createDirectories(target.getParent());Files.write(target,e.getValue());}
             var tasks=new TaskStorageService(stage.resolve(DOMAIN.getFirst())).loadTasks();
             var courses=new CourseStorageService(stage.resolve(DOMAIN.get(1))).load();
-            var blocks=new StudyStorageService(stage.resolve(DOMAIN.get(2))).load();PlanningPreferences.load(stage);notes(stage);
+            var blocks=new StudyStorageService(stage.resolve(DOMAIN.get(2))).load();PlanningPreferences.load(stage);notes(stage);JournalStore.load(stage);
             for(var block:blocks){
                 if(!block.taskId().isBlank()&&tasks.stream().noneMatch(t->t.getId().equals(block.taskId())))throw new IOException("Geçmişteki görev bağlantısı geçersiz");
                 if(!block.workId().isBlank()&&courses.work().stream().noneMatch(w->w.id().equals(block.workId())))throw new IOException("Geçmişteki ödev bağlantısı geçersiz");
@@ -172,6 +179,7 @@ public final class PlannerService {
         return new StudyStorageService(root.resolve(DOMAIN.get(2))).load().stream().filter(s -> s.id().equals(id)).findFirst().orElseThrow(() -> new IOException("NOT_FOUND: Çalışma bloğu bulunamadı"));
     }
     private static void apply(Path root, PlannerCommand command, List<String> notices) throws Exception {
+        if(JournalCommands.apply(root,command))return;
         var agenda = new DailyAgendaService();
         if (command instanceof SaveBlock c) { saveBlock(root, c.block(), c.create(), c.policy(), notices); }
         else if (command instanceof ScheduleBlock c) {

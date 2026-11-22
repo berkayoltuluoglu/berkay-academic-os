@@ -254,11 +254,19 @@
     },
     {
       "id": "tasks",
-      "name": "Görevler",
+      "name": "Yapılacaklar",
       "category": "Planlama",
       "type": "internal",
       "enabled": true,
       "icon": "tasks"
+    },
+    {
+      "id": "activity",
+      "name": "Bugün Ne Yaptım?",
+      "category": "Planlama",
+      "type": "internal",
+      "enabled": true,
+      "icon": "journal"
     }
   ]
 }

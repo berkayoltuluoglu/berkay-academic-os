@@ -513,7 +513,7 @@ public class App extends Application {
 
             selectedModule = module;
             sidebarBuilder.select(module);
-            boolean daily = "today".equals(module.getId()) || "agenda".equals(module.getId());
+            boolean daily = java.util.Set.of("today","agenda","tasks","activity").contains(module.getId());
             centerArea.getStyleClass().remove("planning-workspace");
             if(daily)centerArea.getStyleClass().add("planning-workspace");
             pageHeading.setVisible(!daily); pageHeading.setManaged(!daily);

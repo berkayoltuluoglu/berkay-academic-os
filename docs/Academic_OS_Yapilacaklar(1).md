@@ -1,6 +1,6 @@
 # Academic OS — Yapılacaklar ve Kararlar
 
-Son güncelleme: 22 Kasım 2026
+Son güncelleme: 23 Kasım 2026
 
 | ID | İş | Durum | Kapsam / karar |
 | --- | --- | --- | --- |
@@ -66,7 +66,7 @@ Son güncelleme: 22 Kasım 2026
 
 ## Yapılacaklar ve Bugün Ne Yaptım? · 21 Kasım 2026
 
-- [ ] AOS-015 — Hızlı yapılacaklar listesi ve günlük faaliyet kaydı. Kullanıcı akışı Claude Design ile tasarlanacak.
+- [x] AOS-015 — Hızlı yapılacaklar listesi ve günlük faaliyet kaydı. Claude Design çıktısı 23 Kasım 2026 tarihinde native JavaFX ekranlarına aktarıldı; aşağıdaki teslim notları geçerlidir.
 - Mevcut Görev Planlaması sekmesi form dolduruyormuş hissi veriyor. Görev eklemek için tek satıra başlığı yazıp Enter'a basmak yeterli olmalı. Kullanıcı kendi listelerini oluşturabilmeli ve görevleri tamamlandı olarak işaretleyebilmeli. Son tarih ve ders bağlantısı isteğe bağlı.
 - Kullanıcı gününü zaten günlük olarak planlıyor. Bu akışta takvime çalışma bloğu ekleme ve Google Takvim'e aktarım yerine gün içinde gerçekleşen işleri kaydetme tercih edildi.
 - Bugün Ne Yaptım? ekranında tek satırda saat aralığıyla (ör. 10:30–11:15 Sinyaller çıkmış soru çözdüm) veya yalnızca süreyle (ör. 30 dk kontrol çalıştım) kayıt eklenebilmeli.
@@ -99,3 +99,17 @@ Veri uyumluluğu:
 - Kullanıcı profiline bu geliştirmede yazılmadı; kurulu Windows paketi yayımlanmadı. Kod/yerel dağıtım tamamlanması Windows kurulum kabulü değildir.
 - AOS-009/010/012/016/017/018 ile kararlaştırılan finans geliştirme kapsamı tamamlandı. AOS-011'in özgün kapanması birebir üretilemediğinden önceki doğrulama sınırı korunur; 0 ve 0,01 TL senaryoları ile kayıt hatası yönetimi test edilir.
 - Son doğrulama: **255 test başarılı**, başarısız/hatalı/atlanan yok; bunların 33'ü finans testi (23 JavaFX arayüz, 10 depolama). `:app:test :app:installDist --offline --no-daemon` arayüz testleri açık olarak ayrı sanal ekranda geçti. Yerel dağıtımın kaynak kontrolü ayrıca Java 21 ile başarılı. JSON/CSV turu, şema 1 → 2 geçişi ve önceki dosyanın yedeği, ay sonu/kuruş bölüşümü, transfer düzenleme/silme/yetersiz bakiye ve ekstrede yinelenen satır/tutar/açıklama farkları doğrulandı.
+
+
+## Yapılacaklar ve faaliyet günlüğü — teslim · 23 Kasım 2026
+
+- Referans: İndirilenler’deki `Shared link(1).zip`, içindeki `Yapilacaklar ve Gunluk.dc.html`. Gümüş–sıcak palete uyarlanmış sürüm esas alındı; Modernist varyantın kırmızı/sıfır köşe tasarımı uygulanmadı. Kaynak referans `notes/design-references/aos-015-claude-reference.html` olarak korundu. Prototipin tarayıcı betikleri veya harici font bağlantıları uygulamada çalıştırılmaz; ekranlar mevcut Java 21 / JavaFX, Poppins ve yerel tema ile oluşturulur.
+- Kenar çubuğunda **Yapılacaklar** ve **Bugün Ne Yaptım?** bulunur. Eski kullanıcı yapılandırmasına eksik gezinme bağlantıları yalnızca bellekte eklenir; kullanıcı config dosyası elle veya bu uyarlama sırasında değiştirilmez.
+- Tek satır + Enter ile tarihsiz görev eklenir. Kişisel listeler eklenebilir, yeniden adlandırılabilir ve silinebilir. Liste silinince görevler Genel’e taşınır. Görev tamamlama/yeniden açma, taşıma, silme ve geri al/yinele desteklenir.
+- Sağ ayrıntı panelinde başlık, not, isteğe bağlı tarih ve ders bağlantısı bulunur. Saat, öncelik, tahmin, ek çalışma ve alt görevler açılabilir gelişmiş bölümde korunur. Dar ekranda panel sağdan içerik üzerine açılır; kapatma/vazgeçme eylemi vardır. Eski görev kimlikleri ve mevcut görev deposu kullanılmaya devam eder.
+- Günlüğe `10:30–11:15 Sinyaller çıkmış soru çözdüm`, `30 dk kontrol çalıştım`, `1,5 saat rapor yazdım` biçimlerinde kayıt girilir. Önizleme vardır; hatalı giriş korunur. Saatli kayıtlar sıralanır; saatsiz süreler ayrı grupta ve günlük toplamda gösterilir. Geçmiş günlere geçiş, düzenleme, silme ve geri alma desteklenir. Gerçekleşen faaliyet gelecekteki güne kaydedilemez; çalışma bloğu oluşturulmaz ve Google’a etkinlik gönderilmez.
+- **Süre kaydet** görevin açıklamasını hazır getirir; görevi tamamlamaz. Göreve bağlı elle kayıtlar planlayıcının gerçekleşen/kalan süre hesabına katılır. Gerçek sayaç kayıtları yerel odak günlüğünden okunur; gece yarısını geçen süre ilgili yerel günlere bölünür. Aynı çalışmada Enter ile açıklama sayaçla birleştirilir ve süre bir kez sayılır; ayrı faaliyet açıkça Alt+Enter ile eklenebilir. Sayaç süresi bu ekrandan değiştirilmez veya silinmez; açıklama notu eklenip kaldırılabilir.
+- Yeni listeler, görev yerleşimleri ve faaliyetler `data/planning/journal.json` şema 1 içinde tutulur. Görev dosyasının şeması değiştirilmedi. Bütün kullanıcı işlemleri mevcut planlayıcının kilitli/stale korumalı işlem ve geri al/yinele katmanından geçer. Genel yedekleme ve geri yükleme günlük dosyasını da kapsar. Görev silmek geçmiş faaliyetleri, sayaç süresini veya çalışma bloklarını silmez; görev bağlantıları kaldırılır.
+- Kullanıcı profilinde bu geliştirme sırasında değişiklik yapılmadı. Test profilleri geçicidir. Commit/push yapılmadı; kurulu Windows paketi yayımlanmadı.
+
+- AOS-015 son doğrulaması: **271 test başarılı**, başarısız/hatalı/atlanan yok. Arayüz testleri ayrı sanal ekranda, geçici profillerle çalıştı; `:app:test :app:installDist --offline --no-daemon` ve Java 21 paket kaynak kontrolü başarılı. Hızlı görev/listeler, geniş/dar yerleşim, günlük ekleme/düzenleme/silme, bozuk girişin korunması, sayaç birleştirme/gece yarısı ayrımı, silinen görevin tarihçesi, stale form koruması ve genel yedekleme/geri yükleme doğrulandı.

@@ -31,6 +31,12 @@ public class ConfigLoader {
         Path local = root.resolve("config/app-config.json");
         if (Files.exists(local)) {
             AppConfig config=mapper.readValue(FinanceStorageService.readLimited(local), AppConfig.class);
+            if(config.getModules()!=null){
+                var modules=new java.util.ArrayList<>(config.getModules());
+                for(var core:load().getModules())if(java.util.Set.of("tasks","activity").contains(core.getId())&&modules.stream().noneMatch(m->core.getId().equals(m.getId())))modules.add(core);
+                modules.stream().filter(m->"tasks".equals(m.getId())&&java.util.Set.of("Görevler","Görev Planlaması").contains(m.getName())).forEach(m->m.setName("Yapılacaklar"));
+                config.setModules(modules);
+            }
             // Existing profiles keep their custom configuration while gaining the new core screen.
             if(config.getModules()!=null && config.getModules().stream().noneMatch(m -> "sync".equals(m.getId()))) {
                 var modules=new java.util.ArrayList<>(config.getModules());

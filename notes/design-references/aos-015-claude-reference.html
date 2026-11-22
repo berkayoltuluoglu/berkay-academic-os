@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#E4E8EE;}
+*{box-sizing:border-box;}
+input,select,button,textarea{font:inherit;color:inherit;}
+a{color:#633a30;}a:hover{color:#432523;}
+::placeholder{color:#8A93A1;}
+</style>
+</helmet>
+<div style="padding:48px 56px 96px;font-family:'Poppins',system-ui,sans-serif;color:#24262B;display:flex;flex-direction:column;gap:36px;width:1478px;">
+
+  <header style="display:flex;flex-direction:column;gap:20px;max-width:1366px;">
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      <div style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#626C7B;font-weight:500;">Academic OS · Etkileşimli prototip</div>
+      <h1 style="margin:0;font-size:30px;font-weight:600;letter-spacing:-.01em;">Yapılacaklar ve Bugün Ne Yaptım?</h1>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <div style="font-size:13px;font-weight:600;color:#3A3F48;">Kullanıcı akışı</div>
+      <div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:1px;background:#E1E5EC;border:1px solid #E1E5EC;border-radius:10px;overflow:hidden;">
+        <div style="background:#FAFBFD;padding:14px 16px;display:flex;flex-direction:column;gap:6px;">
+          <div style="font-family:'Poppins',sans-serif;font-variant-numeric:tabular-nums;font-size:12px;color:#8a5a44;">01 · Yakala</div>
+          <div style="font-size:13px;line-height:1.5;color:#2F333A;text-wrap:pretty;">Yapılacaklar’da başlığı yaz, Enter. Tarih ve ders zorunlu değil; görevi seçince eklenir.</div>
+        </div>
+        <div style="background:#FAFBFD;padding:14px 16px;display:flex;flex-direction:column;gap:6px;">
+          <div style="font-family:'Poppins',sans-serif;font-variant-numeric:tabular-nums;font-size:12px;color:#8a5a44;">02 · Çalış</div>
+          <div style="font-size:13px;line-height:1.5;color:#2F333A;text-wrap:pretty;">Görevde “Süre kaydet” (S). Başlık hazır gelir; başa “30 dk” ya da “10:30–11:15” yaz, Enter.</div>
+        </div>
+        <div style="background:#FAFBFD;padding:14px 16px;display:flex;flex-direction:column;gap:6px;">
+          <div style="font-family:'Poppins',sans-serif;font-variant-numeric:tabular-nums;font-size:12px;color:#8a5a44;">03 · Gün sonu</div>
+          <div style="font-size:13px;line-height:1.5;color:#2F333A;text-wrap:pretty;">Listede olmayan işleri tek satırla ekle. Önizleme, metnin nasıl yorumlandığını kaydetmeden gösterir.</div>
+        </div>
+        <div style="background:#FAFBFD;padding:14px 16px;display:flex;flex-direction:column;gap:6px;">
+          <div style="font-family:'Poppins',sans-serif;font-variant-numeric:tabular-nums;font-size:12px;color:#8a5a44;">04 · Kontrol</div>
+          <div style="font-size:13px;line-height:1.5;color:#2F333A;text-wrap:pretty;">Odak sayacı kayıtları “Sayaç” etiketiyle zaten listededir. Çakışan elle kayıt sayaçla birleştirilir; süre bir kez sayılır.</div>
+        </div>
+        <div style="background:#FAFBFD;padding:14px 16px;display:flex;flex-direction:column;gap:6px;">
+          <div style="font-family:'Poppins',sans-serif;font-variant-numeric:tabular-nums;font-size:12px;color:#8a5a44;">05 · Kapat</div>
+          <div style="font-size:13px;line-height:1.5;color:#2F333A;text-wrap:pretty;">İş bittiyse görevi ayrıca tamamla. Süre kaydetmek tamamlamaz. Hata olursa Geri al (Ctrl+Z).</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div style="display:flex;align-items:center;gap:28px;flex-wrap:wrap;max-width:1366px;">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span style="font-size:13px;color:#3A3F48;font-weight:600;">Durum</span>
+      <div style="display:flex;gap:4px;padding:3px;background:#E1E5EC;border-radius:10px;">
+        <button onClick="{{ presetSample }}" style="height:30px;padding:0 12px;border:none;border-radius:10px;cursor:pointer;font-size:13px;background:{{ pbSample }};" style-focus="outline:2px solid #8a5a44;outline-offset:1px;">Örnek veri</button>
+        <button onClick="{{ presetEmpty }}" style="height:30px;padding:0 12px;border:none;border-radius:10px;cursor:pointer;font-size:13px;background:{{ pbEmpty }};" style-focus="outline:2px solid #8a5a44;outline-offset:1px;">Boş ekran</button>
+        <button onClick="{{ presetError }}" style="height:30px;padding:0 12px;border:none;border-radius:10px;cursor:pointer;font-size:13px;background:{{ pbError }};" style-focus="outline:2px solid #8a5a44;outline-offset:1px;">Hatalı giriş</button>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span style="font-size:13px;color:#3A3F48;font-weight:600;">Pencere</span>
+      <div style="display:flex;gap:4px;padding:3px;background:#E1E5EC;border-radius:10px;">
+        <button onClick="{{ vwWide }}" style="height:30px;padding:0 12px;border:none;border-radius:10px;cursor:pointer;font-size:13px;font-family:'Poppins',sans-serif;font-variant-numeric:tabular-nums;background:{{ pbWide }};" style-focus="outline:2px solid #8a5a44;outline-offset:1px;">1366×768</button>
+        <button onClick="{{ vwNarrow }}" style="height:30px;padding:0 12px;border:none;border-radius:10px;cursor:pointer;font-size:13px;font-family:'Poppins',sans-serif;font-variant-numeric:tabular-nums;background:{{ pbNarrow }};" style-focus="outline:2px solid #8a5a44;outline-offset:1px;">1024×768</button>
+      </div>
+    </div>
+    <div style="font-size:12.5px;color:#626C7B;font-family:'Poppins',sans-serif;font-variant-numeric:tabular-nums;">Ctrl+1/2 ekran · Ctrl+N giriş · ↑↓ gez · Boşluk tamamla · S süre · Del sil · Alt+←/→ gün · Ctrl+Z geri al</div>
+  </div>
+
+  <div style="width:{{ vw }}px;height:768px;border-radius:10px;overflow:hidden;box-shadow:0 1px 2px rgba(20,28,40,.12),0 16px 48px rgba(20,28,40,.16);background:#FAFBFD;display:flex;flex-direction:column;border:1px solid #D3D9E2;">
+    <div style="height:30px;flex:none;background:#F1F3F6;border-bottom:1px solid #E1E5EC;display:flex;align-items:center;justify-content:center;font-size:12px;color:#626C7B;position:relative;">
+      <div style="position:absolute;left:12px;display:flex;gap:7px;"><span style="width:11px;height:11px;border-radius:50%;background:#D3D9E2;"></span><span style="width:11px;height:11px;border-radius:50%;background:#D3D9E2;"></span><span style="width:11px;height:11px;border-radius:50%;background:#D3D9E2;"></span></div>
+      Academic OS
+    </div>
+    <div style="flex:1;min-height:0;display:flex;position:relative;">
+
+      <nav style="width:{{ railW }}px;flex:none;background:#EFF1F5;border-right:1px solid #E1E5EC;display:flex;flex-direction:column;padding:16px 10px;gap:2px;">
+        <div style="font-size:13px;font-weight:600;color:#432523;padding:0 10px 14px;letter-spacing:.01em;">Academic OS</div>
+        <button onClick="{{ goTodo }}" style="height:36px;border:none;border-radius:10px;text-align:left;padding:0 10px;cursor:pointer;font-size:13.5px;display:flex;align-items:center;justify-content:space-between;background:{{ navTodoBg }};font-weight:{{ navTodoFw }};color:{{ navTodoFg }};" style-focus="outline:2px solid #8a5a44;outline-offset:-2px;"><span>Yapılacaklar</span><span style="font-size:12px;opacity:.8;font-variant-numeric:tabular-nums;">{{ openCountAll }}</span></button>
+        <button onClick="{{ goLog }}" style="height:36px;border:none;border-radius:10px;text-align:left;padding:0 10px;cursor:pointer;font-size:13.5px;display:flex;align-items:center;justify-content:space-between;background:{{ navLogBg }};font-weight:{{ navLogFw }};color:{{ navLogFg }};" style-focus="outline:2px solid #8a5a44;outline-offset:-2px;"><span>Bugün Ne Yaptım?</span></button>
+        <div style="height:1px;background:#E1E5EC;margin:12px 6px;"></div>
+        <div title="Bu prototipin kapsamı dışında" style="height:32px;padding:0 10px;display:flex;align-items:center;font-size:13px;color:#626C7B;">Dersler</div>
+        <div title="Mevcut odak sayacı — kapsam dışında" style="height:32px;padding:0 10px;display:flex;align-items:center;font-size:13px;color:#626C7B;">Odak sayacı</div>
+        <div title="Bu prototipin kapsamı dışında" style="height:32px;padding:0 10px;display:flex;align-items:center;font-size:13px;color:#626C7B;">Takvim</div>
+      </nav>
+
+      <sc-if value="{{ isTodo }}" hint-placeholder-val="{{ true }}">
+        <div style="flex:1;min-width:0;display:flex;position:relative;">
+          <aside style="width:{{ listsW }}px;flex:none;background:#F1F3F6;border-right:1px solid #E1E5EC;display:flex;flex-direction:column;padding:18px 10px;gap:2px;">
+            <div style="font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:#626C7B;font-weight:500;padding:0 10px 8px;">Listeler</div>
+            <sc-for list="{{ lists }}" as="l" hint-placeholder-count="3">
+              <button onClick="{{ l.onClick }}" onDoubleClick="{{ l.onRename }}" title="Çift tıkla: yeniden adlandır" style="height:34px;border:none;border-radius:10px;text-align:left;padding:0 10px;cursor:pointer;font-size:13.5px;display:flex;align-items:center;justify-content:space-between;gap:8px;background:{{ l.bg }};font-weight:{{ l.fw }};color:#24262B;" style-focus="outline:2px solid #8a5a44;outline-offset:-2px;"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ l.name }}</span><span style="font-size:12px;color:#626C7B;font-family:'Poppins',sans-serif;font-variant-numeric:tabular-nums;">{{ l.count }}</span></button>
+            </sc-for>
+            <sc-if value="{{ newListOpen }}" hint-placeholder-val="{{ false }}">
+              <input ref="{{ newListRef }}" value="{{ newListName }}" onChange="{{ onNewListChange }}" onKeyDown="{{ onNewListKey }}" onBlur="{{ cancelNewList }}" placeholder="Liste adı, Enter" style="height:34px;margin-top:6px;border:1.5px solid #633a30;border-radius:10px;padding:0 10px;font-size:13.5px;background:#FFFFFF;outline:none;" style-focus="box-shadow:0 0 0 3px rgba(138,90,68,.28);">
+            </sc-if>
+            <sc-if value="{{ newListClosed }}" hint-placeholder-val="{{ true }}">
+              <button onClick="{{ openNewList }}" style="height:34px;margin-top:6px;border:1px dashed #C7CED9;border-radius:10px;text-align:left;padding:0 10px;cursor:pointer;font-size:13px;background:transparent;color:#626C7B;" style-focus="outline:2px solid #8a5a44;outline-offset:1px;">+ Yeni liste</button>
+            </sc-if>
+          </aside>
+
+          <main style="flex:1;min-width:0;display:flex;flex-direction:column;padding:20px 28px 0;gap:14px;">
+            <div style="display:flex;align-items:center;gap:12px;min-height:34px;">
+              <sc-if value="{{ renamingList }}" hint-placeholder-val="{{ false }}">
+                <input ref="{{ renameRef }}" value="{{ renameVal }}" onChange="{{ onRenameChange }}" onKeyDown="{{ onRenameKey }}" onBlur="{{ commitRename }}" style="height:34px;font-size:20px;font-weight:600;border:1.5px solid #633a30;border-radius:10px;padding:0 8px;background:#FFFFFF;outline:none;width:280px;" style-focus="box-shadow:0 0 0 3px rgba(138,90,68,.28);">
+                <span style="font-size:12px;color:#626C7B;">Enter kaydet · Esc vazgeç</span>
+              </sc-if>
+              <sc-if value="{{ notRenamingList }}" hint-placeholder-val="{{ true }}">
+                <h2 style="margin:0;font-size:20px;font-weight:600;">{{ activeListName }}</h2>
+                <button onClick="{{ startRename }}" style="height:26px;padding:0 8px;border:1px solid #D3D9E2;background:transparent;border-radius:10px;font-size:12px;color:#626C7B;cursor:pointer;" style-focus="outline:2px solid #8a5a44;outline-offset:1px;">Yeniden adlandır</button>
+              </sc-if>
+              <div style="margin-left:auto;font-size:12.5px;color:#626C7B;font-family:'Poppins',sans-serif;font-variant-numeric:tabular-nums;">{{ listSummary }}</div>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              <div style="position:relative;display:flex;align-items:center;">
+                <span style="position:absolute;left:14px;font-size:18px;color:#8a5a44;line-height:1;">+</span>
+                <input ref="{{ quickRef }}" value="{{ quick }}" onChange="{{ onQuick }}" onKeyDown="{{ onQuickKey }}" placeholder="Görev ekle — başlığı yaz, Enter’a bas" style="width:100%;height:44px;border:1.5px solid #D3D9E2;border-radius:10px;padding:0 14px 0 36px;font-size:14.5px;background:#FFFFFF;outline:none;" style-focus="border-color:#633a30;box-shadow:0 0 0 3px rgba(138,90,68,.28);">
+              </div>
+              <div style="font-size:12px;color:#626C7B;padding-left:2px;">“{{ activeListName }}” listesine eklenir. Son tarih ve ders isteğe bağlı — görevi seçince eklenir.</div>
+            </div>
+
+            <div style="flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;padding-bottom:24px;">
+              <sc-if value="{{ noOpen }}" hint-placeholder-val="{{ false }}">
+                <div style="border:1px dashed #D3D9E2;border-radius:10px;padding:28px 24px;display:flex;flex-direction:column;gap:6px;align-items:flex-start;">
+                  <div style="font-size:14.5px;font-weight:600;">{{ emptyTitle }}</div>
+                  <div style="font-size:13px;color:#626C7B;line-height:1.5;max-width:460px;text-wrap:pretty;">Yukarıdaki satıra bir başlık yaz ve Enter’a bas. Örn. “Sinyaller çıkmış sorular – 2023 vize”.</div>
+                </div>
+              </sc-if>
+              <div style="display:flex;flex-direction:column;border-top:1px solid #E1E5EC;">
+                <sc-for list="{{ openTasks }}" as="t" hint-placeholder-count="5">
+                  <div data-taskrow="1" tabIndex="0" onClick="{{ t.onSelect }}" onKeyDown="{{ t.onKey }}" style="min-height:42px;display:flex;align-items:center;gap:12px;padding:0 10px;border-bottom:1px solid #E1E5EC;cursor:pointer;background:{{ t.rowBg }};" style-hover="background:#F4F5F8;" style-focus="outline:2px solid #8a5a44;outline-offset:-2px;">
+                    <button onClick="{{ t.onToggle }}" aria-label="Tamamla" title="Tamamla (Boşluk)" style="width:18px;height:18px;flex:none;border-radius:10px;border:1.5px solid #8a5a44;background:#FFFFFF;cursor:pointer;padding:0;" style-focus="outline:2px solid #8a5a44;outline-offset:2px;"></button>
+                    <div style="flex:1;min-width:0;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ t.title }}</div>
+                    <sc-if value="{{ t.hasCourse }}" hint-placeholder-val="{{ false }}"><span style="font-size:12px;color:#626C7B;background:#F1F3F6;border-radius:10px;padding:2px 7px;white-space:nowrap;">{{ t.course }}</span></sc-if>
+                    <sc-if value="{{ t.hasDue }}" hint-placeholder-val="{{ false }}"><span style="font-size:12px;white-space:nowrap;color:{{ t.dueColor }};font-weight:{{ t.dueFw }};">{{ t.dueText }}</span></sc-if>
+                    <sc-if value="{{ t.hasMins }}" hint-placeholder-val="{{ false }}"><span title="Bu göreve kayıtlı toplam süre" style="font-size:12px;color:#626C7B;font-family:'Poppins',sans-serif;font-variant-numeric:tabular-nums;white-space:nowrap;">{{ t.minsText }}</span></sc-if>
+                    <button onClick="{{ t.onLog }}" title="Süre kaydet (S)" style="height:26px;padding:0 9px;border:1px solid #D3D9E2;background:#FFFFFF;border-radius:10px;font-size:12px;color:#432523;cursor:pointer;white-space:nowrap;flex:none;" style-hover="border-color:#633a30;" style-focus="outline:2px solid #8a5a44;outline-offset:1px;">Süre kaydet</button>
+                  </div>
+                </sc-for>
+              </div>
+              <sc-if value="{{ hasDone }}" hint-placeholder-val="{{ true }}">
+                <button onClick="{{ toggleShowDone }}" style="align-self:flex-start;margin-top:14px;height:30px;border:none;background:transparent;padding:0 6px;font-size:13px;color:#3A3F48;cursor:pointer;display:flex;align-items:center;gap:6px;border-radius:10px;" style-focus="outline:2px solid #8a5a44;outline-offset:1px;"><span style="font-family:'Poppins',sans-serif;font-variant-numeric:tabular-nums;font-size:11px;width:10px;">{{ doneChevron }}</span>Tamamlananlar · {{ doneCount }}</button>
+                <sc-if value="{{ showDone }}" hint-placeholder-val="{{ false }}">
+                  <div style="display:flex;flex-direction:column;border-top:1px solid #E1E5EC;margin-top:4px;">
+                    <sc-for list="{{ doneTasks }}" as="t" hint-placeholder-count="2">
+                      <div data-taskrow="1" tabIndex="0" onClick="{{ t.onSelect }}" onKeyDown="{{ t.onKey }}" style="min-height:38px;display:flex;align-items:center;gap:12px;padding:0 10px;border-bottom:1px solid #E1E5EC;cursor:pointer;background:{{ t.rowBg }};" style-hover="background:#F4F5F8;" style-focus="outline:2px solid #8a5a44;outline-offset:-2px;">
+                        <button onClick="{{ t.onToggle }}" aria-label="Tamamlamayı geri al" title="Tamamlamayı geri al" style="width:18px;height:18px;flex:none;border-radius:10px;border:1.5px solid #633a30;background:#633a30;color:#FFFFFF;cursor:pointer;padding:0;font-size:12px;line-height:15px;" style-focus="outline:2px solid #8a5a44;outline-offset:2px;">✓</button>
+                        <div style="flex:1;min-width:0;font-size:13.5px;color:#626C7B;text-decoration:line-through;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ t.title }}</div>
+                        <sc-if value="{{ t.hasMins }}" hint-placeholder-val="{{ false }}"><span style="font-size:12px;color:#626C7B;font-family:'Poppins',sans-serif;font-variant-numeric:tabular-nums;">{{ t.minsText }}</span></sc-if>
+                      </div>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </sc-if>
+            </div>
+          </main>
+
+          <sc-if value="{{ hasSel }}" hint-placeholder-val="{{ false }}">
+            <section style="width:{{ detailW }}px;flex:none;background:#FBF8F3;border-left:1px solid #E1E5EC;display:flex;flex-direction:column;position:{{ detailPos }};right:0;top:0;bottom:0;box-shadow:{{ detailShadow }};z-index:5;">
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px 6px;">
+                <span style="font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:#626C7B;font-weight:500;">Görev ayrıntısı</span>
+                <button onClick="{{ closeDetail }}" title="Kapat (Esc)" aria-label="Kapat" style="width:28px;height:28px;border:none;background:transparent;border-radius:10px;cursor:pointer;font-size:16px;color:#626C7B;" style-hover="background:#F1F3F6;" style-focus="outline:2px solid #8a5a44;outline-offset:1px;">×</button>
+              </div>
+              <div style="flex:1;min-height:0;overflow:auto;padding:0 16px 16px;display:flex;flex-direction:column;gap:14px;">
+                <textarea value="{{ selTitle }}" onChange="{{ onSelTitle }}" onKeyDown="{{ onSelTitleKey }}" rows="2" aria-label="Görev başlığı" style="width:100%;resize:none;border:1px solid transparent;border-radius:10px;padding:6px 8px;margin:0 -8px;font-size:16px;font-weight:600;line-height:1.35;background:transparent;outline:none;" style-hover="border-color:#E1E5EC;" style-focus="border-color:#633a30;background:#FFFFFF;box-shadow:0 0 0 3px rgba(138,90,68,.28);"></textarea>
+                <div style="display:grid;grid-template-columns:76px minmax(0,1fr);gap:8px 10px;align-items:center;font-size:13px;">
+                  <label style="color:#626C7B;">Liste</label>
+                  <select value="{{ selListId }}" onChange="{{ onSelList }}" style="height:32px;border:1px solid #D3D9E2;border-radius:10px;background:#FFFFFF;padding:0 8px;font-size:13px;" style-focus="outline:2px solid #8a5a44;outline-offset:1px;">{{ listOptionEls }}</select>
+                  <label style="color:#626C7B;">Son tarih</label>
+                  <div style="display:flex;gap:6px;">
+                    <input type="date" value="{{ selDue }}" onChange="{{ onSelDue }}" style="flex:1;min-width:0;height:32px;border:1px solid #D3D9E2;border-radius:10px;background:#FFFFFF;padding:0 8px;font-size:13px;" style-focus="outline:2px solid #8a5a44;outline-offset:1px;">
+                    <sc-if value="{{ selHasDue }}" hint-placeholder-val="{{ false }}"><button onClick="{{ clearDue }}" title="Tarihi kaldır" style="height:32px;padding:0 8px;border:1px solid #D3D9E2;background:transparent;border-radius:10px;font-size:12px;cursor:pointer;color:#626C7B;" style-focus="outline:2px solid #8a5a44;outline-offset:1px;">Kaldır</button></sc-if>
+                  </div>
+                  <label style="color:#626C7B;">Ders</label>
+                  <select value="{{ selCourse }}" onChange="{{ onSelCourse }}" style="height:32px;border:1px solid #D3D9E2;border-radius:10px;background:#FFFFFF;padding:0 8px;font-size:13px;" style-focus="outline:2px solid #8a5a44;outline-offset:1px;">{{ courseOptionEls }}</select>
+                </div>
+                <div style="display:flex;gap:8px;">
+                  <button onClick="{{ selLog }}" style="flex:1;height:34px;border:none;background:#633a30;color:#FFFFFF;border-radius:10px;font-size:13px;font-weight:500;cursor:pointer;" style-hover="background:#432523;" style-focus="outline:2px solid #8a5a44;outline-offset:2px;">Süre kaydet</button>
+                  <button onClick="{{ selToggle }}" style="flex:1;height:34px;border:1px solid #633a30;background:#FFFFFF;color:#432523;border-radius:10px;font-size:13px;font-weight:500;cursor:pointer;" style-focus="outline:2px solid #8a5a44;outline-offset:2px;">{{ selToggleLabel }}</button>
+                </div>
+                <div style="font-size:12px;color:#626C7B;line-height:1.45;margin-top:-6px;">Süre kaydetmek görevi tamamlamaz.</div>
+                <div style="display:flex;flex-direction:column;gap:6px;border-top:1px solid #E1E5EC;padding-top:12px;">
+                  <div style="display:flex;justify-content:space-between;align-items:baseline;">
+                    <span style="font-size:13px;font-weight:600;">Çalışma kayıtları</span>
+                    <span style="font-size:12.5px;font-family:'Poppins',sans-serif;font-variant-numeric:tabular-nums;color:#432523;">{{ selTotal }}</span>
+                  </div>
+                  <sc-if value="{{ selNoEntries }}" hint-placeholder-val="{{ true }}"><div style="font-size:12.5px;color:#626C7B;line-height:1.45;">Henüz kayıt yok. “Süre kaydet” ile ilk kaydı ekle.</div></sc-if>
+                  <sc-for list="{{ selEntries }}" as="e" hint-placeholder-count="2">
+                    <button onClick="{{ e.onOpen }}" title="Bugün Ne Yaptım? ekranında aç" style="display:grid;grid-template-columns:52px minmax(0,1fr) auto;gap:8px;align-items:center;text-align:left;border:none;background:transparent;padding:6px 6px;margin:0 -6px;border-radius:10px;cursor:pointer;font-size:12.5px;" style-hover="background:#F4F5F8;" style-focus="outline:2px solid #8a5a44;outline-offset:-2px;">
+                      <span style="color:#626C7B;">{{ e.dateText }}</span>
+                      <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ e.desc }}<span style="color:#626C7B;"> · {{ e.srcText }}</span></span>
+                      <span style="font-family:'Poppins',sans-serif;font-variant-numeric:tabular-nums;color:#2F333A;">{{ e.minsText }}</span>
+                    </button>
+                  </sc-for>
+                </div>
+                <button onClick="{{ selDelete }}" style="align-self:flex-start;margin-top:auto;height:30px;padding:0 8px;border:none;background:transparent;color:#B05252;font-size:13px;cursor:pointer;border-radius:10px;" style-hover="background:#F7E9E9;" style-focus="outline:2px solid #8a5a44;outline-offset:1px;">Görevi sil</button>
+              </div>
+            </section>
+          </sc-if>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isLog }}" hint-placeholder-val="{{ false }}">
+        <div style="flex:1;min-width:0;display:flex;">
+          <main style="flex:1;min-width:0;display:flex;flex-direction:column;padding:20px 32px 0;gap:14px;">
+            <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+              <h2 style="margin:0;font-size:20px;font-weight:600;">Bugün Ne Yaptım?</h2>
+              <div style="display:flex;align-items:center;gap:4px;">
+                <button onClick="{{ prevDay }}" title="Önceki gün (Alt+←)" aria-label="Önceki gün" style="width:30px;height:30px;border:1px solid #D3D9E2;background:#FFFFFF;border-radius:10px;cursor:pointer;font-size:14px;" style-focus="outline:2px solid #8a5a44;outline-offset:1px;">‹</button>
+                <div style="position:relative;">
+                  <div style="height:30px;padding:0 12px;display:flex;align-items:center;font-size:13.5px;font-weight:500;min-width:170px;justify-content:center;border-radius:10px;background:#F1F3F6;">{{ dateLabel }}</div>
+                  <input type="date" value="{{ dateVal }}" max="{{ todayVal }}" onChange="{{ onDate }}" aria-label="Tarih seç" title="Tarih seç" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;">
+                </div>
+                <button onClick="{{ nextDay }}" disabled="{{ isToday }}" title="Sonraki gün (Alt+→)" aria-label="Sonraki gün" style="width:30px;height:30px;border:1px solid #D3D9E2;background:#FFFFFF;border-radius:10px;cursor:pointer;font-size:14px;opacity:{{ nextOpacity }};" style-focus="outline:2px solid #8a5a44;outline-offset:1px;">›</button>
+                <sc-if value="{{ notToday }}" hint-placeholder-val="{{ false }}">
+                  <button onClick="{{ goToday }}" style="height:30px;padding:0 10px;margin-left:4px;border:1px solid #633a30;background:#FFFFFF;color:#432523;border-radius:10px;cursor:pointer;font-size:12.5px;" style-focus="outline:2px solid #8a5a44;outline-offset:1px;">Bugüne dön</button>
+                </sc-if>
+              </div>
+              <div style="margin-left:auto;display:flex;align-items:baseline;gap:10px;">
+                <span style="font-size:12.5px;color:#626C7B;">Günlük toplam</span>
+                <span style="font-size:22px;font-weight:600;color:#432523;font-family:'Poppins',sans-serif;font-variant-numeric:tabular-nums;letter-spacing:-.02em;">{{ totalText }}</span>
+              </div>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:8px;">
+              <sc-if value="{{ hasLink }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex;align-items:center;gap:8px;font-size:12.5px;">
+                  <span style="color:#626C7B;">Bağlı görev</span>
+                  <span style="display:flex;align-items:center;gap:6px;background:#F3E9DC;border-radius:10px;padding:3px 4px 3px 9px;color:#2F333A;">{{ linkTitle }}<button onClick="{{ unlink }}" aria-label="Görev bağlantısını kaldır" title="Bağlantıyı kaldır" style="width:20px;height:20px;border:none;background:transparent;border-radius:10px;cursor:pointer;font-size:13px;color:#626C7B;padding:0;" style-focus="outline:2px solid #8a5a44;">×</button></span>
+                  <span style="color:#626C7B;">Başa saat aralığı ya da süre yaz.</span>
+                </div>
+              </sc-if>
+              <input ref="{{ logRef }}" value="{{ logText }}" onChange="{{ onLogChange }}" onKeyDown="{{ onLogKey }}" placeholder="10:30–11:15 Sinyaller çıkmış soru çözdüm   ·   30 dk kontrol çalıştım" aria-describedby="log-preview" style="width:100%;height:48px;border:1.5px solid {{ logBorder }};border-radius:10px;padding:0 16px;font-size:15px;background:#FFFFFF;outline:none;" style-focus="box-shadow:0 0 0 3px rgba(138,90,68,.28);">
+              <div id="log-preview" aria-live="polite" style="min-height:40px;">
+                <sc-if value="{{ pvHint }}" hint-placeholder-val="{{ true }}">
+                  <div style="font-size:12.5px;color:#626C7B;padding:6px 2px;line-height:1.5;">İki biçim: <span style="font-family:'Poppins',sans-serif;font-variant-numeric:tabular-nums;color:#2F333A;">10:30–11:15 açıklama</span> ya da <span style="font-family:'Poppins',sans-serif;font-variant-numeric:tabular-nums;color:#2F333A;">30 dk açıklama</span> · <span style="font-family:'Poppins',sans-serif;font-variant-numeric:tabular-nums;color:#2F333A;">1 sa 15 dk</span>, <span style="font-family:'Poppins',sans-serif;font-variant-numeric:tabular-nums;color:#2F333A;">1,5 saat</span> da olur.</div>
+                </sc-if>
+                <sc-if value="{{ pvOk }}" hint-placeholder-val="{{ false }}">
+                  <div style="display:flex;flex-direction:column;gap:6px;">
+                    <div style="display:flex;align-items:center;gap:10px;font-size:13px;padding:7px 10px;background:#FBF5DF;border-radius:10px;flex-wrap:wrap;">
+                      <span style="font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:#633a30;font-weight:600;">{{ pvKind }}</span>
+                      <sc-if value="{{ pvIsRange }}" hint-placeholder-val="{{ false }}"><span style="font-family:'Poppins',sans-serif;font-variant-numeric:tabular-nums;">{{ pvTime }}</span></sc-if>
+                      <span style="font-family:'Poppins',sans-serif;font-variant-numeric:tabular-nums;font-weight:500;">{{ pvMins }}</span>
+                      <span style="color:#2F333A;">“{{ pvDesc }}”</span>
+                      <sc-if value="{{ pvHasSuggest }}" hint-placeholder-val="{{ false }}"><button onClick="{{ acceptSuggest }}" style="height:24px;padding:0 8px;border:1px dashed #bb895a;background:transparent;border-radius:10px;font-size:12px;cursor:pointer;color:#432523;" style-focus="outline:2px solid #8a5a44;">Görevle bağla: {{ pvSuggest }} (Tab)</button></sc-if>
+                      <span style="margin-left:auto;font-size:12px;color:#626C7B;">{{ pvEnter }}</span>
+                    </div>
+                    <sc-if value="{{ pvTimer }}" hint-placeholder-val="{{ false }}">
+                      <div style="display:flex;align-items:center;gap:10px;font-size:12.5px;padding:8px 10px;border:1px solid #d4bc6a;background:#FBF5DF;border-radius:10px;flex-wrap:wrap;">
+                        <span style="color:#432523;flex:1;min-width:240px;line-height:1.45;">{{ pvConflict }}</span>
+                        <button onClick="{{ doMerge }}" style="height:28px;padding:0 10px;border:none;background:#633a30;color:#FFFFFF;border-radius:10px;font-size:12.5px;cursor:pointer;" style-focus="outline:2px solid #8a5a44;outline-offset:2px;">Sayaç kaydıyla birleştir</button>
+                        <button onClick="{{ doSeparate }}" style="height:28px;padding:0 10px;border:1px solid #bb895a;background:transparent;color:#432523;border-radius:10px;font-size:12.5px;cursor:pointer;" style-focus="outline:2px solid #8a5a44;outline-offset:2px;">Ayrı kayıt ekle</button>
+                      </div>
+                    </sc-if>
+                    <sc-if value="{{ pvOverlap }}" hint-placeholder-val="{{ false }}">
+                      <div style="font-size:12.5px;color:#432523;padding:2px 2px;">{{ pvConflict }}</div>
+                    </sc-if>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ pvPending }}" hint-placeholder-val="{{ false }}">
+                  <div style="font-size:12.5px;color:#626C7B;padding:6px 2px;">Henüz yorumlanamadı — {{ pvErr }}</div>
+                </sc-if>
+                <sc-if value="{{ pvError }}" hint-placeholder-val="{{ false }}">
+                  <div role="alert" style="display:flex;flex-direction:column;gap:3px;font-size:13px;padding:8px 12px;background:#F7E9E9;border-radius:10px;color:#8E3B3B;">
+                    <span style="font-weight:600;">{{ pvErr }}</span>
+                    <span style="color:#6E2E2E;">{{ pvFix }} Yazdığın metin korunur; düzeltip yeniden Enter’a bas.</span>
+                  </div>
+                </sc-if>
+              </div>
+            </div>
+
+            <div style="flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:18px;padding-bottom:24px;">
+              <sc-if value="{{ noEntries }}" hint-placeholder-val="{{ false }}">
+                <div style="border:1px dashed #D3D9E2;border-radius:10px;padding:28px 24px;display:flex;flex-direction:column;gap:6px;">
+                  <div style="font-size:14.5px;font-weight:600;">{{ emptyDayTitle }}</div>
+                  <div style="font-size:13px;color:#626C7B;line-height:1.5;max-width:520px;text-wrap:pretty;">Yukarıdaki satıra yaptığın işi yaz. Saat aralıklı kayıtlar sıralanır; yalnızca süre yazdıkların ayrı grupta durur. İkisi de toplama eklenir.</div>
+                </div>
+              </sc-if>
+              <sc-if value="{{ hasRanges }}" hint-placeholder-val="{{ true }}">
+                <div style="display:flex;flex-direction:column;">
+                  <div style="display:flex;justify-content:space-between;align-items:baseline;padding:0 10px 6px;">
+                    <span style="font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:#626C7B;font-weight:600;">Saat aralıklı</span>
+                    <span style="font-size:12.5px;color:#626C7B;font-family:'Poppins',sans-serif;font-variant-numeric:tabular-nums;">{{ rangeSum }}</span>
+                  </div>
+                  <div style="border-top:1px solid #E1E5EC;">
+                    <sc-for list="{{ ranges }}" as="e" hint-placeholder-count="3">
+                      <div style="border-bottom:1px solid #E1E5EC;background:{{ e.rowBg }};transition:background .4s;">
+                        <sc-if value="{{ e.notEditing }}" hint-placeholder-val="{{ true }}">
+                          <div style="display:grid;grid-template-columns:104px minmax(0,1fr) auto 64px auto;gap:12px;align-items:center;min-height:42px;padding:0 10px;">
+                            <span style="font-family:'Poppins',sans-serif;font-variant-numeric:tabular-nums;font-size:13px;color:#2F333A;">{{ e.timeText }}</span>
+                            <span style="font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ e.desc }}<sc-if value="{{ e.hasTask }}" hint-placeholder-val="{{ false }}"><button onClick="{{ e.onTask }}" title="Göreve git" style="margin-left:8px;border:none;background:transparent;padding:0;font-size:12px;color:#633a30;text-decoration:underline;text-underline-offset:2px;cursor:pointer;" style-focus="outline:2px solid #8a5a44;">↗ {{ e.taskTitle }}</button></sc-if></span>
+                            <span title="{{ e.srcTitle }}" style="font-size:11.5px;padding:2px 7px;border-radius:10px;white-space:nowrap;background:{{ e.srcBg }};color:{{ e.srcColor }};">{{ e.srcText }}</span>
+                            <span style="font-family:'Poppins',sans-serif;font-variant-numeric:tabular-nums;font-size:13px;text-align:right;">{{ e.minsText }}</span>
+                            <div style="display:flex;gap:2px;">
+                              <button onClick="{{ e.onEdit }}" style="height:26px;padding:0 8px;border:none;background:transparent;border-radius:10px;font-size:12px;color:#432523;cursor:pointer;" style-hover="background:#F1F3F6;" style-focus="outline:2px solid #8a5a44;">Düzenle</button>
+                              <button onClick="{{ e.onDelete }}" style="height:26px;padding:0 8px;border:none;background:transparent;border-radius:10px;font-size:12px;color:#B05252;cursor:pointer;" style-hover="background:#F7E9E9;" style-focus="outline:2px solid #8a5a44;">Sil</button>
+                            </div>
+                          </div>
+                        </sc-if>
+                        <sc-if value="{{ e.editing }}" hint-placeholder-val="{{ false }}">
+                          <div style="display:flex;flex-direction:column;gap:6px;padding:8px 10px;background:#FFFFFF;">
+                            <div style="display:flex;gap:8px;">
+                              <input ref="{{ editRef }}" value="{{ editText }}" onChange="{{ onEditChange }}" onKeyDown="{{ onEditKey }}" aria-label="Kaydı düzenle" style="flex:1;height:36px;border:1.5px solid {{ editBorder }};border-radius:10px;padding:0 10px;font-size:14px;outline:none;background:#FFFFFF;" style-focus="box-shadow:0 0 0 3px rgba(138,90,68,.28);">
+                              <button onClick="{{ saveEdit }}" style="height:36px;padding:0 12px;border:none;background:#633a30;color:#FFFFFF;border-radius:10px;font-size:13px;cursor:pointer;" style-focus="outline:2px solid #8a5a44;outline-offset:2px;">Kaydet</button>
+                              <button onClick="{{ cancelEdit }}" style="height:36px;padding:0 12px;border:1px solid #D3D9E2;background:transparent;border-radius:10px;font-size:13px;cursor:pointer;" style-focus="outline:2px solid #8a5a44;outline-offset:2px;">Vazgeç</button>
+                            </div>
+                            <span style="font-size:12.5px;color:{{ editMsgColor }};">{{ editMsg }}</span>
+                          </div>
+                        </sc-if>
+                      </div>
+                    </sc-for>
+                  </div>
+                </div>
+              </sc-if>
+              <sc-if value="{{ hasDurs }}" hint-placeholder-val="{{ true }}">
+                <div style="display:flex;flex-direction:column;">
+                  <div style="display:flex;justify-content:space-between;align-items:baseline;padding:0 10px 6px;">
+                    <span style="font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:#626C7B;font-weight:600;">Yalnızca süre <span style="text-transform:none;letter-spacing:0;font-weight:400;">— saati belirtilmemiş</span></span>
+                    <span style="font-size:12.5px;color:#626C7B;font-family:'Poppins',sans-serif;font-variant-numeric:tabular-nums;">{{ durSum }}</span>
+                  </div>
+                  <div style="border-top:1px solid #E1E5EC;">
+                    <sc-for list="{{ durs }}" as="e" hint-placeholder-count="1">
+                      <div style="border-bottom:1px solid #E1E5EC;background:{{ e.rowBg }};transition:background .4s;">
+                        <sc-if value="{{ e.notEditing }}" hint-placeholder-val="{{ true }}">
+                          <div style="display:grid;grid-template-columns:104px minmax(0,1fr) auto 64px auto;gap:12px;align-items:center;min-height:42px;padding:0 10px;">
+                            <span style="font-size:12px;color:#626C7B;">saatsiz</span>
+                            <span style="font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ e.desc }}<sc-if value="{{ e.hasTask }}" hint-placeholder-val="{{ false }}"><button onClick="{{ e.onTask }}" title="Göreve git" style="margin-left:8px;border:none;background:transparent;padding:0;font-size:12px;color:#633a30;text-decoration:underline;text-underline-offset:2px;cursor:pointer;" style-focus="outline:2px solid #8a5a44;">↗ {{ e.taskTitle }}</button></sc-if></span>
+                            <span title="{{ e.srcTitle }}" style="font-size:11.5px;padding:2px 7px;border-radius:10px;white-space:nowrap;background:{{ e.srcBg }};color:{{ e.srcColor }};">{{ e.srcText }}</span>
+                            <span style="font-family:'Poppins',sans-serif;font-variant-numeric:tabular-nums;font-size:13px;text-align:right;">{{ e.minsText }}</span>
+                            <div style="display:flex;gap:2px;">
+                              <button onClick="{{ e.onEdit }}" style="height:26px;padding:0 8px;border:none;background:transparent;border-radius:10px;font-size:12px;color:#432523;cursor:pointer;" style-hover="background:#F1F3F6;" style-focus="outline:2px solid #8a5a44;">Düzenle</button>
+                              <button onClick="{{ e.onDelete }}" style="height:26px;padding:0 8px;border:none;background:transparent;border-radius:10px;font-size:12px;color:#B05252;cursor:pointer;" style-hover="background:#F7E9E9;" style-focus="outline:2px solid #8a5a44;">Sil</button>
+                            </div>
+                          </div>
+                        </sc-if>
+                        <sc-if value="{{ e.editing }}" hint-placeholder-val="{{ false }}">
+                          <div style="display:flex;flex-direction:column;gap:6px;padding:8px 10px;background:#FFFFFF;">
+                            <div style="display:flex;gap:8px;">
+                              <input ref="{{ editRef }}" value="{{ editText }}" onChange="{{ onEditChange }}" onKeyDown="{{ onEditKey }}" aria-label="Kaydı düzenle" style="flex:1;height:36px;border:1.5px solid {{ editBorder }};border-radius:10px;padding:0 10px;font-size:14px;outline:none;background:#FFFFFF;" style-focus="box-shadow:0 0 0 3px rgba(138,90,68,.28);">
+                              <button onClick="{{ saveEdit }}" style="height:36px;padding:0 12px;border:none;background:#633a30;color:#FFFFFF;border-radius:10px;font-size:13px;cursor:pointer;" style-focus="outline:2px solid #8a5a44;outline-offset:2px;">Kaydet</button>
+                              <button onClick="{{ cancelEdit }}" style="height:36px;padding:0 12px;border:1px solid #D3D9E2;background:transparent;border-radius:10px;font-size:13px;cursor:pointer;" style-focus="outline:2px solid #8a5a44;outline-offset:2px;">Vazgeç</button>
+                            </div>
+                            <span style="font-size:12.5px;color:{{ editMsgColor }};">{{ editMsg }}</span>
+                          </div>
+                        </sc-if>
+                      </div>
+                    </sc-for>
+                  </div>
+                </div>
+              </sc-if>
+            </div>
+          </main>
+
+          <sc-if value="{{ wide }}" hint-placeholder-val="{{ true }}">
+            <aside style="width:290px;flex:none;border-left:1px solid #E1E5EC;background:#F1F3F6;display:flex;flex-direction:column;padding:20px 16px;gap:18px;overflow:auto;">
+              <div style="display:flex;flex-direction:column;gap:6px;">
+                <div style="font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:#626C7B;font-weight:600;">Açık görevlerden kaydet</div>
+                <sc-if value="{{ noOpenAll }}" hint-placeholder-val="{{ false }}"><div style="font-size:12.5px;color:#626C7B;">Açık görev yok.</div></sc-if>
+                <sc-for list="{{ openAll }}" as="t" hint-placeholder-count="5">
+                  <button onClick="{{ t.onLog }}" title="Görev başlığını giriş satırına getir" style="display:flex;flex-direction:column;align-items:flex-start;gap:1px;text-align:left;border:none;background:transparent;padding:7px 8px;margin:0 -8px;border-radius:10px;cursor:pointer;" style-hover="background:#E8EBF0;" style-focus="outline:2px solid #8a5a44;outline-offset:-2px;">
+                    <span style="font-size:13px;color:#24262B;line-height:1.35;">{{ t.title }}</span>
+                    <span style="font-size:11.5px;color:#626C7B;">{{ t.listName }}</span>
+                  </button>
+                </sc-for>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:8px;border-top:1px solid #E1E5EC;padding-top:14px;font-size:12.5px;line-height:1.45;color:#2F333A;">
+                <div style="font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:#626C7B;font-weight:600;">Kayıt kaynağı</div>
+                <div style="display:flex;gap:8px;align-items:flex-start;"><span style="font-size:11.5px;padding:1px 7px;border-radius:10px;background:#F1F3F6;color:#3A3F48;flex:none;">Elle</span><span>Bu ekrandan yazılan kayıt.</span></div>
+                <div style="display:flex;gap:8px;align-items:flex-start;"><span style="font-size:11.5px;padding:1px 7px;border-radius:10px;background:#FBF5DF;color:#432523;flex:none;">Sayaç</span><span>Odak sayacından otomatik gelir. Aynı saatlere elle kayıt yazılırsa birleştirme önerilir; süre bir kez sayılır.</span></div>
+              </div>
+            </aside>
+          </sc-if>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ hasToast }}" hint-placeholder-val="{{ false }}">
+        <div role="status" style="position:absolute;left:50%;bottom:20px;transform:translateX(-50%);background:#24262B;color:#FFFFFF;border-radius:10px;padding:0 6px 0 16px;height:42px;display:flex;align-items:center;gap:14px;font-size:13px;box-shadow:0 8px 24px rgba(20,28,40,.25);z-index:20;white-space:nowrap;">
+          <span>{{ toastMsg }}</span>
+          <sc-if value="{{ toastUndo }}" hint-placeholder-val="{{ true }}"><button onClick="{{ undo }}" style="height:30px;padding:0 10px;border:none;background:transparent;color:#d4bc6a;font-weight:600;font-size:13px;cursor:pointer;border-radius:10px;" style-hover="background:rgba(255,255,255,.08);" style-focus="outline:2px solid #d4bc6a;">Geri al · Ctrl+Z</button></sc-if>
+        </div>
+      </sc-if>
+    </div>
+  </div>
+
+  <section style="max-width:1366px;display:flex;flex-direction:column;gap:14px;">
+    <h2 style="margin:0;font-size:20px;font-weight:600;">JavaFX aktarım notu</h2>
+    <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:28px;font-size:13px;line-height:1.55;color:#2F333A;">
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <div style="font-weight:600;color:#24262B;">Bileşenler</div>
+        <div>Kabuk: <b>BorderPane</b>; sol gezinme <b>VBox</b> + <b>ToggleButton</b> (ToggleGroup).</div>
+        <div>Listeler: <b>ListView&lt;TaskList&gt;</b>; çift tık / F2 → <b>TextFieldListCell</b>. “+ Yeni liste” satır içi <b>TextField</b>.</div>
+        <div>Görevler: <b>ListView&lt;Task&gt;</b> + özel <b>ListCell</b> (CheckBox, Label, Label rozetleri, Button “Süre kaydet”).</div>
+        <div>Tamamlananlar: <b>TitledPane</b> (varsayılan kapalı).</div>
+        <div>Ayrıntı: sağda <b>VBox</b>; 1024’te <b>StackPane</b> üstünde kayan panel. TextArea, ComboBox, <b>DatePicker</b>.</div>
+        <div>Günlük: <b>TextField</b> + önizleme <b>HBox</b>; iki <b>VBox</b> grup, satırlar <b>GridPane</b>. Bildirim: alt ortada <b>Popup</b>/StackPane katmanı.</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <div style="font-weight:600;color:#24262B;">Ölçüler</div>
+        <div style="font-family:'Poppins',sans-serif;font-variant-numeric:tabular-nums;font-size:12.5px;display:grid;grid-template-columns:auto 1fr;gap:2px 12px;">
+          <span>Gezinme</span><span>184 / 150 px</span>
+          <span>Liste sütunu</span><span>212 / 172 px</span>
+          <span>Ayrıntı paneli</span><span>320 / 300 px</span>
+          <span>Sağ sütun (günlük)</span><span>290 px, 1024’te gizli</span>
+          <span>Hızlı giriş</span><span>44 px · günlük 48 px</span>
+          <span>Görev satırı</span><span>42 px · kayıt satırı 42 px</span>
+          <span>Düğme</span><span>26–34 px, köşe 10</span>
+          <span>Kenar boşluğu</span><span>28–32 px yatay</span>
+          <span>Yazı</span><span>13–14.5 px gövde, 20 px başlık</span>
+        </div>
+        <div>Yazı: Poppins (mevcut style.css). Saat ve süreler tabular rakam. Köşe 10 px (Button/TextField ile aynı), onay kutusu yuvarlak (silver-todo-row). Ayırıcılar 1 px -cizgi.</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <div style="font-weight:600;color:#24262B;">Renkler</div>
+        <div style="display:grid;grid-template-columns:16px auto 1fr;gap:5px 8px;align-items:center;font-size:12.5px;">
+          <span style="width:16px;height:16px;border-radius:10px;background:#FAFBFD;border:1px solid #D3D9E2;"></span><span style="font-family:'Poppins',sans-serif;font-variant-numeric:tabular-nums;">#FAFBFD</span><span>-zemin</span>
+          <span style="width:16px;height:16px;border-radius:10px;background:#FFFFFF;border:1px solid #D3D9E2;"></span><span style="font-family:'Poppins',sans-serif;font-variant-numeric:tabular-nums;">#FFFFFF</span><span>-yuzey: giriş alanları</span>
+          <span style="width:16px;height:16px;border-radius:10px;background:#F1F3F6;border:1px solid #D3D9E2;"></span><span style="font-family:'Poppins',sans-serif;font-variant-numeric:tabular-nums;">#F1F3F6</span><span>-yuzey-2: yan sütunlar</span>
+          <span style="width:16px;height:16px;border-radius:10px;background:#E1E5EC;"></span><span style="font-family:'Poppins',sans-serif;font-variant-numeric:tabular-nums;">#E1E5EC</span><span>-cizgi</span>
+          <span style="width:16px;height:16px;border-radius:10px;background:#24262B;"></span><span style="font-family:'Poppins',sans-serif;font-variant-numeric:tabular-nums;">#24262B</span><span>Metin</span>
+          <span style="width:16px;height:16px;border-radius:10px;background:#626C7B;"></span><span style="font-family:'Poppins',sans-serif;font-variant-numeric:tabular-nums;">#626C7B</span><span>İkincil metin (≥4.5:1)</span>
+          <span style="width:16px;height:16px;border-radius:10px;background:#633a30;"></span><span style="font-family:'Poppins',sans-serif;font-variant-numeric:tabular-nums;">#633a30</span><span>-palette-2: seçili menü, ana eylem</span>
+          <span style="width:16px;height:16px;border-radius:10px;background:#F3E9DC;"></span><span style="font-family:'Poppins',sans-serif;font-variant-numeric:tabular-nums;">#F3E9DC</span><span>-vurgu-acik: seçili satır</span>
+          <span style="width:16px;height:16px;border-radius:10px;background:#8a5a44;"></span><span style="font-family:'Poppins',sans-serif;font-variant-numeric:tabular-nums;">#8a5a44</span><span>-palette-3: odak halkası, vurgu</span>
+          <span style="width:16px;height:16px;border-radius:10px;background:#B05252;"></span><span style="font-family:'Poppins',sans-serif;font-variant-numeric:tabular-nums;">#B05252</span><span>-tehlike: hata, silme</span>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <div style="font-weight:600;color:#24262B;">Etkileşim kuralları</div>
+        <div>Enter her zaman kaydeder; boş veya geçersiz girişte metin silinmez, hata satırın altında yazılır.</div>
+        <div>Tamamlama, silme ve kayıt ekleme 7 sn’lik “Geri al” bildirimi gösterir (Ctrl+Z).</div>
+        <div>“Süre kaydet” → günlük ekranı, tarih bugün, metin = görev başlığı, imleç başta, görev bağlı. Görevi tamamlamaz.</div>
+        <div>Ayrıştırma: <span style="font-family:'Poppins',sans-serif;font-variant-numeric:tabular-nums;">HH:MM–HH:MM</span> (–, -, — kabul) veya <span style="font-family:'Poppins',sans-serif;font-variant-numeric:tabular-nums;">N dk / N sa / N,5 saat</span>.</div>
+        <div>Çift sayım: saat aralığı bir Sayaç kaydıyla kesişirse ya da aynı göreve bugün Sayaç kaydı varsa uyarı; Enter = birleştir (süre Sayaç’tan), Alt+Enter = ayrı ekle.</div>
+        <div>Odak: tüm odaklanabilir öğelerde 2 px altın halka; ListView’de ↑↓, Boşluk, S, Delete.</div>
+      </div>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;viewport&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;1366×768&quot;,&quot;1024×768&quot;],&quot;default&quot;:&quot;1366×768&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+const pad = n => String(n).padStart(2, '0');
+const dkey = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const pdate = k => { const [y, m, d] = k.split('-').map(Number); return new Date(y, m - 1, d); };
+const addD = (k, n) => { const d = pdate(k); d.setDate(d.getDate() + n); return dkey(d); };
+const TODAY = dkey(new Date());
+const fmtM = m => { const h = Math.floor(m / 60), r = m % 60; return h ? (r ? `${h} sa ${r} dk` : `${h} sa`) : `${r} dk`; };
+const hm = m => `${pad(Math.floor(m / 60))}:${pad(m % 60)}`;
+const trl = s => s.toLocaleLowerCase('tr');
+const COURSES = ['Sinyaller ve Sistemler', 'Kontrol Sistemleri', 'Olasılık ve İstatistik', 'Elektromanyetik'];
+const COURSE_SHORT = { 'Sinyaller ve Sistemler': 'Sinyaller', 'Kontrol Sistemleri': 'Kontrol', 'Olasılık ve İstatistik': 'Olasılık', 'Elektromanyetik': 'EM' };
+let UID = 100;
+
+class Component extends DCLogic {
+  quickRef = React.createRef();
+  logRef = React.createRef();
+  newListRef = React.createRef();
+  renameRef = React.createRef();
+  editRef = React.createRef();
+  state = { ...this.seed('sample'), vw: this.props.viewport === '1024×768' ? 1024 : 1366 };
+
+  seed(mode) {
+    const lists = [{ id: 'genel', name: 'Genel' }, { id: 'dersler', name: 'Dersler' }, { id: 'kisisel', name: 'Kişisel' }];
+    const T = TODAY, Y = addD(T, -1), Y2 = addD(T, -2);
+    const tasks = mode === 'empty' ? [] : [
+      { id: 't1', listId: 'dersler', title: 'Sinyaller çıkmış sorular – 2023 vize', done: false, due: addD(T, 2), course: 'Sinyaller ve Sistemler' },
+      { id: 't2', listId: 'dersler', title: 'Kontrol: kök yer eğrisi alıştırmaları', done: false, due: addD(T, 1), course: 'Kontrol Sistemleri' },
+      { id: 't3', listId: 'dersler', title: 'Olasılık ödev 4', done: false, due: addD(T, 5), course: 'Olasılık ve İstatistik' },
+      { id: 't9', listId: 'dersler', title: 'Elektromanyetik 3. bölüm özet', done: false, due: addD(T, -1), course: 'Elektromanyetik' },
+      { id: 't7', listId: 'dersler', title: 'Elektromanyetik lab raporu', done: true, due: null, course: 'Elektromanyetik' },
+      { id: 't4', listId: 'genel', title: 'Burs başvuru belgelerini tara', done: false, due: T, course: null },
+      { id: 't5', listId: 'genel', title: 'Danışman hocaya e-posta', done: false, due: null, course: null },
+      { id: 't8', listId: 'genel', title: 'Kütüphane kitabını iade et', done: true, due: null, course: null },
+      { id: 't6', listId: 'kisisel', title: 'Spor salonu üyeliğini yenile', done: false, due: addD(T, 7), course: null },
+    ];
+    const entries = mode === 'empty' ? [] : [
+      { id: 'e1', date: T, kind: 'range', start: 840, end: 865, minutes: 25, desc: 'Olasılık ödev 4', taskId: 't3', source: 'timer' },
+      { id: 'e2', date: T, kind: 'range', start: 630, end: 675, minutes: 45, desc: 'Sinyaller çıkmış soru çözdüm', taskId: 't1', source: 'manual' },
+      { id: 'e3', date: T, kind: 'dur', minutes: 30, desc: 'Kontrol çalıştım', taskId: 't2', source: 'manual' },
+      { id: 'e4', date: Y, kind: 'range', start: 555, end: 630, minutes: 75, desc: 'Elektromanyetik lab raporu yazdım', taskId: 't7', source: 'manual' },
+      { id: 'e5', date: Y, kind: 'range', start: 780, end: 830, minutes: 50, desc: 'Sinyaller: Fourier serileri', taskId: 't1', source: 'timer' },
+      { id: 'e6', date: Y, kind: 'dur', minutes: 20, desc: 'Danışmana e-posta taslağı', taskId: 't5', source: 'manual' },
+      { id: 'e7', date: Y2, kind: 'dur', minutes: 60, desc: 'Kütüphanede okuma', taskId: null, source: 'manual' },
+    ];
+    return {
+      mode, screen: mode === 'error' ? 'log' : 'todo', lists, activeList: 'dersler', tasks, entries,
+      selected: null, quick: '', showDone: false, newListOpen: false, newListName: '',
+      renamingList: false, renameVal: '', date: TODAY,
+      logText: mode === 'error' ? '25:10–11:15 Sinyaller çıkmış soru çözdüm' : '', logTaskId: null, logTried: mode === 'error',
+      editId: null, editText: '', editTried: false, toast: null, highlight: null,
+    };
+  }
+
+  componentDidMount() { this._k = e => this.globalKey(e); window.addEventListener('keydown', this._k); }
+  componentWillUnmount() { window.removeEventListener('keydown', this._k); clearTimeout(this._tt); }
+  componentDidUpdate(prev) {
+    if (prev.viewport !== this.props.viewport && this.props.viewport) this.setState({ vw: this.props.viewport === '1024×768' ? 1024 : 1366 });
+  }
+
+  focusLater(ref, caretStart) {
+    setTimeout(() => { const el = ref.current; if (el) { el.focus(); if (caretStart) el.setSelectionRange(0, 0); } }, 40);
+  }
+
+  globalKey(e) {
+    const S = this.state, mod = e.ctrlKey || e.metaKey;
+    const inField = /INPUT|TEXTAREA|SELECT/.test(e.target.tagName);
+    if (mod && e.key === '1') { e.preventDefault(); this.setState({ screen: 'todo' }); }
+    else if (mod && e.key === '2') { e.preventDefault(); this.setState({ screen: 'log' }); }
+    else if (mod && (e.key === 'n' || e.key === 'N')) { e.preventDefault(); this.focusLater(S.screen === 'todo' ? this.quickRef : this.logRef); }
+    else if (mod && (e.key === 'z' || e.key === 'Z') && S.toast && S.toast.prev && !inField) { e.preventDefault(); this.undo(); }
+    else if (e.altKey && S.screen === 'log' && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) { e.preventDefault(); this.shiftDay(e.key === 'ArrowLeft' ? -1 : 1); }
+    else if (e.key === 'Escape' && S.selected && S.screen === 'todo' && !inField) this.setState({ selected: null });
+  }
+
+  snap() { return { tasks: this.state.tasks, entries: this.state.entries }; }
+  toast(msg, prev) {
+    clearTimeout(this._tt);
+    const id = ++UID;
+    this.setState({ toast: { id, msg, prev } });
+    this._tt = setTimeout(() => { if (this.state.toast && this.state.toast.id === id) this.setState({ toast: null }); }, 7000);
+  }
+  undo() { const t = this.state.toast; if (t && t.prev) this.setState({ ...t.prev, toast: null }); }
+
+  // tasks
+  addTask() {
+    const title = this.state.quick.trim();
+    if (!title) return;
+    this.setState(s => ({ tasks: [{ id: 't' + (++UID), listId: s.activeList, title, done: false, due: null, course: null }, ...s.tasks], quick: '' }));
+  }
+  updTask(id, patch) { this.setState(s => ({ tasks: s.tasks.map(t => t.id === id ? { ...t, ...patch } : t) })); }
+  toggle(id) {
+    const t = this.state.tasks.find(x => x.id === id); if (!t) return;
+    const prev = this.snap();
+    this.updTask(id, { done: !t.done });
+    this.toast(t.done ? 'Görev yeniden açıldı' : `Tamamlandı: ${t.title}`, prev);
+  }
+  deleteTask(id) {
+    const t = this.state.tasks.find(x => x.id === id); const prev = this.snap();
+    this.setState(s => ({ tasks: s.tasks.filter(x => x.id !== id), selected: s.selected === id ? null : s.selected }));
+    this.toast(`Silindi: ${t.title}`, prev);
+  }
+  logTime(id) {
+    const t = this.state.tasks.find(x => x.id === id);
+    this.setState({ screen: 'log', date: TODAY, logText: t.title, logTaskId: id, logTried: false, editId: null });
+    this.focusLater(this.logRef, true);
+  }
+  rowKey(e, t) {
+    if (e.target !== e.currentTarget) return;
+    const rows = Array.from(document.querySelectorAll('[data-taskrow]')), i = rows.indexOf(e.currentTarget);
+    if (e.key === ' ') { e.preventDefault(); this.toggle(t.id); }
+    else if (e.key === 'Enter') this.setState({ selected: t.id });
+    else if (e.key === 's' || e.key === 'S') { e.preventDefault(); this.logTime(t.id); }
+    else if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); this.deleteTask(t.id); if (rows[i + 1]) rows[i + 1].focus(); }
+    else if (e.key === 'ArrowDown' && rows[i + 1]) { e.preventDefault(); rows[i + 1].focus(); }
+    else if (e.key === 'ArrowUp' && rows[i - 1]) { e.preventDefault(); rows[i - 1].focus(); }
+  }
+
+  // lists
+  createList() {
+    const name = this.state.newListName.trim();
+    if (!name) { this.setState({ newListOpen: false }); return; }
+    const id = 'l' + (++UID);
+    this.setState(s => ({ lists: [...s.lists, { id, name }], activeList: id, newListOpen: false, newListName: '', selected: null }));
+    this.focusLater(this.quickRef);
+  }
+  startRename() {
+    const l = this.state.lists.find(x => x.id === this.state.activeList);
+    this.setState({ renamingList: true, renameVal: l.name }); this.focusLater(this.renameRef);
+  }
+  commitRename() {
+    const v = this.state.renameVal.trim();
+    this.setState(s => ({ renamingList: false, lists: v ? s.lists.map(l => l.id === s.activeList ? { ...l, name: v } : l) : s.lists }));
+  }
+
+  // log parsing
+  parse(raw) {
+    const s = raw.trim();
+    const err = (msg, fix) => ({ ok: false, msg, fix });
+    if (!s) return { empty: true };
+    let m = s.match(/^(\d{1,2})[:.](\d{2})\s*(?:[–—-]|ile)\s*(\d{1,2})[:.](\d{2})\s*(.*)$/);
+    if (m) {
+      const h1 = +m[1], m1 = +m[2], h2 = +m[3], m2 = +m[4], rest = m[5].trim();
+      if (h1 > 23 || h2 > 23) return err(`Saat 00–23 arasında olmalı: “${h1 > 23 ? m[1] + ':' + m[2] : m[3] + ':' + m[4]}” geçersiz.`, 'Saati düzelt, örn. 10:30–11:15.');
+      if (m1 > 59 || m2 > 59) return err('Dakika 00–59 arasında olmalı.', 'Örn. 10:30–11:15.');
+      const a = h1 * 60 + m1, b = h2 * 60 + m2;
+      if (b <= a) return err('Bitiş saati başlangıçtan sonra olmalı.', `Örn. ${hm(a)}–${hm(Math.min(a + 45, 1439))}. Gece yarısını geçen çalışmayı iki kayda böl.`);
+      if (!rest) return err('Ne yaptığını da yaz.', `Örn. ${hm(a)}–${hm(b)} Sinyaller çıkmış soru çözdüm.`);
+      return { ok: true, kind: 'range', start: a, end: b, minutes: b - a, desc: rest };
+    }
+    if (/^\d{1,2}[:.]\d{2}/.test(s)) return err('Bitiş saati eksik.', 'Aralığı tireyle yaz: 10:30–11:15 açıklama.');
+    m = s.match(/^(?:(\d+(?:[.,]\d+)?)\s*(?:saat|sa|s)\.?(?=\s|\d|$))?\s*(?:(\d+)\s*(?:dakika|dk|d)\.?(?=\s|$))?\s*(.*)$/i);
+    if (m && (m[1] || m[2])) {
+      const mins = Math.round((m[1] ? parseFloat(m[1].replace(',', '.')) * 60 : 0) + (m[2] ? +m[2] : 0));
+      const rest = m[3].trim();
+      if (mins <= 0) return err('Süre sıfırdan büyük olmalı.', 'Örn. 30 dk kontrol çalıştım.');
+      if (mins > 960) return err(`Süre en fazla 16 sa olabilir (${fmtM(mins)} yazıldı).`, 'Süreyi kontrol et.');
+      if (!rest) return err('Ne yaptığını da yaz.', `Örn. ${fmtM(mins)} kontrol çalıştım.`);
+      return { ok: true, kind: 'dur', minutes: mins, desc: rest };
+    }
+    if (/^\d/.test(s)) return err('Süre birimi eksik.', `Birim ekle: “${s.match(/^\d+/)[0]} dk …” ya da “${s.match(/^\d+/)[0]} sa …”.`);
+    return err('Başa saat aralığı ya da süre ekle.', 'Örn. “10:30–11:15 …” ya da “30 dk …”.');
+  }
+  conflict(p, taskId, excludeId) {
+    const day = this.state.entries.filter(e => e.date === this.state.date && e.id !== excludeId);
+    if (p.kind === 'range') {
+      const ov = day.filter(e => e.kind === 'range' && p.start < e.end && p.end > e.start);
+      const t = ov.find(e => e.source === 'timer');
+      if (t) return { type: 'timer', e: t, text: `${hm(t.start)}–${hm(t.end)} Sayaç kaydıyla çakışıyor (“${t.desc}”, ${fmtM(t.minutes)}). Aynı çalışmaysa birleştir; süre bir kez sayılır.` };
+      if (ov[0]) return { type: 'overlap', e: ov[0], text: `Not: ${hm(ov[0].start)}–${hm(ov[0].end)} “${ov[0].desc}” ile çakışıyor; ikisi de toplama eklenecek.` };
+    } else if (taskId) {
+      const t = day.find(e => e.source === 'timer' && e.taskId === taskId);
+      if (t) return { type: 'timer', e: t, text: `Bu görev için bu gün ${fmtM(t.minutes)} Sayaç kaydı var. Aynı çalışmaysa birleştir; süre bir kez sayılır.` };
+    }
+    return null;
+  }
+  suggest(p) {
+    if (this.state.logTaskId || !p.ok) return null;
+    const words = trl(p.desc).split(/\s+/).filter(w => w.length >= 4).map(w => w.slice(0, 5));
+    return this.state.tasks.find(t => !t.done && words.some(w => trl(t.title).includes(w))) || null;
+  }
+  saveLog(separate) {
+    const S = this.state, p = this.parse(S.logText);
+    if (!p.ok) { this.setState({ logTried: true }); return; }
+    const c = this.conflict(p, S.logTaskId, null), prev = this.snap();
+    if (c && c.type === 'timer' && !separate) {
+      this.setState(s => ({ entries: s.entries.map(e => e.id === c.e.id ? { ...e, desc: p.desc, taskId: s.logTaskId || e.taskId, merged: true } : e), logText: '', logTaskId: null, logTried: false, highlight: c.e.id }));
+      this.toast('Sayaç kaydına eklendi — süre bir kez sayıldı', prev);
+      this.clearHl();
+      return;
+    }
+    const id = 'e' + (++UID);
+    const entry = { id, date: S.date, kind: p.kind, start: p.start, end: p.end, minutes: p.minutes, desc: p.desc, taskId: S.logTaskId, source: 'manual' };
+    this.setState(s => ({ entries: [...s.entries, entry], logText: '', logTaskId: null, logTried: false, highlight: id }));
+    this.toast(`Kaydedildi: ${fmtM(p.minutes)}`, prev);
+    this.clearHl();
+  }
+  clearHl() { setTimeout(() => this.setState({ highlight: null }), 1600); }
+  entryText(e) { return e.kind === 'range' ? `${hm(e.start)}–${hm(e.end)} ${e.desc}` : `${fmtM(e.minutes)} ${e.desc}`; }
+  saveEdit() {
+    const p = this.parse(this.state.editText);
+    if (!p.ok) { this.setState({ editTried: true }); return; }
+    const prev = this.snap();
+    this.setState(s => ({ entries: s.entries.map(e => e.id === s.editId ? { ...e, kind: p.kind, start: p.start, end: p.end, minutes: p.minutes, desc: p.desc } : e), editId: null, editTried: false }));
+    this.toast('Kayıt güncellendi', prev);
+  }
+  deleteEntry(id) {
+    const prev = this.snap();
+    this.setState(s => ({ entries: s.entries.filter(e => e.id !== id) }));
+    this.toast('Kayıt silindi', prev);
+  }
+  shiftDay(n) { const d = addD(this.state.date, n); if (d > TODAY) return; this.setState({ date: d, editId: null }); }
+  goEntry(e) { this.setState({ screen: 'log', date: e.date, highlight: e.id, editId: null }); this.clearHl(); }
+  goTask(id) {
+    const t = this.state.tasks.find(x => x.id === id); if (!t) return;
+    this.setState({ screen: 'todo', activeList: t.listId, selected: id, showDone: t.done || this.state.showDone });
+  }
+  dueLabel(k) {
+    const d = Math.round((pdate(k) - pdate(TODAY)) / 864e5);
+    const short = pdate(k).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' });
+    if (d === 0) return { text: 'Bugün', late: false, strong: true };
+    if (d === 1) return { text: 'Yarın', late: false };
+    if (d < 0) return { text: `Gecikti · ${short}`, late: true, strong: true };
+    return { text: short, late: false };
+  }
+
+  renderVals() {
+    const S = this.state, narrow = S.vw === 1024;
+    const listName = id => (S.lists.find(l => l.id === id) || {}).name || '';
+    const minsBy = {}; S.entries.forEach(e => { if (e.taskId) minsBy[e.taskId] = (minsBy[e.taskId] || 0) + e.minutes; });
+    const mapTask = t => {
+      const due = t.due ? this.dueLabel(t.due) : null;
+      return {
+        id: t.id, title: t.title, hasDue: !!due, dueText: due ? due.text : '', dueColor: due && due.late ? '#B05252' : '#626C7B', dueFw: due && due.strong ? 600 : 400,
+        hasCourse: !!t.course && !narrow, course: COURSE_SHORT[t.course] || t.course || '',
+        hasMins: !!minsBy[t.id], minsText: minsBy[t.id] ? fmtM(minsBy[t.id]) : '',
+        rowBg: t.id === S.selected ? '#F3E9DC' : 'transparent',
+        onToggle: e => { e.stopPropagation(); this.toggle(t.id); },
+        onSelect: () => this.setState({ selected: t.id, renamingList: false }),
+        onLog: e => { e.stopPropagation(); this.logTime(t.id); },
+        onKey: e => this.rowKey(e, t),
+      };
+    };
+    const inList = S.tasks.filter(t => t.listId === S.activeList);
+    const open = inList.filter(t => !t.done), done = inList.filter(t => t.done);
+    const openAllRaw = S.tasks.filter(t => !t.done);
+    const sel = S.tasks.find(t => t.id === S.selected) || null;
+    const selEntries = sel ? S.entries.filter(e => e.taskId === sel.id).sort((a, b) => (b.date + pad(b.start || 0)).localeCompare(a.date + pad(a.start || 0))) : [];
+    const pb = on => on ? '#FFFFFF' : 'transparent';
+
+    // log
+    const day = S.entries.filter(e => e.date === S.date);
+    const total = day.reduce((a, e) => a + e.minutes, 0);
+    const mapEntry = e => {
+      const t = e.taskId ? S.tasks.find(x => x.id === e.taskId) : null, timer = e.source === 'timer';
+      return {
+        id: e.id, desc: e.desc, minsText: fmtM(e.minutes), timeText: e.kind === 'range' ? `${hm(e.start)}–${hm(e.end)}` : '',
+        srcText: timer ? (e.merged ? 'Sayaç · düzenlendi' : 'Sayaç') : 'Elle',
+        srcTitle: timer ? 'Odak sayacından geldi' : 'Bu ekrandan elle girildi',
+        srcBg: timer ? '#FBF5DF' : '#F1F3F6', srcColor: timer ? '#432523' : '#3A3F48',
+        hasTask: !!t && !narrow, taskTitle: t ? (t.title.length > 26 ? t.title.slice(0, 25) + '…' : t.title) : '',
+        onTask: () => t && this.goTask(t.id),
+        editing: S.editId === e.id, notEditing: S.editId !== e.id,
+        rowBg: S.highlight === e.id ? '#FBF5DF' : 'transparent',
+        onEdit: () => { this.setState({ editId: e.id, editText: this.entryText(e), editTried: false }); this.focusLater(this.editRef); },
+        onDelete: () => this.deleteEntry(e.id),
+      };
+    };
+    const ranges = day.filter(e => e.kind === 'range').sort((a, b) => a.start - b.start).map(mapEntry);
+    const durs = day.filter(e => e.kind === 'dur').map(mapEntry);
+    const sum = arr => fmtM(arr.reduce((a, e) => a + e.minutes, 0));
+    const p = this.parse(S.logText);
+    const c = p.ok ? this.conflict(p, S.logTaskId, null) : null;
+    const sg = this.suggest(p);
+    const linkT = S.logTaskId ? S.tasks.find(t => t.id === S.logTaskId) : null;
+    const ep = S.editId ? this.parse(S.editText) : null;
+    const dl = pdate(S.date).toLocaleDateString('tr-TR', { weekday: 'long', day: 'numeric', month: 'long' });
+    const isToday = S.date === TODAY;
+
+    return {
+      vw: S.vw, railW: narrow ? 150 : 184, listsW: narrow ? 172 : 212, detailW: narrow ? 300 : 320,
+      detailPos: narrow ? 'absolute' : 'relative', detailShadow: narrow ? '-12px 0 32px rgba(20,28,40,.14)' : 'none',
+      wide: !narrow,
+      pbSample: pb(S.mode === 'sample'), pbEmpty: pb(S.mode === 'empty'), pbError: pb(S.mode === 'error'),
+      pbWide: pb(!narrow), pbNarrow: pb(narrow),
+      presetSample: () => this.setState({ ...this.seed('sample') }),
+      presetEmpty: () => this.setState({ ...this.seed('empty') }),
+      presetError: () => this.setState({ ...this.seed('error') }),
+      vwWide: () => this.setState({ vw: 1366 }), vwNarrow: () => this.setState({ vw: 1024 }),
+      isTodo: S.screen === 'todo', isLog: S.screen === 'log',
+      goTodo: () => this.setState({ screen: 'todo' }), goLog: () => this.setState({ screen: 'log' }),
+      navTodoBg: S.screen === 'todo' ? '#633a30' : 'transparent', navTodoFw: S.screen === 'todo' ? 600 : 400,
+      navTodoFg: S.screen === 'todo' ? '#FFFFFF' : '#24262B', navLogFg: S.screen === 'log' ? '#FFFFFF' : '#24262B',
+      navLogBg: S.screen === 'log' ? '#633a30' : 'transparent', navLogFw: S.screen === 'log' ? 600 : 400,
+      openCountAll: openAllRaw.length || '',
+
+      lists: S.lists.map(l => ({
+        id: l.id, name: l.name, count: S.tasks.filter(t => t.listId === l.id && !t.done).length || '',
+        bg: l.id === S.activeList ? '#F3E9DC' : 'transparent', fw: l.id === S.activeList ? 600 : 400,
+        onClick: () => this.setState({ activeList: l.id, selected: null, renamingList: false }),
+        onRename: () => this.setState({ activeList: l.id }, () => this.startRename()),
+      })),
+      newListOpen: S.newListOpen, newListClosed: !S.newListOpen, newListRef: this.newListRef, newListName: S.newListName,
+      openNewList: () => { this.setState({ newListOpen: true, newListName: '' }); this.focusLater(this.newListRef); },
+      onNewListChange: e => this.setState({ newListName: e.target.value }),
+      onNewListKey: e => { if (e.key === 'Enter') this.createList(); if (e.key === 'Escape') this.setState({ newListOpen: false }); },
+      cancelNewList: () => { if (this.state.newListName.trim()) this.createList(); else this.setState({ newListOpen: false }); },
+
+      activeListName: listName(S.activeList),
+      renamingList: S.renamingList, notRenamingList: !S.renamingList, renameRef: this.renameRef, renameVal: S.renameVal,
+      startRename: () => this.startRename(),
+      onRenameChange: e => this.setState({ renameVal: e.target.value }),
+      onRenameKey: e => { if (e.key === 'Enter') this.commitRename(); if (e.key === 'Escape') this.setState({ renamingList: false }); },
+      commitRename: () => this.state.renamingList && this.commitRename(),
+      listSummary: `${open.length} açık · ${done.length} tamamlandı`,
+
+      quickRef: this.quickRef, quick: S.quick,
+      onQuick: e => this.setState({ quick: e.target.value }),
+      onQuickKey: e => { if (e.key === 'Enter') this.addTask(); if (e.key === 'Escape') this.setState({ quick: '' }); },
+      noOpen: open.length === 0,
+      emptyTitle: done.length ? 'Açık görev kalmadı.' : `“${listName(S.activeList)}” listesi boş.`,
+      openTasks: open.map(mapTask), doneTasks: done.map(mapTask),
+      hasDone: done.length > 0, doneCount: done.length, showDone: S.showDone, doneChevron: S.showDone ? '▾' : '▸',
+      toggleShowDone: () => this.setState(s => ({ showDone: !s.showDone })),
+
+      hasSel: !!sel,
+      closeDetail: () => this.setState({ selected: null }),
+      selTitle: sel ? sel.title : '',
+      onSelTitle: e => sel && this.updTask(sel.id, { title: e.target.value.replace(/\n/g, '') }),
+      onSelTitleKey: e => { if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); } },
+      selListId: sel ? sel.listId : '',
+      listOptionEls: S.lists.map(l => React.createElement('option', { key: l.id, value: l.id }, l.name)),
+      onSelList: e => { if (!sel) return; const to = e.target.value; this.updTask(sel.id, { listId: to }); this.toast(`“${listName(to)}” listesine taşındı`, this.snap()); },
+      selDue: sel && sel.due ? sel.due : '', selHasDue: !!(sel && sel.due),
+      onSelDue: e => sel && this.updTask(sel.id, { due: e.target.value || null }),
+      clearDue: () => sel && this.updTask(sel.id, { due: null }),
+      selCourse: sel && sel.course ? sel.course : '',
+      courseOptionEls: [React.createElement('option', { key: '_', value: '' }, '— Ders yok'), ...COURSES.map(c => React.createElement('option', { key: c, value: c }, c))],
+      onSelCourse: e => sel && this.updTask(sel.id, { course: e.target.value || null }),
+      selLog: () => sel && this.logTime(sel.id),
+      selToggle: () => sel && this.toggle(sel.id),
+      selToggleLabel: sel && sel.done ? 'Tamamlanmadı yap' : 'Tamamla',
+      selTotal: selEntries.length ? fmtM(selEntries.reduce((a, e) => a + e.minutes, 0)) : '',
+      selNoEntries: selEntries.length === 0,
+      selEntries: selEntries.map(e => ({
+        id: e.id, desc: e.kind === 'range' ? `${hm(e.start)} ${e.desc}` : e.desc,
+        dateText: e.date === TODAY ? 'Bugün' : pdate(e.date).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' }),
+        srcText: e.source === 'timer' ? 'Sayaç' : 'Elle', minsText: fmtM(e.minutes), onOpen: () => this.goEntry(e),
+      })),
+      selDelete: () => sel && this.deleteTask(sel.id),
+
+      dateLabel: dl.charAt(0).toLocaleUpperCase('tr') + dl.slice(1), dateVal: S.date, todayVal: TODAY,
+      isToday, notToday: !isToday, nextOpacity: isToday ? 0.4 : 1,
+      prevDay: () => this.shiftDay(-1), nextDay: () => this.shiftDay(1), goToday: () => this.setState({ date: TODAY }),
+      onDate: e => { const v = e.target.value; if (v && v <= TODAY) this.setState({ date: v, editId: null }); },
+      totalText: fmtM(total),
+      hasLink: !!linkT, linkTitle: linkT ? linkT.title : '', unlink: () => this.setState({ logTaskId: null }),
+      logRef: this.logRef, logText: S.logText,
+      logBorder: !p.ok && !p.empty && S.logTried ? '#B05252' : '#D3D9E2',
+      onLogChange: e => this.setState({ logText: e.target.value, logTried: false }),
+      onLogKey: e => {
+        if (e.key === 'Enter') { e.preventDefault(); this.saveLog(e.altKey); }
+        else if (e.key === 'Tab' && !e.shiftKey && sg) { e.preventDefault(); this.setState({ logTaskId: sg.id }); }
+        else if (e.key === 'Escape') { this.setState({ logText: '', logTaskId: null, logTried: false }); }
+      },
+      pvHint: !!p.empty, pvOk: !!p.ok, pvPending: !p.ok && !p.empty && !S.logTried, pvError: !p.ok && !p.empty && S.logTried,
+      pvKind: p.kind === 'range' ? 'Saat aralığı' : 'Yalnızca süre', pvIsRange: p.kind === 'range',
+      pvTime: p.kind === 'range' ? `${hm(p.start)}–${hm(p.end)}` : '', pvMins: p.ok ? fmtM(p.minutes) : '', pvDesc: p.desc || '',
+      pvHasSuggest: !!sg, pvSuggest: sg ? (sg.title.length > 28 ? sg.title.slice(0, 27) + '…' : sg.title) : '', acceptSuggest: () => sg && this.setState({ logTaskId: sg.id }),
+      pvEnter: c && c.type === 'timer' ? 'Enter birleştir · Alt+Enter ayrı' : (isToday ? 'Enter ile kaydet' : `Enter · ${dl} gününe kaydet`),
+      pvTimer: !!(c && c.type === 'timer'), pvOverlap: !!(c && c.type === 'overlap'), pvConflict: c ? c.text : '',
+      doMerge: () => this.saveLog(false), doSeparate: () => this.saveLog(true),
+      pvErr: p.msg || '', pvFix: p.fix || '',
+
+      noEntries: day.length === 0, emptyDayTitle: isToday ? 'Bugün için henüz kayıt yok.' : 'Bu gün için kayıt yok.',
+      hasRanges: ranges.length > 0, hasDurs: durs.length > 0, ranges, durs,
+      rangeSum: `${ranges.length} kayıt · ${sum(day.filter(e => e.kind === 'range'))}`,
+      durSum: `${durs.length} kayıt · ${sum(day.filter(e => e.kind === 'dur'))}`,
+      editRef: this.editRef, editText: S.editText,
+      onEditChange: e => this.setState({ editText: e.target.value, editTried: false }),
+      onEditKey: e => { if (e.key === 'Enter') this.saveEdit(); if (e.key === 'Escape') this.setState({ editId: null }); },
+      saveEdit: () => this.saveEdit(), cancelEdit: () => this.setState({ editId: null }),
+      editBorder: ep && !ep.ok && S.editTried ? '#B05252' : '#633a30',
+      editMsgColor: ep && !ep.ok && S.editTried ? '#B05252' : '#626C7B',
+      editMsg: !ep ? '' : ep.ok ? `${ep.kind === 'range' ? 'Saat aralığı ' + hm(ep.start) + '–' + hm(ep.end) + ' · ' : 'Yalnızca süre · '}${fmtM(ep.minutes)} — Enter kaydet, Esc vazgeç` : (S.editTried ? `${ep.msg} ${ep.fix || ''}` : `Henüz yorumlanamadı — ${ep.msg || ''}`),
+
+      noOpenAll: openAllRaw.length === 0,
+      openAll: openAllRaw.slice(0, 8).map(t => ({ id: t.id, title: t.title, listName: listName(t.listId), onLog: () => this.logTime(t.id) })),
+
+      hasToast: !!S.toast, toastMsg: S.toast ? S.toast.msg : '', toastUndo: !!(S.toast && S.toast.prev), undo: () => this.undo(),
+    };
+  }
+}
+</script>
+</body>
+</html>

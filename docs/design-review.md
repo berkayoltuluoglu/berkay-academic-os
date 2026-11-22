@@ -114,3 +114,21 @@ Yeni tema motoru veya ağır görsel bağımlılık gerekmiyor. Finansın WebVie
 - Odak, teslim, seçili blok, sabit ders ve bekleyen öneri yalnızca renkle ayrılmaz.
 - Otomatik kayıt durumu “Kaydediliyor / Kaydedildi / Kaydedilemedi” şeklinde aynı yerde görünür;
   hata halinde taslak kullanıcıdan gizlenmez.
+
+
+## AOS-015 — Claude referansının JavaFX uyarlaması · 23 Kasım 2026
+
+`Shared link(1).zip` içindeki sıcak paletli `Yapilacaklar ve Gunluk.dc.html` kaynak alındı. Özgün referans
+[notes/design-references/aos-015-claude-reference.html](../notes/design-references/aos-015-claude-reference.html) içinde korunur.
+Modernist varyant yerine mevcut uygulamanın Poppins tipografisi ve gümüş–kahverengi paleti kullanıldı.
+
+Liste sütunu, 44 px hızlı giriş, kompakt görev satırları, kapalı tamamlananlar grubu ve sağ ayrıntı paneli
+native kontrollere aktarıldı. 1366 genişlikte ayrıntı paneli içerik yanında, 1024 genişlikte içerik üzerinde açılır.
+Günlükte saatli ve saatsiz kayıtlar ayrıdır; sayaç kaynağı görünür ve birleştirme süreyi iki kez eklemez.
+
+`JournalInterfaceTest` geçici profillerle geniş/dar görünümü ve günlük işlemlerini çalıştırır; ekran görüntüleri
+`app/build/reports/journal-tasks-wide.png`, `journal-tasks-narrow.png`, `journal-diary-wide.png` içinde üretilir.
+
+Doğrulama: 1366×768 ve 1024×768 ekran görüntüleri incelendi. 271 uygulama testi arayüz testleri dahil
+başarılı; geçici profiller kullanıldı ve Java 21 dağıtım kaynak kontrolü geçti. Kayıt hatası ve eski veri
+koruması testleri de bu teslimin parçasıdır.
