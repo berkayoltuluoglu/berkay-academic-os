@@ -9,6 +9,7 @@ if (Test-Path 'HKCU:\Software\BerkayAcademicOS') {
 }
 $InstallDirectory = Join-Path $VerificationDirectory 'Academic OS Türkçe installed'
 $SmokeDirectory = Join-Path $VerificationDirectory ('AcademicOS-smoke-profile-' + [guid]::NewGuid().ToString('N'))
+New-Item -ItemType Directory -Path $SmokeDirectory -Force | Out-Null
 $ProfileDirectory = Join-Path $env:LOCALAPPDATA 'BerkayAcademicOS'
 New-Item -ItemType Directory -Path (Join-Path $ProfileDirectory 'data') -Force | Out-Null
 $Marker = Join-Path $ProfileDirectory 'data/installer-test-marker.txt'
