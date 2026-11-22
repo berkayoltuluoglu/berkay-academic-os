@@ -47,7 +47,7 @@ const TURLER = {
   diger:      "Diğer"
 };
 
-let state = { debts: [], flows: [], accounts: [], subs: [], incomes: [], goals: [],
+let state = { debts: [], flows: [], accounts: [], subs: [], incomes: [], goals: [], installments: [], statements: [],
               settings: clone(DEFAULTS) };
 let activeTab = "panel";
 let openCards = new Set();
@@ -55,6 +55,8 @@ let editingDebt = null;
 let editSub = null, editAcc = null, editInc = null, editGoal = null, editFlow = null;
 let odemeSecim = null;
 let formType = "kredikarti";
+let editInstallment = null, editTransfer = null, transferOpen = false;
+let statementSource = null, statementPreview = null;
 
 /* =========================================================
    2. YARDIMCILAR
@@ -242,9 +244,11 @@ function setSync(text){ document.getElementById("bt-sync").textContent = text; }
 function resetEditors(){
   editingDebt = editSub = editAcc = editInc = editGoal = editFlow = null;
   odemeSecim = null;
+  editInstallment = editTransfer = null; transferOpen = false;
+  statementSource = statementPreview = null;
 }
 function save(){
-  const editors = [editingDebt, editSub, editAcc, editInc, editGoal, editFlow].map(item => item && item.id);
+  const editors = [editingDebt, editSub, editAcc, editInc, editGoal, editFlow, editInstallment, editTransfer].map(item => item && item.id);
   try {
     const checked = hostResult(window.financeHost.validate(JSON.stringify(state))).data;
     hostResult(window.financeHost.save(JSON.stringify(checked)));
@@ -253,8 +257,8 @@ function save(){
     setSync("bu bilgisayara kaydedildi");
   } catch(error) {
     if(committed) state = clone(committed);
-    const collections = ["debts", "subs", "accounts", "incomes", "goals", "flows"];
-    [editingDebt, editSub, editAcc, editInc, editGoal, editFlow] = editors.map((id, index) =>
+    const collections = ["debts", "subs", "accounts", "incomes", "goals", "flows", "installments", "flows"];
+    [editingDebt, editSub, editAcc, editInc, editGoal, editFlow, editInstallment, editTransfer] = editors.map((id, index) =>
       id ? state[collections[index]].find(item => item.id === id) || null : null);
     setSync("kaydedilemedi — son kayıt korundu");
     throw new Error("Kaydedilemedi: " + error.message);
@@ -262,7 +266,7 @@ function save(){
 }
 
 /* ---- veriyi state'e uygula: replace = üzerine yaz, merge = birleştir ---- */
-const KOLEKSIYONLAR = ["debts","flows","accounts","subs","incomes","goals"];
+const KOLEKSIYONLAR = ["debts","flows","accounts","subs","incomes","goals","installments","statements"];
 function hydrate(p, mode){
   for(const key of ["__proto__", "constructor", "prototype"]){
     if(Object.prototype.hasOwnProperty.call(p, key) || (p.settings && Object.prototype.hasOwnProperty.call(p.settings, key))) throw new Error("Geçersiz alan adı");
@@ -299,7 +303,8 @@ const CSV_COLS = ["kayit_tipi","id","tur","ad","banka","limit","bakiye","anapara
   "akdi_oran_ozel","gecikme_oran_ozel","kurumsal","son_odeme","hesap_kesim","kisi","yon","alinma_tarihi",
   "akis_yonu","tutar","tarih","kategori","borc_id","hesap_id","hesap_turu","bagli_hesap","odeme_gunu",
   "tekrar","aktif","oncelik","kisitli_tutar","donem_hedef","donem_odenen","donem_anahtari","aciklama",
-  "toplam_kart_borcu","kullanilan_harclik"];
+  "toplam_kart_borcu","kullanilan_harclik","hedef_hesap_id","aktarilan_harclik","taksit_adedi",
+  "odenen_taksit","ilk_taksit_tarihi","ilk_gun","son_gun","acilis_bakiyesi","kapanis_bakiyesi","ekstre_satirlari"];
 
 const csvOut = v => {
   if(v === null || v === undefined) return "";
@@ -331,9 +336,9 @@ function buildCSV(){
 
   state.flows.forEach(f => rows.push(line({
     kayit_tipi:"hareket", id:f.id,
-    akis_yonu: f.type === "in" ? "girdi" : "cikti",
+    akis_yonu: f.type === "transfer" ? "aktarim" : f.type === "in" ? "girdi" : "cikti",
     tutar:f.amount, tarih:f.date, kategori:f.category, aciklama:f.note, borc_id:f.debtId, hesap_id:f.accountId,
-    kullanilan_harclik:f.restrictedUsed
+    kullanilan_harclik:f.restrictedUsed, hedef_hesap_id:f.targetAccountId, aktarilan_harclik:f.restrictedAmount
   })));
 
   state.accounts.forEach(a => rows.push(line({
@@ -356,12 +361,17 @@ function buildCSV(){
     kayit_tipi:"hedef", id:h.id, ad:h.name, tutar:h.amount, bakiye:h.saved,
     tarih:h.due, oncelik:h.priority, aciklama:h.note
   })));
+  state.installments.forEach(p => rows.push(line({kayit_tipi:"taksit", id:p.id, ad:p.name, borc_id:p.cardId,
+    tutar:p.amount, taksit_adedi:p.count, odenen_taksit:p.paidCount, ilk_taksit_tarihi:p.firstDue, aciklama:p.note})));
+  state.statements.forEach(s => rows.push(line({kayit_tipi:"ekstre", id:s.id, ad:s.name, hesap_id:s.accountId,
+    ilk_gun:s.from, son_gun:s.to, acilis_bakiyesi:s.openingBalance, kapanis_bakiyesi:s.closingBalance,
+    ekstre_satirlari:JSON.stringify(s.rows)})));
 
   rows.push(line({ kayit_tipi:"ayar", aciklama: JSON.stringify(state.settings) }));
   return "\uFEFF" + rows.join("\r\n");
 }
 
-function parseCSV(text){
+function parseCSV(text, separator = ";"){
   if(text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
   const rows = []; let row = [], cur = "", q = false;
   for(let i = 0; i < text.length; i++){
@@ -371,7 +381,7 @@ function parseCSV(text){
       else cur += c;
     }else{
       if(c === '"') q = true;
-      else if(c === ";") { row.push(cur); cur = ""; }
+      else if(c === separator) { row.push(cur); cur = ""; }
       else if(c === "\n"){ row.push(cur); rows.push(row); row = []; cur = ""; }
       else if(c === "\r"){ /* atla */ }
       else cur += c;
@@ -389,7 +399,7 @@ function readCSV(text){
   if(!head.includes("kayit_tipi")) throw new Error("Bu CSV bu uygulamadan çıkmamış");
   const at = (r,c) => { const i = head.indexOf(c); return i < 0 ? "" : String(r[i] ?? "").trim(); };
 
-  const out = { debts: [], flows: [], accounts: [], subs: [], incomes: [], goals: [], settings: null };
+  const out = { debts: [], flows: [], accounts: [], subs: [], incomes: [], goals: [], installments: [], statements: [], settings: null };
   for(let i = 1; i < rows.length; i++){
     const r = rows[i], tip = at(r,"kayit_tipi").toLowerCase();
 
@@ -430,15 +440,26 @@ function readCSV(text){
     }else if(tip === "hareket"){
       out.flows.push({
         id: at(r,"id") || uid(),
-        type: at(r,"akis_yonu").toLowerCase() === "girdi" ? "in" : "out",
+        type: at(r,"akis_yonu").toLowerCase() === "aktarim" ? "transfer" : at(r,"akis_yonu").toLowerCase() === "girdi" ? "in" : "out",
         amount: csvNum(at(r,"tutar")) || 0,
         date: at(r,"tarih") || isoOf(today()),
         category: at(r,"kategori"),
         debtId: at(r,"borc_id") || undefined, accountId: at(r,"hesap_id") || undefined,
         restrictedUsed: csvNum(at(r,"kullanilan_harclik")) || 0,
+        targetAccountId: at(r,"hedef_hesap_id") || undefined, restrictedAmount: csvNum(at(r,"aktarilan_harclik")) || 0,
         note: at(r,"aciklama")
       });
 
+    }else if(tip === "taksit"){
+      out.installments.push({id:at(r,"id") || uid(), name:at(r,"ad"), cardId:at(r,"borc_id"),
+        amount:csvNum(at(r,"tutar")), count:csvNum(at(r,"taksit_adedi")), paidCount:csvNum(at(r,"odenen_taksit")),
+        firstDue:at(r,"ilk_taksit_tarihi"), note:at(r,"aciklama")});
+    }else if(tip === "ekstre"){
+      const report = {id:at(r,"id") || uid(), name:at(r,"ad"), accountId:at(r,"hesap_id"),
+        from:at(r,"ilk_gun"), to:at(r,"son_gun"), rows:JSON.parse(at(r,"ekstre_satirlari"))};
+      if(at(r,"acilis_bakiyesi") !== "") report.openingBalance = csvNum(at(r,"acilis_bakiyesi"));
+      if(at(r,"kapanis_bakiyesi") !== "") report.closingBalance = csvNum(at(r,"kapanis_bakiyesi"));
+      out.statements.push(report);
     }else if(tip === "hesap"){
       out.accounts.push({
         id: at(r,"id") || uid(), name: at(r,"ad") || "Hesap", bank: at(r,"banka"),
@@ -492,7 +513,7 @@ function importText(text, mode){
     if(!data || typeof data !== "object" || !KOLEKSIYONLAR.some(k => Array.isArray(data[k]))) {
       throw new Error("Bu dosya bir Borç Defteri yedeği değil");
     }
-    if(data.schemaVersion != null && data.schemaVersion !== 1) throw new Error("Desteklenmeyen defter sürümü");
+    if(data.schemaVersion != null && ![1,2].includes(data.schemaVersion)) throw new Error("Desteklenmeyen defter sürümü");
     const old = clone(state);
     try {
       hydrate(data, mode);
@@ -548,28 +569,7 @@ function handleAction(action){
    so account effects are applied here only, never on load or import. */
 function replaceFlow(original, replacement){
   if(original && original.debtId) throw new Error("Borç işlemine bağlı hareketi ayrı değiştiremezsin");
-  const accounts = clone(state.accounts);
-  const accountFor = id => {
-    const account = accounts.find(item => item.id === id);
-    if(!account) throw new Error("Hareketin bağlı hesabı bulunamadı; hesap kaydını kontrol et");
-    return account;
-  };
-  if(original && original.accountId){
-    const account = accountFor(original.accountId);
-    account.balance = money(num(account.balance) - (original.type === "in" ? 1 : -1) * num(original.amount));
-    account.kisitli = money(num(account.kisitli) + num(original.restrictedUsed));
-  }
-  if(replacement && replacement.accountId){
-    const account = accountFor(replacement.accountId);
-    account.balance = money(num(account.balance) + (replacement.type === "in" ? 1 : -1) * replacement.amount);
-    replacement.restrictedUsed = money(Math.max(0, num(account.kisitli) - account.balance));
-    account.kisitli = money(num(account.kisitli) - replacement.restrictedUsed);
-  } else if(replacement) replacement.restrictedUsed = 0;
-  for(const account of accounts){
-    if(account.balance < 0 || num(account.kisitli) < 0 || num(account.kisitli) > account.balance)
-      throw new Error("Hesap bakiyesi bu işleme yetmiyor; hareket ve harçlık tutarlarını kontrol et");
-  }
-  state.accounts = accounts;
+  state.accounts = window.financeTools.applyFlow(state.accounts, original, replacement);
   state.flows = state.flows.filter(item => !original || item.id !== original.id);
   if(replacement) state.flows.push(replacement);
 }
@@ -1538,10 +1538,10 @@ function renderAkis(){
         <thead><tr><th>Tarih</th><th>Hesap</th><th>Kategori</th><th>Açıklama</th><th class="num">Tutar</th><th></th></tr></thead>
         <tbody>${kayit.map(f=>`<tr>
           <td>${fmtDate(f.date)}</td>
-          <td>${esc(f.accountId ? (state.accounts.find(account => account.id === f.accountId) || {}).name || "Silinmiş hesap" : "Yalnızca kayıt")}</td>
+          <td>${esc(f.type === "transfer" ? accountName(f.accountId)+" → "+accountName(f.targetAccountId) : f.accountId ? accountName(f.accountId) : "Yalnızca kayıt")}</td>
           <td>${esc(f.category||"—")}</td>
           <td>${esc(f.note||"")}</td>
-          <td class="num ${f.type}">${f.type==="in"?"+":"−"}${fmt(num(f.amount))}</td>
+          <td class="num ${f.type}">${f.type==="transfer"?"↔ ":f.type==="in"?"+":"−"}${fmt(num(f.amount))}</td>
           <td class="num">
             <button class="bt-btn quiet sm" data-editflow="${f.id}">Düzenle</button>
             <button class="bt-btn danger sm" data-delflow="${f.id}">Sil</button></td>
@@ -1624,6 +1624,140 @@ function renderAbonelik(){
 /* =========================================================
    7c. BAKİYELER
    ========================================================= */
+function accountOptions(selected){
+  return state.accounts.map(a => `<option value="${a.id}" ${a.id === selected ? "selected" : ""}>${esc(a.name)} · ${fmt(a.balance)}</option>`).join("");
+}
+function accountName(id){ return (state.accounts.find(a => a.id === id) || {}).name || "Silinmiş hesap"; }
+function transferHTML(){
+  const item = editTransfer || {}, value = key => esc(item[key] == null ? "" : item[key]);
+  const transfers = state.flows.filter(f => f.type === "transfer").sort((a,b) => b.date.localeCompare(a.date));
+  return `<div class="bt-section"><div class="bt-section-head"><h2>Hesaplar arası transfer</h2>
+    <button class="bt-btn quiet" id="bt-transfer-open">${transferOpen ? "Formu kapat" : "Transfer ekle"}</button></div>
+    <p class="bt-note">Kendi hesapların arasındaki aktarım gelir veya gider sayılmaz. Banka masrafını ayrı gider olarak kaydet.</p>
+    ${transferOpen ? `<div class="bt-form"><div class="bt-grid">
+    <div class="bt-field"><label for="tr-from">Kaynak hesap</label><select id="tr-from"><option value="">Seç…</option>${accountOptions(item.accountId)}</select></div>
+    <div class="bt-field"><label for="tr-to">Hedef hesap</label><select id="tr-to"><option value="">Seç…</option>${accountOptions(item.targetAccountId)}</select></div>
+    <div class="bt-field"><label for="tr-amount">Tutar (₺)</label><input id="tr-amount" inputmode="decimal" value="${value("amount")}"></div>
+    <div class="bt-field"><label for="tr-reserved">Bunun harçlık kısmı (₺)</label><input id="tr-reserved" inputmode="decimal" value="${value("restrictedAmount")}" placeholder="0"><div class="hint">Bu tutarın harçlık niteliği hedef hesapta korunur.</div></div>
+    <div class="bt-field"><label for="tr-date">Tarih</label><input id="tr-date" type="date" value="${item.date ? value("date") : isoOf(today())}"></div>
+    <div class="bt-field"><label for="tr-note">Açıklama</label><input id="tr-note" value="${value("note")}"></div>
+    </div><div class="bt-form-actions"><button class="bt-btn" id="bt-transfer-save">${editTransfer ? "Transferi güncelle" : "Transferi kaydet"}</button></div></div>` : ""}
+    ${transfers.length ? `<div class="bt-scroll"><table class="bt-table"><thead><tr><th>Tarih</th><th>Hesaplar</th><th>Tutar</th><th>Harçlık</th><th></th></tr></thead><tbody>${transfers.map(f => `<tr><td>${fmtDate(f.date)}</td><td>${esc(accountName(f.accountId))} → ${esc(accountName(f.targetAccountId))}<br>${esc(f.note)}</td><td>${fmt(f.amount)}</td><td>${fmt(f.restrictedAmount || 0)}</td><td><button class="bt-btn quiet sm" data-edittransfer="${f.id}">Düzenle</button><button class="bt-btn danger sm" data-deltransfer="${f.id}">Sil</button></td></tr>`).join("")}</tbody></table></div>` : `<p class="bt-note">Henüz transfer yok.</p>`}</div>`;
+}
+function renderInstallments(){
+  const el = document.getElementById("bt-taksit"), p = editInstallment || {};
+  const v = (key, fallback = "") => esc(p[key] == null ? fallback : p[key]);
+  const all = state.installments.flatMap(plan => window.financeTools.installments(plan));
+  const remaining = all.filter(row => !row.paid), selectedMonth = el.dataset.month || thisMonth();
+  const first = selectedMonth + "-01", last = window.financeTools.monthAfter(first, 12);
+  const months = Array.from({length:12}, (_,i) => window.financeTools.monthAfter(first,i).slice(0,7));
+  el.innerHTML = `<div class="bt-section"><div class="bt-section-head"><h2>${editInstallment ? "Taksit planını düzenle" : "Taksitli alışveriş ekle"}</h2></div>
+    <div class="bt-callout">Mevcut kart borcunun aylara dağılımını kaydet. Bu çizelge kart borcunu veya hesap bakiyesini değiştirmez; aynı borç ikinci kez eklenmez. Ödeme yaptıktan sonra ödenen taksit adedini güncelle.</div>
+    <div class="bt-form"><div class="bt-grid">
+    <div class="bt-field"><label for="ip-card">Kredi kartı</label><select id="ip-card"><option value="">Seç…</option>${state.debts.filter(d => d.type === "kredikarti").map(d => `<option value="${d.id}" ${d.id === p.cardId ? "selected" : ""}>${esc(d.name)}</option>`).join("")}</select></div>
+    <div class="bt-field"><label for="ip-name">Alışveriş / açıklama</label><input id="ip-name" value="${v("name")}" placeholder="Bilgisayar, kitap…"></div>
+    <div class="bt-field"><label for="ip-amount">Alışverişin toplam tutarı (₺)</label><input id="ip-amount" inputmode="decimal" value="${v("amount")}"></div>
+    <div class="bt-field"><label for="ip-count">Toplam taksit adedi</label><input id="ip-count" type="number" min="1" max="1200" value="${v("count",3)}"></div>
+    <div class="bt-field"><label for="ip-paid">Ödenen taksit adedi</label><input id="ip-paid" type="number" min="0" max="1200" value="${v("paidCount",0)}"></div>
+    <div class="bt-field"><label for="ip-date">İlk taksitin tarihi</label><input id="ip-date" type="date" value="${v("firstDue",isoOf(today()))}"><div class="hint">Alışverişin ilk taksiti. Ödenen adet baştan düşülür; kalan tarihler aylık hesaplanır.</div></div>
+    <div class="bt-field"><label for="ip-note">Not</label><input id="ip-note" value="${v("note")}"></div></div>
+    <div class="bt-form-actions"><button class="bt-btn" id="bt-installment-save">Planı kaydet</button>${editInstallment ? `<button class="bt-btn quiet" id="bt-installment-cancel">Vazgeç</button>` : ""}</div></div></div>
+    <div class="bt-section"><div class="bt-section-head"><h2>Aylık taksit çizelgesi</h2><input id="ip-month" type="month" value="${selectedMonth}"><button class="bt-btn quiet" id="bt-installment-export">Çizelgeyi CSV indir</button></div>
+    <p class="bt-note">Gelecek 12 ay gösterilir. Kalan planlı tutar: ${fmt(remaining.reduce((sum,row) => sum+row.amount,0))}. Ekstre faizleri ve diğer harcamalar bu çizelgede yoktur.</p>
+    <div class="bt-scroll"><table class="bt-table"><thead><tr><th>Ay</th><th>Planlanan taksitler</th><th class="num">Toplam</th></tr></thead><tbody>${months.map(month => {const rows = remaining.filter(row => row.date.slice(0,7) === month); return `<tr><td>${month}</td><td>${rows.map(row => `${fmtDate(row.date)} · ${esc(row.name)} (${row.number}. taksit) · ${esc((state.debts.find(d => d.id === row.cardId)||{}).name || "")}`).join("<br>") || "—"}</td><td class="num">${fmt(rows.reduce((sum,row) => sum+row.amount,0))}</td></tr>`;}).join("")}</tbody></table></div>
+    ${remaining.some(row => row.date < first) ? `<div class="bt-callout">Seçilen aydan önce kalan planlı taksitler var. Ödeme kayıtlarını kontrol ederek ödenen taksit adedini güncelle; çizelge ödemeleri kendiliğinden işaretlemez.</div>` : ""}
+    ${remaining.some(row => row.date >= last) ? `<p class="bt-note">12 aylık görünümün sonrasında da taksit var; başlangıç ayını değiştirerek inceleyebilirsin.</p>` : ""}</div>
+    <div class="bt-section"><h2>Alışverişler</h2>${state.installments.map(plan => {const rows=window.financeTools.installments(plan).filter(row=>!row.paid); return `<div class="bt-card"><div class="bt-card-head"><div><h3>${esc(plan.name)}</h3><p>${esc((state.debts.find(d=>d.id===plan.cardId)||{}).name || "")} · ${plan.paidCount}/${plan.count} taksit ödendi · kalan ${fmt(rows.reduce((sum,row)=>sum+row.amount,0))}</p></div></div><div class="bt-card-actions"><button class="bt-btn quiet sm" data-editinstallment="${plan.id}">Düzenle</button><button class="bt-btn danger sm" data-delinstallment="${plan.id}">Sil</button></div></div>`;}).join("") || `<p class="bt-note">Henüz taksit planı yok.</p>`}</div>`;
+}
+
+function prepareStatement(text){
+  if(text.length > 5*1024*1024) throw new Error("CSV en fazla 5 MB olabilir");
+  const candidates = [";",",","\t"].map(separator => ({separator,rows:parseCSV(text,separator)}));
+  const parsed = candidates.sort((a,b) => (b.rows[0] || []).length-(a.rows[0] || []).length)[0];
+  if(parsed.rows.length < 2 || parsed.rows.length > 10001 || parsed.rows[0].length < 2)
+    throw new Error("Başlık satırı ve 1–10000 hareket içeren CSV gerekiyor");
+  const headers = parsed.rows[0], normalize = value => value.toLocaleLowerCase("tr-TR").replace(/ı/g,"i").normalize("NFD").replace(/[\u0300-\u036f\s_-]/g,"");
+  const index = names => headers.findIndex(header => names.includes(normalize(header)));
+  statementSource = {text, headers, rows:parsed.rows.slice(1), config:{
+    date:index(["tarih","islemtarihi","date"]), note:index(["aciklama","islemaciklamasi","description","note"]),
+    amount:index(["tutar","islemtutari","amount"]), debit:index(["cikis","borc","debit"]), credit:index(["giris","alacak","credit"]),
+    mode:headers.some(header => ["cikis","borc","debit"].includes(normalize(header))) ? "split" : "signed", positive:"in", account:"", from:"", to:"", opening:"", closing:""
+  }};
+  statementPreview = null;
+}
+function buildStatement(){
+  if(!statementSource) throw new Error("Önce CSV sütunlarını hazırla");
+  if(document.getElementById("st-text").value !== statementSource.text) throw new Error("CSV değişti; önce sütunları yeniden hazırla");
+  const g = id => document.getElementById(id).value;
+  const cfg = {date:g("st-date"), note:g("st-note"), amount:g("st-amount"), debit:g("st-debit"), credit:g("st-credit"),
+    mode:g("st-mode"), positive:g("st-positive"), account:g("st-account"), from:g("st-from"), to:g("st-to"), opening:g("st-opening"), closing:g("st-closing")};
+  statementSource.config = cfg;
+  if(!state.accounts.some(a => a.id === cfg.account)) throw new Error("Karşılaştırılacak hesabı seç");
+  const columns = cfg.mode === "split" ? [cfg.date,cfg.debit,cfg.credit] : [cfg.date,cfg.amount];
+  if(columns.some(value => Number(value) < 0) || new Set(columns).size !== columns.length)
+    throw new Error("Tarih ve tutar için farklı, geçerli sütunlar seç");
+  const parseAmount = value => {
+    const cleaned = String(value || "").trim().replace(/(?:TL|TRY|₺)$/i, "").trim().replace(/^−/,"-");
+    const absolute = amountValue(cleaned.replace(/^-/,""), "Ekstre tutarı");
+    return {amount:absolute, negative:cleaned.startsWith("-")};
+  };
+  const rows = statementSource.rows.map((row,index) => {
+    try {
+      const day = window.financeTools.date(row[Number(cfg.date)]), note = Number(cfg.note) < 0 ? "" : String(row[Number(cfg.note)] || "").trim();
+      let amount, type;
+      if(cfg.mode === "split"){
+        const debit = parseAmount(row[Number(cfg.debit)]).amount, credit = parseAmount(row[Number(cfg.credit)]).amount;
+        if((debit > 0) === (credit > 0)) throw new Error("Giriş veya çıkış sütunlarından yalnızca biri dolu olmalı");
+        amount = debit || credit; type = debit ? "out" : "in";
+      } else {
+        const value = parseAmount(row[Number(cfg.amount)]); amount = value.amount;
+        type = value.negative ? (cfg.positive === "in" ? "out" : "in") : cfg.positive;
+      }
+      if(amount <= 0) throw new Error("Hareket tutarı sıfırdan büyük olmalı");
+      return {date:day, note, amount, type};
+    } catch(error){throw new Error(`${index+2}. CSV satırı: ${error.message}`);}
+  });
+  const days = rows.map(row => row.date).sort();
+  const report = {id:uid(), name:"Banka ekstresi", accountId:cfg.account, rows,
+    from:cfg.from ? window.financeTools.date(cfg.from) : days[0], to:cfg.to ? window.financeTools.date(cfg.to) : days[days.length-1]};
+  if(cfg.opening.trim() !== "") report.openingBalance = amountValue(cfg.opening,"Açılış bakiyesi");
+  if(cfg.closing.trim() !== "") report.closingBalance = amountValue(cfg.closing,"Kapanış bakiyesi");
+  if(report.from > report.to) throw new Error("İlk gün son günden sonra olamaz");
+  if(!rows.some(row => row.date >= report.from && row.date <= report.to)) throw new Error("Seçilen tarih aralığında ekstre hareketi yok");
+  return report;
+}
+function renderStatementResult(report){
+  const result = window.financeTools.compare(report.rows,state.flows,report.accountId,report.from,report.to);
+  const labels = {matched:"Eşleşti",description:"Açıklama farklı — kontrol et",amount:"Tutar farklı — kontrol et",missing:"Yalnızca ekstrede"};
+  const opening = report.openingBalance, closing = report.closingBalance;
+  return `<div id="st-result" class="bt-section"><div class="bt-section-head"><h2>${esc(accountName(report.accountId))} · ${report.from} – ${report.to}</h2><button class="bt-btn quiet" id="bt-statement-save">Ekstreyi sakla</button></div>
+    <div class="bt-callout">Bu karşılaştırma hesap bakiyesini veya hareketleri değiştirmez. Aynı gün ve tutardaki kayıtlar birer kez eşleştirilir; açıklama veya tutar farklıysa ayrıca gösterilir.</div>
+    <dl class="bt-hero-grid"><div class="bt-stat"><dt>Tam eşleşen</dt><dd>${result.matched}/${result.rows.length}</dd></div><div class="bt-stat"><dt>Ekstre net hareketi</dt><dd>${fmt(result.bankNet)}</dd></div><div class="bt-stat"><dt>Yerel net hareket</dt><dd>${fmt(result.localNet)}</dd></div><div class="bt-stat"><dt>Net fark</dt><dd>${fmt(result.difference)}</dd></div></dl>
+    ${opening != null ? `<p class="bt-note">Aynı açılış bakiyesiyle: ekstre hareketlerinden kapanış ${fmt(opening+result.bankNet)}, yerel hareketlerden kapanış ${fmt(opening+result.localNet)}.</p>` : ""}
+    ${closing != null ? `<p class="bt-note">Ekstrede bildirilen kapanış: ${fmt(closing)}.${opening != null ? ` Ekstrenin kendi hareketleriyle farkı ${fmt(closing-opening-result.bankNet)}; yerel hareketlerle farkı ${fmt(closing-opening-result.localNet)}.` : " Kapanış farkı hesaplamak için açılış bakiyesini de gir."}</p>` : ""}
+    <p class="bt-note">Hesabın bugün kayıtlı bakiyesi: ${fmt((state.accounts.find(a=>a.id===report.accountId)||{}).balance || 0)}. Geçmiş ekstre kapanışıyla aynı tarih olduğu varsayılmaz.${result.excluded ? ` Tarih aralığı dışında ${result.excluded} ekstre satırı var.` : ""}</p>
+    <div class="bt-scroll"><table class="bt-table"><thead><tr><th>Tarih</th><th>Ekstre açıklaması</th><th>Ekstre tutarı</th><th>Yerel kayıt</th><th>Durum</th></tr></thead><tbody>${result.rows.map(row => `<tr><td>${fmtDate(row.date)}</td><td>${esc(row.note)}</td><td>${row.type === "in" ? "+" : "−"}${fmt(row.amount)}</td><td>${row.local ? `${esc(row.local.note)} · ${fmt(row.local.amount)}${row.local.transfer ? " · transfer" : ""}` : "—"}</td><td>${labels[row.status]}</td></tr>`).join("")}${result.onlyLocal.map(row => `<tr><td>${fmtDate(row.date)}</td><td>—</td><td>—</td><td>${esc(row.note)} · ${row.type === "in" ? "+" : "−"}${fmt(row.amount)}</td><td>Yalnızca yerelde</td></tr>`).join("")}</tbody></table></div></div>`;
+}
+function renderStatements(){
+  const el=document.getElementById("bt-ekstre"), source=statementSource, cfg=source ? source.config : {};
+  const select = (id,label,key) => `<div class="bt-field"><label for="${id}">${label}</label><select id="${id}"><option value="-1">Seçilmedi</option>${source.headers.map((header,index)=>`<option value="${index}" ${Number(cfg[key]) === index ? "selected" : ""}>${index+1}. ${esc(header)}</option>`).join("")}</select></div>`;
+  el.innerHTML = `<div class="bt-section"><div class="bt-section-head"><h2>Banka ekstresini karşılaştır</h2><button class="bt-btn quiet" id="bt-statement-file">CSV dosyası aç</button></div>
+    <p class="bt-note">UTF-8 CSV/TSV kullan. Noktalı virgül, virgül veya sekme ayracı desteklenir. PDF ekstreleri CSV olarak dışa aktar. Başlık satırından sonra hareketler gelmeli.</p>
+    <div class="bt-form"><div class="bt-field"><label for="st-text">CSV içeriği</label><textarea id="st-text" rows="4" placeholder="tarih;aciklama;tutar&#10;22.11.2026;Market;-125,50">${esc(source ? source.text : "")}</textarea></div><div class="bt-form-actions"><button class="bt-btn quiet" id="bt-statement-prepare">Sütunları hazırla</button></div>
+    ${source ? `<div class="bt-grid"><div class="bt-field"><label for="st-account">Hesap</label><select id="st-account"><option value="">Seç…</option>${accountOptions(cfg.account)}</select></div>
+    <div class="bt-field"><label for="st-mode">Tutar düzeni</label><select id="st-mode"><option value="signed" ${cfg.mode === "signed" ? "selected" : ""}>Tek tutar sütunu (+/−)</option><option value="split" ${cfg.mode === "split" ? "selected" : ""}>Ayrı giriş ve çıkış sütunları</option></select></div>
+    ${select("st-date","Tarih sütunu","date")}${select("st-note","Açıklama sütunu (isteğe bağlı)","note")}${select("st-amount","Tek tutar sütunu","amount")}
+    <div class="bt-field"><label for="st-positive">Tek sütunda pozitif tutar</label><select id="st-positive"><option value="in" ${cfg.positive === "in" ? "selected" : ""}>Girdi</option><option value="out" ${cfg.positive === "out" ? "selected" : ""}>Çıktı</option></select></div>
+    ${select("st-debit","Çıkış / borç sütunu","debit")}${select("st-credit","Giriş / alacak sütunu","credit")}
+    <div class="bt-field"><label for="st-from">İlk gün (boşsa CSV başlangıcı)</label><input id="st-from" type="date" value="${esc(cfg.from)}"></div>
+    <div class="bt-field"><label for="st-to">Son gün (boşsa CSV sonu)</label><input id="st-to" type="date" value="${esc(cfg.to)}"></div>
+    <div class="bt-field"><label for="st-opening">Ekstre açılış bakiyesi (isteğe bağlı)</label><input id="st-opening" inputmode="decimal" value="${esc(cfg.opening)}"></div>
+    <div class="bt-field"><label for="st-closing">Ekstre kapanış bakiyesi (isteğe bağlı)</label><input id="st-closing" inputmode="decimal" value="${esc(cfg.closing)}"></div></div>
+    <div class="bt-form-actions"><button class="bt-btn" id="bt-statement-compare">Karşılaştır</button></div>` : ""}</div></div>
+    ${statementPreview ? renderStatementResult(statementPreview) : ""}
+    <div class="bt-section"><h2>Saklanan ekstreler</h2>${state.statements.map(report=>`<div class="bt-card"><div class="bt-card-head"><p>${esc(accountName(report.accountId))} · ${report.from} – ${report.to} · ${report.rows.length} hareket</p></div><div class="bt-card-actions"><button class="bt-btn quiet sm" data-openstatement="${report.id}">Güncel kayıtlarla karşılaştır</button><button class="bt-btn danger sm" data-delstatement="${report.id}">Sil</button></div></div>`).join("") || `<p class="bt-note">Henüz saklanan ekstre yok.</p>`}</div>`;
+}
+
 function renderKasa(){
   const el = document.getElementById("bt-kasa");
   const e = editAcc || {};
@@ -1690,7 +1824,7 @@ function renderKasa(){
         </tr>`;}).join("")}</tbody></table></div>
         <div class="bt-callout">Bu rakam <b>para değil, borçlanma kapasitesi</b>. Günlük harcama planına dahil edilmiyor; harcarsan gelecek ayın asgari ödemesi ve faizi büyür.</div>`
       : `<div class="bt-empty"><b>Kayıtlı kart yok</b>Borçlar sekmesinden kredi kartı eklersen kullanılabilir limitleri burada toplanır.</div>`}
-    </div>`;
+    </div>${transferHTML()}`;
 }
 
 /* =========================================================
@@ -2069,6 +2203,8 @@ function render(){
   if(activeTab==="borclar") renderBorclar();
   if(activeTab==="abonelik") renderAbonelik();
   if(activeTab==="kasa") renderKasa();
+  if(activeTab==="taksit") renderInstallments();
+  if(activeTab==="ekstre") renderStatements();
   if(activeTab==="plan") renderPlan();
   if(activeTab==="hedef") renderHedef();
   if(activeTab==="akis") renderAkis();
@@ -2131,6 +2267,77 @@ document.getElementById("bt-app").addEventListener("click", handleAction(e => {
   if(!t) return;
 
   if(t.classList.contains("bt-tab")){ activeTab = t.dataset.tab; render(); return; }
+
+  if(t.id === "bt-transfer-open"){
+    transferOpen = !transferOpen; editTransfer = null; renderKasa(); return;
+  }
+  if(t.id === "bt-transfer-save"){
+    const g = id => document.getElementById(id).value.trim();
+    const rec = {id:editTransfer ? editTransfer.id : uid(), type:"transfer", accountId:g("tr-from"), targetAccountId:g("tr-to"),
+      amount:amountValue(g("tr-amount"),"Transfer tutarı",true), restrictedAmount:amountValue(g("tr-reserved"),"Aktarılan harçlık"),
+      date:window.financeTools.date(g("tr-date")), note:g("tr-note"), category:"Transfer"};
+    if(!rec.accountId || !rec.targetAccountId) throw new Error("Kaynak ve hedef hesabı seç");
+    replaceFlow(editTransfer,rec); save(); editTransfer=null; transferOpen=false; renderKasa(); toast("Transfer kaydedildi"); return;
+  }
+  if(t.dataset.edittransfer){
+    editTransfer=state.flows.find(flow=>flow.id===t.dataset.edittransfer && flow.type==="transfer");
+    transferOpen=true; activeTab="kasa"; render(); return;
+  }
+  if(t.dataset.deltransfer){
+    const original=state.flows.find(flow=>flow.id===t.dataset.deltransfer && flow.type==="transfer");
+    if(original && confirm("Transfer silinsin ve iki hesaptaki etkisi geri alınsın mı?")){
+      replaceFlow(original,null); save(); editTransfer=null; transferOpen=false; renderKasa();
+    }
+    return;
+  }
+  if(t.id === "bt-installment-save"){
+    const g=id=>document.getElementById(id).value.trim();
+    const plan={id:editInstallment ? editInstallment.id : uid(),name:g("ip-name"),cardId:g("ip-card"),
+      amount:amountValue(g("ip-amount"),"Alışveriş toplamı",true),count:num(g("ip-count")),paidCount:num(g("ip-paid")),
+      firstDue:window.financeTools.date(g("ip-date")),note:g("ip-note")};
+    if(!plan.name || !state.debts.some(card=>card.id===plan.cardId && card.type==="kredikarti")) throw new Error("Alışveriş adını ve kredi kartını seç");
+    window.financeTools.installments(plan);
+    const index=state.installments.findIndex(item=>item.id===plan.id);
+    if(index<0) state.installments.push(plan); else state.installments[index]=plan;
+    save(); editInstallment=null; renderInstallments(); toast("Taksit planı kaydedildi; kart borcu değişmedi"); return;
+  }
+  if(t.id === "bt-installment-cancel"){editInstallment=null;renderInstallments();return;}
+  if(t.dataset.editinstallment){editInstallment=state.installments.find(p=>p.id===t.dataset.editinstallment);renderInstallments();return;}
+  if(t.dataset.delinstallment){
+    if(confirm("Taksit çizelgesi silinsin mi? Kart borcu ve ödeme kayıtları korunur.")){
+      state.installments=state.installments.filter(p=>p.id!==t.dataset.delinstallment);save();editInstallment=null;renderInstallments();
+    } return;
+  }
+  if(t.id === "bt-installment-export"){
+    const rows=[["tarih","kart","alisveris","taksit","tutar","durum"]];
+    state.installments.flatMap(p=>window.financeTools.installments(p)).sort((a,b)=>a.date.localeCompare(b.date)).forEach(row=>
+      rows.push([row.date,(state.debts.find(card=>card.id===row.cardId)||{}).name,row.name,row.number,row.amount,row.paid?"odendi":"planli"]));
+    download("taksit-cizelgesi.csv","\uFEFF"+rows.map(row=>row.map(csvOut).join(";")).join("\r\n"),"text/csv;charset=utf-8"); return;
+  }
+  if(t.id === "bt-statement-prepare"){
+    prepareStatement(document.getElementById("st-text").value);renderStatements();return;
+  }
+  if(t.id === "bt-statement-file"){
+    const result=hostResult(window.financeHost.importStatement());
+    if(!result.cancelled){prepareStatement(result.text);renderStatements();}return;
+  }
+  if(t.id === "bt-statement-compare"){statementPreview=buildStatement();renderStatements();return;}
+  if(t.id === "bt-statement-save"){
+    if(!statementPreview) throw new Error("Önce karşılaştırmayı hazırla");
+    const candidate=clone(statementPreview);
+    const previous=state.statements.find(report=>report.id===candidate.id || (report.accountId===candidate.accountId
+      && report.from===candidate.from && report.to===candidate.to && JSON.stringify(report.rows)===JSON.stringify(candidate.rows)));
+    if(previous) candidate.id=previous.id;
+    const index=state.statements.findIndex(report=>report.id===candidate.id);
+    if(index<0) state.statements.push(candidate); else state.statements[index]=candidate;
+    save();statementPreview=candidate;renderStatements();toast("Ekstre saklandı; bakiye değişmedi");return;
+  }
+  if(t.dataset.openstatement){statementPreview=clone(state.statements.find(report=>report.id===t.dataset.openstatement));statementSource=null;renderStatements();return;}
+  if(t.dataset.delstatement){
+    if(confirm("Saklanan ekstre silinsin mi? Hesap ve hareketler korunur.")){
+      state.statements=state.statements.filter(report=>report.id!==t.dataset.delstatement);save();statementPreview=null;renderStatements();
+    }return;
+  }
 
   if(t.id === "bt-odeme-ac"){
     const el = document.getElementById("bt-borclar");
@@ -2195,6 +2402,7 @@ document.getElementById("bt-app").addEventListener("click", handleAction(e => {
   }
   if(t.dataset.del){
     const d = state.debts.find(x=>x.id===t.dataset.del);
+    if(d && state.installments.some(plan=>plan.cardId===d.id)) throw new Error("Bu karta bağlı taksit planları var; önce planları kaldır");
     if(d && confirm(`"${d.name}" kaydı silinsin mi?`)){
       state.debts = state.debts.filter(x=>x.id!==d.id);
       if(odemeSecim === d.id) odemeSecim = null;
@@ -2266,7 +2474,8 @@ document.getElementById("bt-app").addEventListener("click", handleAction(e => {
   }
   if(t.dataset.accdel){
     const x = state.accounts.find(y=>y.id===t.dataset.accdel);
-    if(x && state.flows.some(flow => flow.accountId === x.id)) throw new Error("Bu hesabın hareket kayıtları var; hareketlere bağlı hesap silinemez");
+    if(x && (state.flows.some(flow => flow.accountId === x.id || flow.targetAccountId === x.id)
+        || state.statements.some(report=>report.accountId===x.id))) throw new Error("Bu hesaba bağlı hareket veya ekstre var; önce bağlı kayıtları kontrol et");
     if(x && confirm(`"${x.name}" hesabı silinsin mi?`)){
       state.accounts = state.accounts.filter(y=>y.id!==x.id);
       if(editAcc && editAcc.id===x.id) editAcc = null;
@@ -2371,6 +2580,8 @@ document.getElementById("bt-app").addEventListener("click", handleAction(e => {
     return;
   }
   if(t.dataset.editflow){
+    const original=state.flows.find(flow=>flow.id===t.dataset.editflow);
+    if(original && original.type==="transfer"){editTransfer=original;transferOpen=true;activeTab="kasa";render();return;}
     if(state.flows.find(f=>f.id===t.dataset.editflow)?.debtId){ toast("Bu hareket bir borç işlemine bağlı. Düzeltmeyi borç ve hesap kaydından yap."); return; }
     editFlow = state.flows.find(f=>f.id===t.dataset.editflow) || null;
     renderAkis();
@@ -2414,7 +2625,7 @@ document.getElementById("bt-app").addEventListener("click", handleAction(e => {
   if(t.id === "bt-wipe"){
     if(confirm("Bütün borç, abonelik, hesap, gelir, hedef ve nakit akışı kayıtların silinecek. Emin misin?")){
       KOLEKSIYONLAR.forEach(k => { state[k] = []; });
-      save(); render(); toast("Defter temizlendi");
+      save(); resetEditors(); render(); toast("Defter temizlendi");
     }
     return;
   }
@@ -2422,6 +2633,11 @@ document.getElementById("bt-app").addEventListener("click", handleAction(e => {
 
 document.getElementById("bt-app").addEventListener("input", handleAction(e => {
   const el = e.target;
+  if(el.id.startsWith("st-")){
+    statementPreview=null;
+    const saveButton=document.getElementById("bt-statement-save");
+    if(saveButton) saveButton.disabled=true;
+  }
 
   if(el.id === "f-type"){ formType = el.value; renderBorclar(); document.getElementById("f-name")?.focus(); return; }
   if(el.id === "od-borc"){ odemeSecim = el.value; renderBorclar(); return; }
@@ -2432,6 +2648,10 @@ document.getElementById("bt-app").addEventListener("input", handleAction(e => {
 
 document.getElementById("bt-app").addEventListener("change", handleAction(e => {
   const el = e.target;
+  if(el.id === "ip-month"){
+    if(!/^\d{4}-\d{2}$/.test(el.value)) throw new Error("Geçerli bir başlangıç ayı seç");
+    document.getElementById("bt-taksit").dataset.month=el.value;renderInstallments();return;
+  }
   if(el.dataset.tier != null){
     state.settings.ccTiers[+el.dataset.tier][el.dataset.f] = num(el.value);
     save(); return;

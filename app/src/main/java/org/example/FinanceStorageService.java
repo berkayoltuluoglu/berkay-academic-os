@@ -20,11 +20,12 @@ import java.util.Set;
 /** Versioned, validated local ledger storage, independent of the HTML view. */
 public final class FinanceStorageService {
     public static final int MAX_BYTES = 5 * 1024 * 1024;
-    private static final String[] COLLECTIONS = {"debts", "flows", "accounts", "subs", "incomes", "goals"};
+    private static final String[] COLLECTIONS = {"debts", "flows", "accounts", "subs", "incomes", "goals", "installments", "statements"};
     private static final Set<String> MONEY_FIELDS = Set.of("limit", "balance", "principal", "avans", "amount",
-            "saved", "kisitli", "taksit", "donemHedef", "donemOdenen", "totalBalance", "restrictedUsed");
+            "saved", "kisitli", "taksit", "donemHedef", "donemOdenen", "totalBalance", "restrictedUsed",
+            "restrictedAmount", "openingBalance", "closingBalance");
     private static final Set<String> RATE_FIELDS = Set.of("rate", "rateOverride", "asgariOverride", "gecikmeOverride");
-    private static final Set<String> DATE_FIELDS = Set.of("date", "due", "kesim", "alindi");
+    private static final Set<String> DATE_FIELDS = Set.of("date", "due", "kesim", "alindi", "firstDue", "from", "to");
     private final Path file;
     private final ObjectMapper mapper = new ObjectMapper()
             .enable(JsonParser.Feature.STRICT_DUPLICATE_DETECTION)
@@ -94,8 +95,9 @@ public final class FinanceStorageService {
         JsonNode parsed = mapper.readTree(json);
         require(parsed != null && parsed.isObject(), "Geçerli bir defter nesnesi gerekiyor");
         ObjectNode root = (ObjectNode) parsed;
+        for (String optional : new String[]{"installments", "statements"}) if (!root.has(optional)) root.putArray(optional);
         require(!root.has("schemaVersion") || (root.path("schemaVersion").isIntegralNumber()
-                && root.path("schemaVersion").asInt() == 1), "Desteklenmeyen defter sürümü");
+                && Set.of(1, 2).contains(root.path("schemaVersion").asInt())), "Desteklenmeyen defter sürümü");
         checkTree(root, 0);
         for (String collection : COLLECTIONS) {
             JsonNode entries = root.get(collection);
@@ -138,7 +140,7 @@ public final class FinanceStorageService {
                         if (entry.hasNonNull("yon")) require(Set.of("", "borc", "alacak").contains(entry.path("yon").asText()), "Geçersiz borç yönü");
                     }
                     case "flows" -> {
-                        require(Set.of("in", "out").contains(entry.path("type").asText()), "Geçersiz hareket yönü");
+                        require(Set.of("in", "out", "transfer").contains(entry.path("type").asText()), "Geçersiz hareket yönü");
                         require(number(entry.get("amount")).signum() > 0, "Hareket tutarı pozitif olmalı");
                         require(entry.path("date").isTextual() && !entry.path("date").asText().isBlank(), "Hareket tarihi gerekiyor");
                         if (entry.hasNonNull("accountId") && !entry.path("accountId").asText().isBlank()) {
@@ -150,6 +152,18 @@ public final class FinanceStorageService {
                             require(used.compareTo(number(entry.get("amount"))) <= 0, "Kullanılan harçlık hareket tutarını aşamaz");
                             require(used.signum() == 0 || (entry.path("type").asText().equals("out")
                                     && !entry.path("accountId").asText().isBlank()), "Harçlık kullanımı için çıktı hesabı gerekiyor");
+                        }
+                        if (entry.path("type").asText().equals("transfer")) {
+                            String source = entry.path("accountId").asText(), target = entry.path("targetAccountId").asText();
+                            require(entry.path("targetAccountId").isTextual(), "Transfer hedefi bir hesap kimliği olmalı");
+                            require(!source.equals(target) && find(root.path("accounts"), source) != null
+                                    && find(root.path("accounts"), target) != null, "Transfer için iki farklı kayıtlı hesap gerekiyor");
+                            require(number(entry.get("amount")).stripTrailingZeros().scale() <= 2, "Transfer tutarı kuruş hassasiyetinde olmalı");
+                            optionalNumber(entry, "restrictedAmount", number(entry.get("amount")), false);
+                            if (entry.hasNonNull("restrictedAmount")) require(number(entry.get("restrictedAmount")).stripTrailingZeros().scale() <= 2,
+                                    "Aktarılan harçlık kuruş hassasiyetinde olmalı");
+                            ((ObjectNode) entry).put("amount", number(entry.get("amount")));
+                            if (entry.hasNonNull("restrictedAmount")) ((ObjectNode) entry).put("restrictedAmount", number(entry.get("restrictedAmount")));
                         }
                     }
                     case "subs" -> {
@@ -165,6 +179,39 @@ public final class FinanceStorageService {
                         require(Set.of("tek", "aylik").contains(entry.path("repeat").asText()), "Geçersiz gelir tekrarı");
                     }
                     case "goals" -> require(number(entry.get("amount")).signum() > 0, "Hedef tutarı pozitif olmalı");
+                    case "installments" -> {
+                        JsonNode card = find(root.path("debts"), entry.path("cardId").asText());
+                        require(card != null && card.path("type").asText().equals("kredikarti"), "Taksit için kayıtlı kredi kartı gerekiyor");
+                        BigDecimal amount = number(entry.get("amount"));
+                        require(amount.signum() > 0 && amount.stripTrailingZeros().scale() <= 2, "Taksit toplamı pozitif ve kuruş hassasiyetinde olmalı");
+                        optionalNumber(entry, "count", new BigDecimal("1200"), true);
+                        int count = number(entry.get("count")).intValueExact();
+                        require(count > 0 && amount.movePointRight(2).compareTo(new BigDecimal(count)) >= 0, "Taksit adedi ve tutarı uyumsuz");
+                        optionalNumber(entry, "paidCount", new BigDecimal(count), true);
+                        int paidCount = number(entry.get("paidCount")).intValueExact();
+                        ((ObjectNode) entry).put("amount", amount).put("count", count).put("paidCount", paidCount);
+                        LocalDate first = requiredDate(entry, "firstDue");
+                        require(first.plusMonths(count - 1L).getYear() <= 9999, "Taksit tarihleri desteklenen aralığı aşıyor");
+                    }
+                    case "statements" -> {
+                        require(find(root.path("accounts"), entry.path("accountId").asText()) != null, "Ekstre için kayıtlı hesap gerekiyor");
+                        LocalDate from = requiredDate(entry, "from"), to = requiredDate(entry, "to");
+                        require(!from.isAfter(to), "Ekstre tarih aralığı geçersiz");
+                        for (String field : new String[]{"openingBalance", "closingBalance"}) {
+                            if (!entry.hasNonNull(field) || entry.path(field).asText().isBlank()) ((ObjectNode) entry).remove(field);
+                            else ((ObjectNode) entry).put(field, number(entry.get(field)));
+                        }
+                        JsonNode rows = entry.path("rows");
+                        require(rows.isArray() && !rows.isEmpty() && rows.size() <= 10000, "Ekstre 1–10000 hareket içermeli");
+                        for (JsonNode row : rows) {
+                            require(row.isObject() && Set.of("in", "out").contains(row.path("type").asText()), "Geçersiz ekstre hareketi");
+                            BigDecimal value = number(row.get("amount"));
+                            require(value.signum() > 0 && value.stripTrailingZeros().scale() <= 2, "Ekstre tutarı pozitif ve kuruş hassasiyetinde olmalı");
+                            ((ObjectNode) row).put("amount", value);
+                            requiredDate(row, "date");
+                            require(row.path("note").isTextual(), "Ekstre açıklaması metin olmalı");
+                        }
+                    }
                 }
             }
         }
@@ -189,7 +236,7 @@ public final class FinanceStorageService {
         for (String field : new String[]{"asgariAlt", "asgariUst", "vergi"}) requiredRate(settings, field);
         require(number(settings.get("asgariEsik")).signum() >= 0, "Asgari eşiği negatif olamaz");
         optionalNumber(settings, "gunlukButce", new BigDecimal("1000000000000"), false);
-        root.put("schemaVersion", 1);
+        root.put("schemaVersion", 2);
         return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(root);
     }
 
@@ -205,6 +252,18 @@ public final class FinanceStorageService {
         } else if (node.isArray()) {
             for (JsonNode child : node) checkTree(child, depth + 1);
         } else if (node.isTextual()) require(node.asText().length() <= 20000, "Metin alanı çok uzun");
+    }
+
+    private static JsonNode find(JsonNode entries, String id) {
+        for (JsonNode entry : entries) if (entry.path("id").asText().equals(id)) return entry;
+        return null;
+    }
+
+    private static LocalDate requiredDate(JsonNode entry, String key) throws IOException {
+        JsonNode value = entry.path(key);
+        require(value.isTextual() && value.asText().matches("\\d{4}-\\d{2}-\\d{2}"), "Tarih gerekiyor: " + key);
+        try { return LocalDate.parse(value.asText()); }
+        catch (RuntimeException error) { throw new IOException("Geçersiz tarih: " + key, error); }
     }
 
     private void requiredRate(JsonNode record, String key) throws IOException {

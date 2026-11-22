@@ -111,4 +111,53 @@ class FinanceStorageServiceTest {
         flow.put("restrictedUsed", 0).put("accountId", "bad\"id");
         assertThrows(IOException.class, () -> storage.validate(data.toString()));
     }
+
+    @Test void legacyLedgerLoadsNewCollectionsWithoutWritingTheOriginalFile() throws Exception {
+        Path path=directory.resolve("ledger.json");
+        String original=FinanceTestData.populated().put("schemaVersion",1).toString(); Files.writeString(path,original);
+        FinanceStorageService storage=new FinanceStorageService(path);
+        String loaded=storage.load();
+        var root=new com.fasterxml.jackson.databind.ObjectMapper().readTree(loaded);
+        assertTrue(root.path("installments").isArray());assertTrue(root.path("statements").isArray());
+        assertEquals(original,Files.readString(path));
+        assertEquals(2,root.path("schemaVersion").asInt());
+        storage.save(loaded);
+        assertEquals(original,Files.readString(storage.backupPath()));
+    }
+
+    @Test void installmentPlansRejectMissingCardsFractionalCountsAndInvalidDates() throws Exception {
+        FinanceStorageService storage=new FinanceStorageService(directory.resolve("ledger.json"));
+        var data=FinanceTestData.populated();
+        var plan=data.putArray("installments").addObject().put("id","purchase").put("name","Kitap")
+                .put("cardId","card").put("amount",100).put("count",3).put("paidCount",1).put("firstDue","2027-01-31");
+        storage.validate(data.toString());
+        plan.put("amount","100,00").put("count","3,00").put("paidCount","1,00");
+        var normalized=new com.fasterxml.jackson.databind.ObjectMapper().readTree(storage.validate(data.toString())).path("installments").get(0);
+        assertTrue(normalized.path("amount").isNumber()); assertEquals(3,normalized.path("count").asInt());
+        plan.put("cardId","loan"); assertThrows(IOException.class,()->storage.validate(data.toString()));
+        plan.put("cardId","card").put("count",1.5); assertThrows(IOException.class,()->storage.validate(data.toString()));
+        plan.put("count",3).put("paidCount",4); assertThrows(IOException.class,()->storage.validate(data.toString()));
+        plan.put("paidCount",0).put("firstDue","2027-02-30"); assertThrows(IOException.class,()->storage.validate(data.toString()));
+        plan.put("firstDue","2027-01-31").put("amount",.01); assertThrows(IOException.class,()->storage.validate(data.toString()));
+    }
+
+    @Test void transferReferencesAndStatementRowsAreValidatedBeforeSaving() throws Exception {
+        FinanceStorageService storage=new FinanceStorageService(directory.resolve("ledger.json"));
+        var data=FinanceTestData.populated();
+        data.withArray("accounts").addObject().put("id","wallet").put("name","Nakit").put("balance",100);
+        var flow=data.withArray("flows").addObject().put("id","transfer").put("type","transfer").put("amount",20)
+                .put("restrictedAmount",5).put("accountId","bank").put("targetAccountId","wallet").put("date","2026-11-22");
+        storage.validate(data.toString());
+        flow.put("targetAccountId","bank");assertThrows(IOException.class,()->storage.validate(data.toString()));
+        flow.put("targetAccountId","missing");assertThrows(IOException.class,()->storage.validate(data.toString()));
+        flow.put("targetAccountId","wallet").put("restrictedAmount",21);assertThrows(IOException.class,()->storage.validate(data.toString()));
+        flow.put("restrictedAmount",5);
+        var report=data.putArray("statements").addObject().put("id","statement").put("name","Ekstre").put("accountId","bank")
+                .put("from","2026-11-01").put("to","2026-11-30");
+        var row=report.putArray("rows").addObject().put("date","2026-11-22").put("type","out").put("amount",20).put("note","Transfer");
+        storage.validate(data.toString());
+        row.put("date","2026-02-30");assertThrows(IOException.class,()->storage.validate(data.toString()));
+        row.put("date","2026-11-22").put("amount",-20);assertThrows(IOException.class,()->storage.validate(data.toString()));
+        row.put("amount",20);report.put("from","2026-12-01");assertThrows(IOException.class,()->storage.validate(data.toString()));
+    }
 }

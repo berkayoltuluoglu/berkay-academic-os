@@ -80,6 +80,7 @@ public final class FinanceModuleView {
     private void showPanel(FinanceStorageService storage, String initialData) {
         try {
             String html = resource("index.html").replace("/* FINANCE_CSS */", fontCss() + resource("styles.css"))
+                    .replace("/* FINANCE_TOOLS_JS */", resource("finance-tools.js"))
                     .replace("/* FINANCE_JS */", resource("ledger.js"));
             webView = new WebView();
             webView.setContextMenuEnabled(false);
@@ -228,6 +229,19 @@ public final class FinanceModuleView {
                 var file = chooser.showOpenDialog(owner.get());
                 if (file == null) return Map.of("ok", true, "cancelled", true);
                 return Map.of("ok", true, "text", new String(FinanceStorageService.readLimited(file.toPath()), StandardCharsets.UTF_8));
+            });
+        }
+
+        public String importStatement() {
+            return respond(() -> {
+                FileChooser chooser = new FileChooser();
+                chooser.setTitle("Banka hareketlerini aç — UTF-8 CSV");
+                chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("CSV / TSV hareketler", "*.csv", "*.tsv"));
+                var file = chooser.showOpenDialog(owner.get());
+                if (file == null) return Map.of("ok", true, "cancelled", true);
+                byte[] bytes = FinanceStorageService.readLimited(file.toPath());
+                String text = StandardCharsets.UTF_8.newDecoder().decode(java.nio.ByteBuffer.wrap(bytes)).toString();
+                return Map.of("ok", true, "text", text);
             });
         }
 

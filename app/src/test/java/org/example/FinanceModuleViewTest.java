@@ -85,7 +85,7 @@ class FinanceModuleViewTest {
 
     @Test void allEightScreensRenderOfflineAndPreviewIsCaptured() throws Exception {
         open(true);
-        for (String tab : new String[]{"panel", "borclar", "abonelik", "kasa", "plan", "hedef", "akis", "ayarlar"}) {
+        for (String tab : new String[]{"panel", "borclar", "abonelik", "kasa", "taksit", "ekstre", "plan", "hedef", "akis", "ayarlar"}) {
             click("[data-tab=" + tab + "]");
             assertTrue(((Number) js("document.getElementById('bt-" + tab + "').textContent.length")).intValue() > 30, tab);
             assertEquals(false, js("document.getElementById('bt-" + tab + "').classList.contains('bt-hidden')"));
@@ -405,5 +405,138 @@ class FinanceModuleViewTest {
         click("#bt-save");
         assertEquals(3, state().path("debts").size());
         assertEquals("Yeniden dene", debt("card").path("note").asText());
+    }
+
+    private void installment(String amount, String count, String paid) throws Exception {
+        click("[data-tab=taksit]"); value("ip-card", "card"); value("ip-name", "Kitap alışverişi");
+        value("ip-amount", amount); value("ip-count", count); value("ip-paid", paid); value("ip-date", "2027-01-31");
+        click("#bt-installment-save");
+    }
+
+    private String wallet() throws Exception {
+        click("[data-tab=kasa]"); value("ac-name", "Cüzdan"); value("ac-balance", "100"); click("#bt-acc-save");
+        return state().path("accounts").get(1).path("id").asText();
+    }
+
+    private void transfer(String target, String amount, String reserved) throws Exception {
+        click("[data-tab=kasa]"); click("#bt-transfer-open");
+        value("tr-from", "bank"); value("tr-to", target); value("tr-amount", amount); value("tr-reserved", reserved);
+        value("tr-date", "2026-11-22"); value("tr-note", "Cüzdana aktarım"); click("#bt-transfer-save");
+    }
+
+    private void statement(String csv) throws Exception {
+        click("[data-tab=ekstre]"); value("st-text", csv); click("#bt-statement-prepare");
+        value("st-account", "bank"); click("#bt-statement-compare");
+    }
+
+    @Test void installmentDatesAmountsAndProgressRemainSeparateFromActualCardDebt() throws Exception {
+        open(true);
+        installment("100", "3", "1");
+        assertEquals(1, state().path("installments").size());
+        JsonNode schedule = mapper.readTree((String)js("JSON.stringify(window.financeTools.installments(JSON.parse(window.financeApp.exportState()).installments[0]))"));
+        assertEquals("2027-02-28", schedule.get(1).path("date").asText());
+        assertEquals("2027-03-31", schedule.get(2).path("date").asText());
+        assertEquals(33.33, schedule.get(1).path("amount").asDouble(), .00001);
+        assertEquals(33.34, schedule.get(2).path("amount").asDouble(), .00001);
+        assertEquals(4000, summary().path("debt").asInt());
+        String id=state().path("installments").get(0).path("id").asText();
+        click("[data-editinstallment=\""+id+"\"]"); value("ip-paid", "2"); click("#bt-installment-save");
+        assertEquals(2, state().path("installments").get(0).path("paidCount").asInt());
+        capture("finance-installments");
+        close(); open(false);
+        assertEquals(2, state().path("installments").get(0).path("paidCount").asInt());
+        click("[data-tab=taksit]"); click("[data-delinstallment=\""+id+"\"]");
+        assertEquals(0, state().path("installments").size());
+        installment("0,01", "3", "0");
+        assertEquals(0, state().path("installments").size());
+        assertEquals(4000, summary().path("debt").asInt());
+    }
+
+    @Test void transferEditAndDeletePreserveTotalCashAndMoveReservedMoney() throws Exception {
+        open(true); String wallet=wallet();
+        transfer(wallet,"120","20");
+        assertEquals(1, state().path("flows").size());
+        assertEquals("transfer", state().path("flows").get(0).path("type").asText());
+        assertEquals(5100, summary().path("cash").asInt());
+        assertEquals(4880, state().path("accounts").get(0).path("balance").asInt());
+        assertEquals(480, state().path("accounts").get(0).path("kisitli").asInt());
+        assertEquals(20, state().path("accounts").get(1).path("kisitli").asInt());
+        String id=state().path("flows").get(0).path("id").asText();
+        click("[data-tab=akis]");
+        assertEquals(0, ((Number)js("JSON.parse(window.financeApp.exportState()).flows.filter(f=>f.type==='in'||f.type==='out').length")).intValue());
+        click("[data-editflow=\""+id+"\"]"); value("tr-amount", "150"); value("tr-reserved", "50"); click("#bt-transfer-save");
+        assertEquals(4850, state().path("accounts").get(0).path("balance").asInt());
+        assertEquals(450, state().path("accounts").get(0).path("kisitli").asInt());
+        close(); open(false);
+        assertEquals(5100, summary().path("cash").asInt());
+        click("[data-tab=akis]");value("fl-account",wallet);value("fl-amount","200");click("#bt-flow-add");
+        String spent=state().toString(), expense=state().path("flows").get(1).path("id").asText();
+        click("[data-tab=kasa]");click("[data-deltransfer=\""+id+"\"]");
+        assertEquals(spent,state().toString());
+        click("[data-tab=akis]");click("[data-delflow=\""+expense+"\"]");
+        click("[data-tab=kasa]"); click("[data-deltransfer=\""+id+"\"]");
+        assertEquals(0, state().path("flows").size());
+        assertEquals(5000, state().path("accounts").get(0).path("balance").asInt());
+        assertEquals(500, state().path("accounts").get(0).path("kisitli").asInt());
+        assertEquals(100, state().path("accounts").get(1).path("balance").asInt());
+    }
+
+    @Test void invalidAndFailedTransferLeavesBothAccountsUntouched() throws Exception {
+        open(true); String wallet=wallet();
+        String before=state().toString();
+        transfer("bank","50","0");
+        assertEquals(before,state().toString());
+        value("tr-to",wallet); value("tr-amount","4600"); click("#bt-transfer-save");
+        assertEquals(before,state().toString());
+        value("tr-amount","1"); value("tr-reserved","0");
+        Path backup=file.resolveSibling("ledger.json.bak"); Files.deleteIfExists(backup); Files.createDirectory(backup);
+        Files.writeString(backup.resolve("keep"),"keep");
+        click("#bt-transfer-save");
+        assertEquals(before,state().toString());
+        assertEquals("1",js("document.getElementById('tr-amount').value"));
+    }
+
+    @Test void statementMatchesDuplicatesOnceAndReportsAmountAndDescriptionDifferencesWithoutWritingMoney() throws Exception {
+        var data=FinanceTestData.populated();
+        for(String[] row:new String[][]{{"market","out","25.50","Market"},{"rent","out","99","Kira"},{"shop","out","5","Ödeme"},{"only","out","2","Yalnız yerel"}}){
+            data.withArray("flows").addObject().put("id",row[0]).put("type",row[1]).put("amount",Double.parseDouble(row[2]))
+                    .put("note",row[3]).put("date","2026-11-22").put("accountId","bank");
+        }
+        var storage=new FinanceStorageService(directory.resolve("ledger.json")); storage.load();storage.save(data.toString());
+        open(true);
+        String cashBefore=state().path("accounts").toString(), flowsBefore=state().path("flows").toString();
+        statement("tarih;aciklama;tutar\n22.11.2026;Market;-25,50\n22.11.2026;Market;-25,50\n22.11.2026;Kira;-100\n22.11.2026;Alışveriş;-5");
+        String text=(String)js("document.getElementById('bt-ekstre').textContent");
+        assertTrue(text.contains("1/4")); assertTrue(text.contains("Tutar farklı"));
+        assertTrue(text.contains("Açıklama farklı")); assertTrue(text.contains("Yalnızca ekstrede")); assertTrue(text.contains("Yalnızca yerelde"));
+        click("#bt-statement-save"); click("#bt-statement-save");
+        assertEquals(1,state().path("statements").size());
+        assertEquals(cashBefore,state().path("accounts").toString());
+        assertEquals(flowsBefore,state().path("flows").toString());
+        js("document.querySelector('#bt-ekstre .bt-hero-grid').scrollIntoView({block:'center'})");
+        capture("finance-statement-comparison");
+        close();open(false);
+        String id=state().path("statements").get(0).path("id").asText();
+        click("[data-tab=ekstre]");click("[data-openstatement=\""+id+"\"]");
+        assertTrue(((String)js("document.getElementById('bt-ekstre').textContent")).contains("1/4"));
+    }
+
+    @Test void splitStatementCsvAndMalformedDatesAreHandledAndAllFeaturesRoundTrip() throws Exception {
+        open(true); String wallet=wallet(); installment("100","3","0"); transfer(wallet,"100","0");
+        statement("İşlem Tarihi,Açıklama,Borç,Alacak\n22.11.2026,Cüzdana aktarım,100,\n22.11.2026,\"Market, alışveriş\",\"25,50\",\n");
+        assertTrue(((String)js("document.getElementById('bt-ekstre').textContent")).contains("1/2"));
+        value("st-opening","5100");value("st-closing","4974,50");click("#bt-statement-compare");
+        click("#bt-statement-save");
+        String csv=(String)js("window.financeApp.exportCsv()");
+        assertEquals(true,js("window.financeApp.importText("+mapper.writeValueAsString(csv)+",'replace')"));
+        assertEquals(1,state().path("installments").size());assertEquals(1,state().path("statements").size());
+        assertEquals("transfer",state().path("flows").get(0).path("type").asText());
+        assertEquals(5100,summary().path("cash").asInt());
+        String saved=state().toString();
+        assertEquals(true,js("window.financeApp.importText("+mapper.writeValueAsString(saved)+",'merge')"));
+        assertEquals(saved,state().toString());
+        statement("tarih;aciklama;tutar\n31.02.2026;Bozuk;-1");
+        assertTrue(((String)js("document.getElementById('bt-error').textContent")).contains("Geçersiz tarih"));
+        assertEquals(saved,state().toString());
     }
 }
