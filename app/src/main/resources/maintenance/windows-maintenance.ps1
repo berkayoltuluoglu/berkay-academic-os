@@ -1,11 +1,23 @@
 ﻿param([Parameter(Mandatory=$true)][string]$JobFile)
 $ErrorActionPreference = 'Stop'
+# Use .NET directly: Windows PowerShell may inherit a PSModulePath from PowerShell 7.
+function Get-MaintenanceFileHash([string]$Path) {
+    $HashAlgorithm = [System.Security.Cryptography.SHA256]::Create()
+    $FileStream = $null
+    try {
+        $FileStream = [System.IO.File]::OpenRead($Path)
+        return [System.BitConverter]::ToString($HashAlgorithm.ComputeHash($FileStream)).Replace('-', '').ToLowerInvariant()
+    } finally {
+        if ($FileStream) { $FileStream.Dispose() }
+        $HashAlgorithm.Dispose()
+    }
+}
 $MaintenanceJob = $null
 try {
     $MaintenanceJob = Get-Content -LiteralPath $JobFile -Raw -Encoding UTF8 | ConvertFrom-Json
     if ($MaintenanceJob.mode -notin @('update', 'uninstall')) { throw 'Bilinmeyen bakım işlemi.' }
     if (!(Test-Path -LiteralPath $MaintenanceJob.executable -PathType Leaf)) { throw 'Kurulum dosyası bulunamadı.' }
-    if ((Get-FileHash -LiteralPath $MaintenanceJob.executable -Algorithm SHA256).Hash.ToLowerInvariant() -ne $MaintenanceJob.sha256) {
+    if ((Get-MaintenanceFileHash $MaintenanceJob.executable) -ne $MaintenanceJob.sha256) {
         throw 'Kurulum dosyasının SHA-256 değeri değişmiş. İşlem durduruldu.'
     }
     Set-Content -LiteralPath $MaintenanceJob.ready -Value 'ready' -Encoding ASCII
@@ -17,7 +29,7 @@ try {
         }
     }
     # Verify again after shutdown; the installer must still be the file the user approved.
-    if ((Get-FileHash -LiteralPath $MaintenanceJob.executable -Algorithm SHA256).Hash.ToLowerInvariant() -ne $MaintenanceJob.sha256) {
+    if ((Get-MaintenanceFileHash $MaintenanceJob.executable) -ne $MaintenanceJob.sha256) {
         throw 'Kurulum dosyası kapanış sırasında değişmiş. İşlem durduruldu.'
     }
     $MaintenanceArguments = '/S'

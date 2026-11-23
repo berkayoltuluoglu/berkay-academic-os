@@ -13,6 +13,8 @@
 - CSV/TSV banka ekstresi karşılaştırması; karşılaştırma bakiye veya hareket oluşturmaz.
 - Önceki 1.6.0 geliştirmeleri: uygulama içi Windows güncellemesi, logo, saatli sınavlar ve ders iptalleri.
 - Haftalık planın ilk açılışı, Bu hafta düğmesi ve hızlı görev tarihi profilin saat dilimini kullanır.
+- Windows bakım yardımcısı SHA-256 hesabını doğrudan .NET ile yapar; PowerShell modül yolu nedeniyle
+  `Get-FileHash` bulunamadığında güncellemenin durması giderildi.
 
 ## Geçiş ve Windows kontrolü
 
