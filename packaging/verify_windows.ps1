@@ -93,8 +93,24 @@ function Invoke-MaintenanceVerification([string]$Mode, [string]$Executable) {
         waitFor = @(); ready = $ReadyFile; result = $ResultFile; restart = $false
     } | ConvertTo-Json -Depth 5 | Set-Content -Path $JobFile -Encoding utf8
     $PowerShell = Join-Path $env:SystemRoot 'System32/WindowsPowerShell/v1.0/powershell.exe'
-    $Helper = Start-Process -FilePath $PowerShell -ArgumentList @('-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', "`"$MaintenanceScript`"", '-JobFile', "`"$JobFile`"") -PassThru
-    if (!$Helper.WaitForExit(120000)) { $Helper.Kill(); throw "Maintenance $Mode timed out." }
+    $HelperOutput = Join-Path $SmokeDirectory ("maintenance-$Mode-output.log")
+    $HelperError = Join-Path $SmokeDirectory ("maintenance-$Mode-error.log")
+    $Helper = Start-Process -FilePath $PowerShell -ArgumentList @('-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', "`"$MaintenanceScript`"", '-JobFile', "`"$JobFile`"") -PassThru -RedirectStandardOutput $HelperOutput -RedirectStandardError $HelperError
+    $HelperDeadline = (Get-Date).AddSeconds(120)
+    while (!$Helper.WaitForExit(250)) {
+        if (Test-Path $ResultFile) {
+            $PendingResult = Get-Content $ResultFile -Raw -Encoding UTF8 | ConvertFrom-Json
+            if ($PendingResult.status -eq 'failed') {
+                $Helper.Kill()
+                throw "Maintenance $Mode failed: $($PendingResult.message)"
+            }
+        }
+        if ((Get-Date) -gt $HelperDeadline) {
+            $Helper.Kill()
+            Get-Content $HelperOutput, $HelperError -ErrorAction SilentlyContinue | Write-Output
+            throw "Maintenance $Mode timed out; ready=$(Test-Path $ReadyFile), result=$(Test-Path $ResultFile)."
+        }
+    }
     if ($Helper.ExitCode -ne 0 -or !(Test-Path $ReadyFile) -or !(Test-Path $ResultFile)) { throw "Maintenance $Mode did not finish successfully." }
     $Result = Get-Content $ResultFile -Raw | ConvertFrom-Json
     if ($Result.status -ne 'success') { throw "Maintenance $Mode failed: $($Result.message)" }

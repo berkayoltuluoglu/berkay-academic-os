@@ -54,4 +54,6 @@ jobs:
             app/build/test-results/test/
             app/build/reports/tests/test/
             ${{ runner.temp }}/AcademicOS-smoke-profile-*/package-smoke.png
+            ${{ runner.temp }}/AcademicOS-smoke-profile-*/maintenance-*-result.json
+            ${{ runner.temp }}/AcademicOS-smoke-profile-*/maintenance-*.log
           if-no-files-found: warn

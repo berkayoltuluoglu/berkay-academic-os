@@ -1,0 +1,38 @@
+name: Windows existing installer verification
+on:
+  workflow_dispatch:
+    inputs:
+      package_run:
+        description: 'Windows package verification run containing the installer artifact'
+        required: true
+        type: string
+permissions:
+  contents: read
+  actions: read
+jobs:
+  verify:
+    runs-on: windows-2022
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: academic-os-windows
+          run-id: ${{ inputs.package_run }}
+          github-token: ${{ github.token }}
+          path: installer-artifact
+      - name: Verify existing installer
+        shell: pwsh
+        run: |
+          $Installer = (Get-ChildItem installer-artifact -Recurse -Filter '*-setup.exe' | Select-Object -First 1).FullName
+          if (!$Installer) { throw 'No installer in the requested package artifact.' }
+          ./packaging/verify_windows.ps1 -Installer $Installer
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: windows-installer-check
+          path: |
+            ${{ runner.temp }}/AcademicOS-smoke-profile-*/package-smoke.png
+            ${{ runner.temp }}/AcademicOS-smoke-profile-*/maintenance-*-result.json
+            ${{ runner.temp }}/AcademicOS-smoke-profile-*/maintenance-*.log
+          if-no-files-found: warn
