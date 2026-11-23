@@ -4,7 +4,7 @@ Son güncelleme: 23 Kasım 2026
 
 | ID | İş | Durum | Kapsam / karar |
 | --- | --- | --- | --- |
-| AOS-001 | Uygulama içinden güncelleme | Tamamlanma durumu doğrulanacak | GitHub Releases üzerinden yeni sürüm kontrolü, sağ üstte bildirim ve uygulamadan indirme/yükleme isteniyor. Sürüm sayfasını açmak yerine doğrudan yükleme yapılmalı. |
+| AOS-001 | Uygulama içinden güncelleme | Windows CI geçti — kullanıcı kabulü bekliyor | 1.6.1 paketinde Windows kurulum/açılış, yardımcılı yükseltme/kaldırma ve veri korunması doğrulandı. Kullanıcının kurulu 1.6.0 sürümünden indirme → onay → kapanış → kurulum → yeniden açılış ve tepsi denemesi bekliyor. [Sürüm notları](release-1.6.1.md). |
 | AOS-002 | OneNote entegrasyonu | Fikir — karar verilmedi | Derslerle OneNote bölümlerini eşleştirme, notları listeleme ve ilgili notu açma değerlendirildi. Görevlere not bağlantısı ekleme de öneri aşamasında. |
 | AOS-003 | Uygulama içinde not alma | Ertelendi — vize sonrası | OneNote benzeri kalemle yazma, çizim, PDF üzerine not ve otomatik kayıt değerlendirildi. Kapsam kesinleşmedi; acelesi yok. |
 | AOS-004 | Ödevler ve sınavlar listesinin görünümü | Yapılacak | İlk ekran görüntüsündeki listeye yalnızca görsel düzenleme uygulanacak; işleyiş değiştirilmeyecek. |
@@ -33,6 +33,12 @@ Son güncelleme: 23 Kasım 2026
 - 13 Kasım 2026: Uygulama içi not alma vize sonrasına ertelendi.
 - 13 Kasım 2026: OneNote entegrasyonunun faydaları konuşuldu; geliştirme kararı verilmedi.
 - 13 Kasım 2026: Listenin sohbet dışında erişilebilir tek bir dosyada tutulması istendi.
+
+## Windows yayını — 23 Kasım 2026
+
+- [Academic OS 1.6.1](https://github.com/berkayoltuluoglu/berkay-academic-os/releases/tag/v1.6.1) kararlı yayın olarak açıldı; setup, SHA-256 ve Windows kılavuzu birlikte yüklendi. Herkese açık güncelleme API'si 1.6.1'i döndürüyor.
+- Windows CI'da 271 uygulama testi ve 7 paketleyici testi geçti; kurulum, JavaFX açılışı, CLI, bakım yardımcısıyla yükseltme/kaldırma ve kullanıcı verisinin korunması doğrulandı. [Doğrulama kaydı](release-1.6.1.md).
+- Kullanıcının Windows sürümü 1.6.0. Ayarlar'dan 1.6.1'i bulma, indirme, onaylı kapanış/kurulum/yeniden açılış ve tepsi denemesi henüz kullanıcı tarafından doğrulanmadı; AOS-001 bu kabul tamamlanana kadar açık kalır.
 
 ## Finans — 13 Kasım 2026
 

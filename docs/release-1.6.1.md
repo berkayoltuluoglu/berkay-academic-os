@@ -2,6 +2,9 @@
 
 23 Kasım 2026. Finans geliştirmeleri, hızlı yapılacaklar listeleri ve günlük faaliyet kaydı Windows paketinde bir araya gelir.
 
+[v1.6.1 kararlı yayını](https://github.com/berkayoltuluoglu/berkay-academic-os/releases/tag/v1.6.1) açıldı.
+Herkese açık latest API ve indirilebilir SHA-256 dosyası GitHub girişi olmadan doğrulandı.
+
 ## Değişiklikler
 
 - Yapılacaklar ekranında hızlı görev girişi, listeler, ders bağlantısı ve ayrıntı düzenleme.
@@ -39,7 +42,15 @@ Kişisel profil ve Google tokenları dağıtıma dahil edilmez.
 - Windows paketleyici birim testleri: **7 başarılı**.
 - Java 21 ile yerel dağıtımın `--self-check` kontrolü başarılı.
 - UTC ortamında da 271 uygulama testi başarılı; testlerin Windows dosya yolu/satır sonu uyumu ve kayıt sonunu beklemesi düzeltildi.
-- Windows CI kurulum ve bakım kontrolleri yayın hazırlığı sırasında çalıştırılır; gerçek kullanıcı bilgisayarındaki
-  uygulama içi indirme ve yeniden açılış kabulü ayrıca takip edilir.
+- [Windows CI](https://github.com/berkayoltuluoglu/berkay-academic-os/actions/runs/45163789347) başarılı:
+  **271 test**, başarısızlık/hata/atlanan yok; 7 paketleyici testi de geçti.
+- Windows'ta kurulum, payload hash'leri, paketli Java ve CLI, gerçek JavaFX açılışı,
+  aynı bakım yardımcısıyla yükseltme/kaldırma ve kullanıcı verisinin korunması doğrulandı.
+- Kaynak commit: `bbab1aebcd433bc5319fa9a391d0968c4c770389`.
+- Setup: `BerkayAcademicOS-1.6.1-setup.exe`, **85.608.786 bayt**.
+- SHA-256: `3f5615bcacaaa69e089a4c577b1f2c3dd5baedaa23d8705c642c43a4095f9247`.
+- İndirilen CI paketinin hash'i yan dosyayla eşleşti; `7z t` arşiv kontrolü başarılı.
+- Kullanıcının kurulu 1.6.0 uygulamasından gerçek indirme → onay → kapanış → kurulum → yeniden açılış
+  ve tepsi kabulü ayrıca takip edilir. CI bakım kontrolü `restart: false` kullanır; bu kullanıcı akışının yerine geçmez.
 
 Kullanım: [Windows kılavuzu](../packaging/WINDOWS.md).
